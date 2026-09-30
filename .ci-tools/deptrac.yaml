@@ -99,6 +99,6 @@ deptrac:
     Assertion: [Root, Exception, Value, XmlCore]
     Protocol: [Root, Exception, Value, Assertion, Internal, XmlCore]
     Metadata: [Root, Exception, Value, Assertion, Internal, TimeBounds, XmlCore, XmlDsig, Clock]
-    Internal: [Root, Exception, Value, Assertion, Protocol, Metadata, Authentication, XmlCore, XmlDsig]
+    Internal: [Root, Exception, Value, Assertion, Protocol, Metadata, TimeBounds, Authentication, XmlCore, XmlDsig]
     Validation: [Root, Exception, Value, Assertion, Protocol, Metadata, Port, TimeBounds, Authentication, Internal, XmlCore, XmlDsig, Clock]
     Writing: [Root, Exception, Value, Assertion, Protocol, Metadata, Internal, XmlCore, XmlDsig]
