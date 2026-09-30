@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Tests\Unit\Assertion;
 
+use function array_fill;
 use Beffroi\Saml2\Model\Assertion\Conditions;
 use Beffroi\Saml2\Model\Exception\AudienceMismatch;
+use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -157,5 +159,55 @@ final class ConditionsTest extends TestCase
             [['https://sp.example.com/saml'], ['https://sp.example.com/saml', 'relative/path']],
             false,
         );
+    }
+
+    /**
+     * Section 7, M-15, M-17: 8 AudienceRestriction of 16 Audience each, the bounds the reader of the service provider
+     * applies, are the most the Conditions hold whoever builds them.
+     */
+    #[Test]
+    public function itHoldsTheBoundsOfSection7(): void
+    {
+        // Given
+        $audiences = array_fill(0, 8, array_fill(0, 16, 'https://sp.example.com/saml'));
+
+        // When
+        $conditions = new Conditions(null, null, $audiences, false);
+
+        // Then
+        static::assertSame($audiences, $conditions->audiences);
+    }
+
+    /**
+     * §9.2 row 36, M-15, M-17: one restriction or one audience over its bound of section 7, which the reader of the
+     * service provider would refuse, is refused whoever builds the Conditions, a writer included.
+     *
+     * @param list<list<string>> $audiences
+     */
+    #[Test]
+    #[DataProvider('provideAudiencesOverTheirBound')]
+    public function itRefusesAudiencesOverTheirBound(array $audiences, string $message): void
+    {
+        // Then
+        $this->expectException(LimitExceeded::class);
+        $this->expectExceptionMessageIs($message);
+
+        // When
+        new Conditions(null, null, $audiences, false);
+    }
+
+    /**
+     * @return iterable<string, array{list<list<string>>, string}>
+     */
+    public static function provideAudiencesOverTheirBound(): iterable
+    {
+        yield '9 AudienceRestriction' => [
+            array_fill(0, 9, ['https://sp.example.com/saml']),
+            'The Conditions hold more than 8 AudienceRestriction, the bound of section 7 (M-17).',
+        ];
+        yield '17 Audience in one restriction' => [
+            [['https://sp.example.com/saml'], array_fill(0, 17, 'https://sp.example.com/saml')],
+            'An AudienceRestriction holds more than 16 Audience, the bound of section 7 (M-17).',
+        ];
     }
 }

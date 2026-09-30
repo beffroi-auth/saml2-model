@@ -13,6 +13,7 @@ use Beffroi\Saml2\Model\Metadata\Endpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoints;
 use Beffroi\Saml2\Model\Value\Boolean;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\UnsignedShort;
 use Beffroi\Saml2\Model\Value\Uri;
 use Beffroi\Xml\Core\Attributes;
@@ -30,8 +31,6 @@ use function sprintf;
  */
 final readonly class EndpointReader
 {
-    private const int MAX_ENDPOINTS = 64;
-
     /**
      * @param list<Element> $elements the md:SingleSignOnService or md:SingleLogoutService children of a role
      * @param string $element their name in the schema
@@ -101,11 +100,10 @@ final readonly class EndpointReader
      */
     public static function bound(array $elements, string $element): void
     {
-        if (count($elements) > self::MAX_ENDPOINTS) {
-            throw new LimitExceeded(sprintf(
-                'A role descriptor holds more than 64 %s, the bound of section 7 (M-17).',
-                $element,
-            ));
-        }
+        Counts::check(
+            count($elements),
+            Counts::ENDPOINTS,
+            sprintf('A role descriptor holds more than 64 %s, the bound of section 7 (M-17).', $element),
+        );
     }
 }

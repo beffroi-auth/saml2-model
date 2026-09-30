@@ -16,6 +16,7 @@ use Beffroi\Saml2\Model\Internal\Assertion\NameIdReader;
 use Beffroi\Saml2\Model\Internal\Particle;
 use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\LogoutRequest;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
@@ -63,9 +64,11 @@ final readonly class LogoutRequestReader
         if (Schema::saml('EncryptedID')->matches($identifier[0])) {
             throw new Unsupported('The LogoutRequest names its principal with a saml:EncryptedID, which the package does not support until sub-spike 9e (section 6.7).');
         }
-        if (count($sessionIndexes) > LogoutRequest::MAX_SESSION_INDEXES) {
-            throw new LimitExceeded('A LogoutRequest names more than 16 session indexes, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count($sessionIndexes),
+            Counts::SESSION_INDEXES,
+            'A LogoutRequest names more than 16 session indexes, the bound of section 7 (M-17).',
+        );
     }
 
     /**

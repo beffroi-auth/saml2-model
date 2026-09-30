@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Tests\Unit\Assertion;
 
+use function array_fill;
 use Beffroi\Saml2\Model\Assertion\Assertion;
 use Beffroi\Saml2\Model\Assertion\Attribute;
 use Beffroi\Saml2\Model\Assertion\AttributeNameFormat;
@@ -12,6 +13,7 @@ use Beffroi\Saml2\Model\Assertion\Conditions;
 use Beffroi\Saml2\Model\Assertion\Issuer;
 use Beffroi\Saml2\Model\Assertion\NameId;
 use Beffroi\Saml2\Model\Assertion\SubjectConfirmation;
+use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\Test;
@@ -110,6 +112,57 @@ final class AssertionTest extends TestCase
             null,
             null,
             'urn:oasis:names:tc:SAML:2.0:ac:classes:Password',
+        );
+    }
+
+    /**
+     * Section 7, M-15, M-17: 256 attributes, the bound the reader of the service provider applies.
+     */
+    #[Test]
+    public function itHoldsTheAttributesOfTheirBound(): void
+    {
+        // Given
+        $attributes = array_fill(0, 256, new Attribute('uid', AttributeNameFormat::Unspecified, null, ['jdoe']));
+
+        // When
+        $assertion = $this->assertion($attributes);
+
+        // Then
+        static::assertSame($attributes, $assertion->attributes);
+    }
+
+    /**
+     * §9.2 row 36, M-15, M-17: 257 attributes, which the reader of the service provider would refuse, are refused
+     * whoever builds the assertion, a writer included.
+     */
+    #[Test]
+    public function itRefusesAttributesOverTheirBound(): void
+    {
+        // Given
+        $attributes = array_fill(0, 257, new Attribute('uid', AttributeNameFormat::Unspecified, null, ['jdoe']));
+
+        // Then
+        $this->expectException(LimitExceeded::class);
+        $this->expectExceptionMessageIs('The AttributeStatement holds more than 256 Attribute, the bound of section 7 (M-17).');
+
+        // When
+        $this->assertion($attributes);
+    }
+
+    /**
+     * @param list<Attribute> $attributes
+     */
+    private function assertion(array $attributes): Assertion
+    {
+        return new Assertion(
+            '_assertion',
+            new DateTimeImmutable('2026-09-30T11:59:58Z'),
+            new Issuer('https://idp.example.com/saml'),
+            new NameId('jdoe'),
+            $this->confirmation(),
+            $this->conditions(),
+            $this->authnStatement(),
+            $attributes,
         );
     }
 }

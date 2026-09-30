@@ -8,6 +8,7 @@ use function array_key_exists;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\UnknownEndpoint;
+use Beffroi\Saml2\Model\Value\Counts;
 use function count;
 
 /**
@@ -17,8 +18,6 @@ use function count;
  */
 final readonly class IndexedEndpoints
 {
-    private const int MAX_ENDPOINTS = 64;
-
     /**
      * @param list<IndexedEndpoint> $endpoints
      *
@@ -28,9 +27,11 @@ final readonly class IndexedEndpoints
     public function __construct(
         public array $endpoints,
     ) {
-        if (count($endpoints) > self::MAX_ENDPOINTS) {
-            throw new LimitExceeded('A role holds more than 64 assertion consumer services, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count($endpoints),
+            Counts::ENDPOINTS,
+            'A role holds more than 64 assertion consumer services, the bound of section 7 (M-17).',
+        );
         $byIndex = [];
         foreach ($endpoints as $endpoint) {
             if (array_key_exists($endpoint->index, $byIndex)) {
