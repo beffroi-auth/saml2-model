@@ -68,8 +68,15 @@ const INFECTION_STRICT_FILES = [
     'src/Internal/Metadata/Schema.php',
     // Section 9: the rule of M-2 for a received protocol message.
     'src/Internal/Protocol/MessageAuthentication.php',
+    // Section 9: the strict readers of the assertion and their rules, sections 6.1 steps 7 to 11.
+    'src/Internal/Assertion/AssertionContext.php',
+    'src/Internal/Assertion/Particle.php',
+    'src/Internal/Assertion/Structure.php',
+    'src/Internal/Assertion/IssuerReader.php',
+    'src/Internal/Assertion/HeaderReader.php',
+    'src/Internal/Assertion/SubjectReader.php',
     // Section 9, each added by the story that writes it:
-    // the strict readers and the selection of the signed element, every file of src/Internal/;
+    // the other strict readers and the selection of the signed element, every other file of src/Internal/;
     // the validators, every other file of src/Validation/.
 ];
 
