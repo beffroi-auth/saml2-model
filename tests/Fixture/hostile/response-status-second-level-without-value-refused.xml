@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_response" Version="2.0" IssueInstant="2026-09-30T11:59:59Z" Destination="https://sp.example.com/saml/acs" InResponseTo="_request">
+  <saml:Issuer>https://idp.example.com/saml</saml:Issuer>
+  <samlp:Status>
+    <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Responder">
+      <samlp:StatusCode/>
+    </samlp:StatusCode>
+    <samlp:StatusMessage>The password of jdoe@example.com is wrong</samlp:StatusMessage>
+    <samlp:StatusDetail><ext:Trace xmlns:ext="urn:example:extension">not read</ext:Trace></samlp:StatusDetail>
+  </samlp:Status>
+</samlp:Response>

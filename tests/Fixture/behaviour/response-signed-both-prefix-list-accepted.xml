@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:xs="http://www.w3.org/2001/XMLSchema" ID="_response" Version="2.0" IssueInstant="2026-09-30T11:59:59Z" Destination="https://sp.example.com/saml/acs" InResponseTo="_request">
+  <saml:Issuer>https://idp.example.com/saml</saml:Issuer><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><ds:Reference URI="#_response"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>gmfHIJNP7QZEN9ypJuH5Y0ZpLBcxginnAwTCpn7OV3Y=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>kzzIKmlpfgwRiZNyRfRqZVaezkNewBfDVVvabhyIMzeqlsP72U8GgRb6hd/NODswXP6hzT/edz0d
+7ReTI1AJzuyNF3Or8Euq73o/gjCnEFh6qMO+lJsZTZCQks2G0UFu6Dw4QpMonodDWXPCz4XB7WFq
+neD/RzUl3u880jeUgY04zLx+5FOiVpdOzyrKcvyGUsCuxDbjiaGtTVGMAIPxmfjOf1ru4OM5DlNE
+k3/C3CNx8ptLAMJZ4o710KnJzep1kQe2wsZkS7PSVJ17v0C+hOcoZWVXqsBoZhxGCFMxIuVS3GcR
+TTobXPkX0brgbgeX6XydNXBllwXl65WV/3DUlw==</ds:SignatureValue></ds:Signature>
+  <samlp:Status>
+    <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+  </samlp:Status>
+  <saml:Assertion ID="_assertion" Version="2.0" IssueInstant="2026-09-30T11:59:58Z">
+    <saml:Issuer>https://idp.example.com/saml</saml:Issuer><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><ds:Reference URI="#_assertion"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"><ec:InclusiveNamespaces xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#" PrefixList="xs"/></ds:Transform></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>2P3IirF3Z7TRqZoxYhfarTDXVS0UXQEW8Fu0yaOlfc8=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>Xky1HawVtygjM0sc+7Zy/zEHteFVXMIrU2OyruVn3C1FJFKXnpPCqSCa+mEBtEpoa4NNfDi5gIbJ
+rwnBIgy7bjW8tEckS3QLbOxyk/39hWn+WgThniKLKWctKROji6VOIO7FhPsvre7X5+xrS+keGBTd
+fV0Q1hLcMFK+IlHGINOVrwp5NQIUy/gFDz7nDUCEGr4Z6sxsgcyR081ht1NJOMasojWJxPkNYKn7
+N1pPhmzQFXG2JTm3WgcfmqRN8uR4D/zk8fp2TQAywvD83Ls3CTFED7KhwRS7Z27NxuXRUC62elQ2
+9xcC0q2NWVuSEaITO9XVpMwpSjic3hZsrb4DNw==</ds:SignatureValue></ds:Signature>
+    <saml:Subject>
+      <saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">_7a2f4c1d9e</saml:NameID>
+      <saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+        <saml:SubjectConfirmationData NotOnOrAfter="2026-09-30T12:04:58Z" Recipient="https://sp.example.com/saml/acs" InResponseTo="_request"/>
+      </saml:SubjectConfirmation>
+    </saml:Subject>
+    <saml:Conditions NotBefore="2026-09-30T11:59:28Z" NotOnOrAfter="2026-09-30T12:04:58Z">
+      <saml:AudienceRestriction>
+        <saml:Audience>https://sp.example.com/saml</saml:Audience>
+      </saml:AudienceRestriction>
+    </saml:Conditions>
+    <saml:AuthnStatement AuthnInstant="2026-09-30T11:59:57Z" SessionIndex="_session">
+      <saml:AuthnContext>
+        <saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport</saml:AuthnContextClassRef>
+      </saml:AuthnContext>
+    </saml:AuthnStatement>
+    <saml:AttributeStatement>
+      <saml:Attribute Name="urn:oid:0.9.2342.19200300.100.1.3" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" FriendlyName="mail">
+        <saml:AttributeValue xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">jdoe@example.com</saml:AttributeValue>
+      </saml:Attribute>
+    </saml:AttributeStatement>
+  </saml:Assertion>
+</samlp:Response>
