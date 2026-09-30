@@ -574,7 +574,7 @@ Numbered after those of the first phase. F1 is finding 1, F2 finding 2.
 17. **F1 does not arise when the broker is configured from the model's metadata.** Keycloak's `import-config` sets
     `postBindingAuthnRequest`, `postBindingResponse` and `postBindingLogout` together, to `true` whenever the metadata
     lists a single sign-on service on HTTP-POST, whatever its place among the services, and to `false` when it lists
-    HTTP-Redirect only (measured on 30 September 2026 with three variants of the model's metadata: HTTP-POST only,
+    HTTP-Redirect only (measured on 30 September 2026 with four variants of the model's metadata: HTTP-POST only,
     HTTP-Redirect then HTTP-POST, HTTP-POST then HTTP-Redirect, all `true`; HTTP-Redirect only, all `false`). The
     broker then asks for `ProtocolBinding` HTTP-POST, and sends its requests over HTTP-POST. F1 stays for a broker
     configured by hand, whose form leaves `postBindingResponse` off, and for an identity provider metadata without an
