@@ -6,7 +6,6 @@ namespace Beffroi\Saml2\Model\Internal\Writing;
 
 use Beffroi\Saml2\Model\Assertion\Assertion;
 use Beffroi\Saml2\Model\Protocol\Response;
-use Beffroi\Saml2\Model\Protocol\SecondLevelStatusCode;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Document;
@@ -43,11 +42,7 @@ final readonly class ResponseBuilder
             $root->setAttribute('InResponseTo', $response->inResponseTo);
         }
         $tree->introduceSaml($root, 'Issuer')->append($response->issuer->entityId);
-        $code = $tree->samlp($tree->samlp($root, 'Status'), 'StatusCode');
-        $code->setAttribute('Value', $response->status->code->value);
-        if ($response->status->secondLevel instanceof SecondLevelStatusCode) {
-            $tree->samlp($code, 'StatusCode')->setAttribute('Value', $response->status->secondLevel->value);
-        }
+        StatusBuilder::append($tree, $root, $response->status);
         if ($response->assertion instanceof Assertion) {
             AssertionBuilder::append($tree, $root, $response->assertion);
         }

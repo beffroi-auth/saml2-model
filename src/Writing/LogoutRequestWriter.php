@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Writing;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Internal\Writing\NameIdBuilder;
+use Beffroi\Saml2\Model\Internal\Writing\Tree;
 use Beffroi\Saml2\Model\Protocol\LogoutRequest;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\SamlLoader;
@@ -16,9 +18,7 @@ use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Exception\SigningFailed;
 use Beffroi\Xml\Dsig\Signer;
 use DateTimeImmutable;
-use Dom\Element;
 use InvalidArgumentException;
-use LogicException;
 
 /**
  * A samlp:LogoutRequest written in the order of section 6.6 (section 5.7): what its reader would refuse, its
@@ -48,6 +48,7 @@ final readonly class LogoutRequestWriter
             throw new InvalidArgumentException('The NotOnOrAfter of the LogoutRequest is not later than its IssueInstant, to the second, which its reader refuses (section 6.6).');
         }
         $document = new DocumentFactory()->create(new Name(Saml::PROTOCOL, 'LogoutRequest'), 'samlp');
+        $tree = Tree::of($document);
         $root = $document->root();
         $root->setAttributeNS(self::XMLNS, 'xmlns:saml', Saml::ASSERTION);
         $root->setAttribute('ID', $request->id);
@@ -60,22 +61,10 @@ final readonly class LogoutRequestWriter
         if ($request->reason !== null) {
             $root->setAttribute('Reason', $request->reason);
         }
-        $this->child($root, Saml::ASSERTION, 'saml:Issuer')->append($request->issuer->entityId);
-        $nameId = $this->child($root, Saml::ASSERTION, 'saml:NameID');
-        $nameId->setAttribute('Format', $request->nameId->format->value);
-        foreach ([
-            'NameQualifier' => $request->nameId->nameQualifier,
-            'SPNameQualifier' => $request->nameId->spNameQualifier,
-            'SPProvidedID' => $request->nameId->spProvidedId,
-        ] as $attribute => $value) {
-            if ($value === null) {
-                continue;
-            }
-            $nameId->setAttribute($attribute, $value);
-        }
-        $nameId->append($request->nameId->value);
+        $tree->saml($root, 'Issuer')->append($request->issuer->entityId);
+        NameIdBuilder::append($tree, $root, $request->nameId);
         foreach ($request->sessionIndexes as $sessionIndex) {
-            $this->child($root, Saml::PROTOCOL, 'samlp:SessionIndex')->append($sessionIndex);
+            $tree->samlp($root, 'SessionIndex')->append($sessionIndex);
         }
         if (! $signing instanceof Signing) {
             return $document;
@@ -99,18 +88,5 @@ final readonly class LogoutRequestWriter
     private function written(DateTimeImmutable $time): DateTimeImmutable
     {
         return Time::read(Time::write($time));
-    }
-
-    /**
-     * A prefixed element appended to its parent, its prefix declared on the root (core.md section 6.5).
-     */
-    private function child(Element $parent, string $namespace, string $qualifiedName): Element
-    {
-        $document =
-            $parent->ownerDocument ?? throw new LogicException('An element of a built document belongs to it (section 6.6).');
-        $child = $document->createElementNS($namespace, $qualifiedName);
-        $parent->appendChild($child);
-
-        return $child;
     }
 }

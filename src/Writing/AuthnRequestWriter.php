@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Writing;
 
+use Beffroi\Saml2\Model\Internal\Writing\Tree;
 use Beffroi\Saml2\Model\Protocol\AuthnRequest;
 use Beffroi\Saml2\Model\Protocol\NameIdPolicy;
 use Beffroi\Saml2\Model\Protocol\RequestedAuthnContext;
@@ -19,7 +20,6 @@ use Beffroi\Xml\Dsig\Exception\SigningFailed;
 use Beffroi\Xml\Dsig\Signer;
 use Dom\Element;
 use InvalidArgumentException;
-use LogicException;
 
 /**
  * A samlp:AuthnRequest written in the order of section 6.6 (section 5.7): checked against what the validator of the
@@ -33,8 +33,6 @@ use LogicException;
  */
 final readonly class AuthnRequestWriter
 {
-    private const string XMLNS = 'http://www.w3.org/2000/xmlns/';
-
     /**
      * @throws InvalidArgumentException when the request holds no Destination, which the identity provider requires of
      *                                   a request signed by XML or by the binding: a programming error of the caller
@@ -50,6 +48,7 @@ final readonly class AuthnRequestWriter
             throw new InvalidArgumentException('The request holds no Destination, which the identity provider requires of a signed request, by XML or by the binding (section 6.6).');
         }
         $document = new DocumentFactory()->create(new Name(Saml::PROTOCOL, 'AuthnRequest'), 'samlp');
+        $tree = Tree::of($document);
         $root = $document->root();
         $root->setAttribute('ID', $request->id);
         $root->setAttribute('Version', Saml::VERSION);
@@ -70,12 +69,12 @@ final readonly class AuthnRequestWriter
         if ($request->assertionConsumerServiceIndex !== null) {
             $root->setAttribute('AssertionConsumerServiceIndex', (string) $request->assertionConsumerServiceIndex);
         }
-        $this->saml($root, 'Issuer')->append($request->issuer->entityId);
+        $tree->introduceSaml($root, 'Issuer')->append($request->issuer->entityId);
         if ($request->nameIdPolicy instanceof NameIdPolicy) {
-            $this->nameIdPolicy($root, $request->nameIdPolicy);
+            $this->nameIdPolicy($tree, $root, $request->nameIdPolicy);
         }
         if ($request->requestedAuthnContext instanceof RequestedAuthnContext) {
-            $this->requestedAuthnContext($root, $request->requestedAuthnContext);
+            $this->requestedAuthnContext($tree, $root, $request->requestedAuthnContext);
         }
         if (! $signing instanceof Signing) {
             return $document;
@@ -91,9 +90,9 @@ final readonly class AuthnRequestWriter
         );
     }
 
-    private function nameIdPolicy(Element $root, NameIdPolicy $policy): void
+    private function nameIdPolicy(Tree $tree, Element $root, NameIdPolicy $policy): void
     {
-        $element = $this->child($root, Saml::PROTOCOL, 'samlp:NameIDPolicy');
+        $element = $tree->samlp($root, 'NameIDPolicy');
         if ($policy->format !== null) {
             $element->setAttribute('Format', $policy->format);
         }
@@ -105,36 +104,12 @@ final readonly class AuthnRequestWriter
         }
     }
 
-    private function requestedAuthnContext(Element $root, RequestedAuthnContext $context): void
+    private function requestedAuthnContext(Tree $tree, Element $root, RequestedAuthnContext $context): void
     {
-        $element = $this->child($root, Saml::PROTOCOL, 'samlp:RequestedAuthnContext');
+        $element = $tree->samlp($root, 'RequestedAuthnContext');
         $element->setAttribute('Comparison', $context->comparison->value);
         foreach ($context->authnContextClassRefs as $authnContextClassRef) {
-            $this->saml($element, 'AuthnContextClassRef')->append($authnContextClassRef);
+            $tree->introduceSaml($element, 'AuthnContextClassRef')->append($authnContextClassRef);
         }
-    }
-
-    /**
-     * An element of the assertion namespace, which declares the saml prefix it introduces (core.md section 6.5).
-     */
-    private function saml(Element $parent, string $local): Element
-    {
-        $element = $this->child($parent, Saml::ASSERTION, 'saml:' . $local);
-        $element->setAttributeNS(self::XMLNS, 'xmlns:saml', Saml::ASSERTION);
-
-        return $element;
-    }
-
-    /**
-     * A prefixed element appended to its parent (core.md section 6.5).
-     */
-    private function child(Element $parent, string $namespace, string $qualifiedName): Element
-    {
-        $document =
-            $parent->ownerDocument ?? throw new LogicException('An element of a built document belongs to it (section 6.6).');
-        $child = $document->createElementNS($namespace, $qualifiedName);
-        $parent->appendChild($child);
-
-        return $child;
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Writing;
 
-use DateTimeImmutable;
 use Beffroi\Saml2\Model\Assertion\NameIdFormat;
+use Beffroi\Saml2\Model\Internal\Writing\Tree;
 use Beffroi\Saml2\Model\Metadata\Binding;
 use Beffroi\Saml2\Model\Metadata\Endpoint;
 use Beffroi\Saml2\Model\Metadata\EntityDescriptor;
@@ -22,9 +22,9 @@ use Beffroi\Xml\Core\Exception\RefusedXml;
 use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Exception\SigningFailed;
 use Beffroi\Xml\Dsig\Signer;
+use DateTimeImmutable;
 use Dom\Element;
 use InvalidArgumentException;
-use LogicException;
 
 /**
  * An md:EntityDescriptor written in the order of section 6.6 (section 5.7): checked against what its reader refuses
@@ -35,10 +35,6 @@ use LogicException;
  */
 final readonly class MetadataWriter
 {
-    private const string XMLNS = 'http://www.w3.org/2000/xmlns/';
-
-    private const string DSIG = 'http://www.w3.org/2000/09/xmldsig#';
-
     /**
      * @throws InvalidArgumentException when the descriptor holds no role, its identity provider no single sign-on
      *                                   service, its service provider no assertion consumer service or one that is
@@ -51,6 +47,7 @@ final readonly class MetadataWriter
         $this->check($descriptor);
         $id = SamlId::generate();
         $document = new DocumentFactory()->create(new Name(Saml::METADATA, 'EntityDescriptor'), 'md');
+        $tree = Tree::of($document);
         $root = $document->root();
         $root->setAttribute('entityID', $descriptor->entityId);
         $root->setAttribute('ID', $id);
@@ -58,10 +55,10 @@ final readonly class MetadataWriter
             $root->setAttribute('validUntil', Time::write($descriptor->validUntil));
         }
         if ($descriptor->identityProvider instanceof IdentityProvider) {
-            $this->identityProvider($root, $descriptor->identityProvider);
+            $this->identityProvider($tree, $root, $descriptor->identityProvider);
         }
         if ($descriptor->serviceProvider instanceof ServiceProvider) {
-            $this->serviceProvider($root, $descriptor->serviceProvider);
+            $this->serviceProvider($tree, $root, $descriptor->serviceProvider);
         }
         if (! $signing instanceof Signing) {
             return $document;
@@ -103,28 +100,28 @@ final readonly class MetadataWriter
         }
     }
 
-    private function identityProvider(Element $root, IdentityProvider $idp): void
+    private function identityProvider(Tree $tree, Element $root, IdentityProvider $idp): void
     {
-        $role = $this->md($root, 'IDPSSODescriptor');
+        $role = $tree->md($root, 'IDPSSODescriptor');
         $role->setAttribute('protocolSupportEnumeration', Saml::PROTOCOL);
         $role->setAttribute('WantAuthnRequestsSigned', $idp->wantAuthnRequestsSigned ? Boolean::TRUE : Boolean::FALSE);
-        $this->keys($role, $idp->signingCertificates, $idp->encryptionCertificates);
-        $this->endpoints($role, 'SingleLogoutService', $idp->singleLogoutServices);
-        $this->formats($role, $idp->nameIdFormats);
-        $this->endpoints($role, 'SingleSignOnService', $idp->singleSignOnServices);
+        $this->keys($tree, $role, $idp->signingCertificates, $idp->encryptionCertificates);
+        $this->endpoints($tree, $role, 'SingleLogoutService', $idp->singleLogoutServices);
+        $this->formats($tree, $role, $idp->nameIdFormats);
+        $this->endpoints($tree, $role, 'SingleSignOnService', $idp->singleSignOnServices);
     }
 
-    private function serviceProvider(Element $root, ServiceProvider $sp): void
+    private function serviceProvider(Tree $tree, Element $root, ServiceProvider $sp): void
     {
-        $role = $this->md($root, 'SPSSODescriptor');
+        $role = $tree->md($root, 'SPSSODescriptor');
         $role->setAttribute('protocolSupportEnumeration', Saml::PROTOCOL);
         $role->setAttribute('AuthnRequestsSigned', $sp->authnRequestsSigned ? Boolean::TRUE : Boolean::FALSE);
         $role->setAttribute('WantAssertionsSigned', $sp->wantAssertionsSigned ? Boolean::TRUE : Boolean::FALSE);
-        $this->keys($role, $sp->signingCertificates, $sp->encryptionCertificates);
-        $this->endpoints($role, 'SingleLogoutService', $sp->singleLogoutServices);
-        $this->formats($role, $sp->nameIdFormats);
+        $this->keys($tree, $role, $sp->signingCertificates, $sp->encryptionCertificates);
+        $this->endpoints($tree, $role, 'SingleLogoutService', $sp->singleLogoutServices);
+        $this->formats($tree, $role, $sp->nameIdFormats);
         foreach ($sp->assertionConsumerServices->endpoints as $endpoint) {
-            $element = $this->md($role, 'AssertionConsumerService');
+            $element = $tree->md($role, 'AssertionConsumerService');
             $element->setAttribute('Binding', $endpoint->binding->value);
             $element->setAttribute('Location', $endpoint->location);
             $element->setAttribute('index', (string) $endpoint->index);
@@ -141,19 +138,17 @@ final readonly class MetadataWriter
      * @param list<string> $signing
      * @param list<string> $encryption
      */
-    private function keys(Element $role, array $signing, array $encryption): void
+    private function keys(Tree $tree, Element $role, array $signing, array $encryption): void
     {
         foreach ([
             ['signing',    $signing],
             ['encryption', $encryption],
         ] as [$use, $certificates]) {
             foreach ($certificates as $certificate) {
-                $keyDescriptor = $this->md($role, 'KeyDescriptor');
+                $keyDescriptor = $tree->md($role, 'KeyDescriptor');
                 $keyDescriptor->setAttribute('use', $use);
-                $keyInfo = $this->child($keyDescriptor, self::DSIG, 'ds:KeyInfo');
-                $keyInfo->setAttributeNS(self::XMLNS, 'xmlns:ds', self::DSIG);
-                $data = $this->child($keyInfo, self::DSIG, 'ds:X509Data');
-                $this->child($data, self::DSIG, 'ds:X509Certificate')->append($certificate);
+                $data = $tree->ds($tree->introduceDs($keyDescriptor, 'KeyInfo'), 'X509Data');
+                $tree->ds($data, 'X509Certificate')->append($certificate);
             }
         }
     }
@@ -161,10 +156,10 @@ final readonly class MetadataWriter
     /**
      * @param list<Endpoint> $endpoints
      */
-    private function endpoints(Element $role, string $local, array $endpoints): void
+    private function endpoints(Tree $tree, Element $role, string $local, array $endpoints): void
     {
         foreach ($endpoints as $endpoint) {
-            $element = $this->md($role, $local);
+            $element = $tree->md($role, $local);
             $element->setAttribute('Binding', $endpoint->binding->value);
             $element->setAttribute('Location', $endpoint->location);
             if ($endpoint->responseLocation !== null) {
@@ -176,28 +171,10 @@ final readonly class MetadataWriter
     /**
      * @param list<NameIdFormat> $formats
      */
-    private function formats(Element $role, array $formats): void
+    private function formats(Tree $tree, Element $role, array $formats): void
     {
         foreach ($formats as $format) {
-            $this->md($role, 'NameIDFormat')->append($format->value);
+            $tree->md($role, 'NameIDFormat')->append($format->value);
         }
-    }
-
-    private function md(Element $parent, string $local): Element
-    {
-        return $this->child($parent, Saml::METADATA, 'md:' . $local);
-    }
-
-    /**
-     * A prefixed element appended to its parent (core.md section 6.5).
-     */
-    private function child(Element $parent, string $namespace, string $qualifiedName): Element
-    {
-        $document =
-            $parent->ownerDocument ?? throw new LogicException('An element of a built document belongs to it (section 6.6).');
-        $child = $document->createElementNS($namespace, $qualifiedName);
-        $parent->appendChild($child);
-
-        return $child;
     }
 }
