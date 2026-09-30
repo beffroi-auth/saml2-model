@@ -74,6 +74,7 @@ const INFECTION_STRICT_FILES = [
     // Section 9: the strict readers of the assertion and their rules, sections 6.1 steps 7 to 11.
     'src/Internal/Assertion/AssertionContext.php',
     'src/Internal/Assertion/IssuerReader.php',
+    'src/Internal/Assertion/NameIdReader.php',
     'src/Internal/Assertion/HeaderReader.php',
     'src/Internal/Assertion/SubjectReader.php',
     'src/Internal/Assertion/ConditionsReader.php',
