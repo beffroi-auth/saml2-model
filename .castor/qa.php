@@ -52,6 +52,8 @@ const INFECTION_STRICT_FILES = [
     'src/Assertion/NameId.php',
     // Section 9: the bounds of time the validators and the metadata reader share (M-7).
     'src/Validation/TimeBounds.php',
+    // Section 5.6: how a protocol message was authenticated (M-2).
+    'src/Validation/Authentication.php',
     // Section 9: IndexedEndpoints, the default endpoint and the searches of M-9.
     'src/Metadata/IndexedEndpoints.php',
     // Section 9: the metadata reader (section 6.5).

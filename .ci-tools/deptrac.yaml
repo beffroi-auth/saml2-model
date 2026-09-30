@@ -44,10 +44,16 @@ deptrac:
       collectors:
         - type: classLike
           value: '^Beffroi\\Saml2\\Model\\Validation\\TimeBounds$'
+    # Authentication is a value of Validation that the rule of M-2 under Internal returns too (section 5.6): a leaf of
+    # its own, so that Internal names it without depending on the validators.
+    - name: Authentication
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Validation\\Authentication$'
     - name: Validation
       collectors:
         - type: classLike
-          value: '^Beffroi\\Saml2\\Model\\Validation\\(?!TimeBounds$)'
+          value: '^Beffroi\\Saml2\\Model\\Validation\\(?!TimeBounds$|Authentication$)'
     - name: Writing
       collectors:
         - type: classLike
@@ -89,9 +95,10 @@ deptrac:
     Value: [Root, Exception, XmlCore]
     Port: ~
     TimeBounds: ~
+    Authentication: ~
     Assertion: [Root, Exception, Value, XmlCore]
     Protocol: [Root, Exception, Value, Assertion, Internal, XmlCore]
     Metadata: [Root, Exception, Value, Assertion, Internal, TimeBounds, XmlCore, XmlDsig, Clock]
-    Internal: [Root, Exception, Value, Assertion, Protocol, Metadata, XmlCore, XmlDsig]
-    Validation: [Root, Exception, Value, Assertion, Protocol, Metadata, Port, TimeBounds, Internal, XmlCore, XmlDsig, Clock]
+    Internal: [Root, Exception, Value, Assertion, Protocol, Metadata, Authentication, XmlCore, XmlDsig]
+    Validation: [Root, Exception, Value, Assertion, Protocol, Metadata, Port, TimeBounds, Authentication, Internal, XmlCore, XmlDsig, Clock]
     Writing: [Root, Exception, Value, Assertion, Protocol, Metadata, Internal, XmlCore, XmlDsig]
