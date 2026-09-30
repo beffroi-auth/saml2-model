@@ -1,0 +1,55 @@
+{
+    "name": "beffroi-php/saml2-model",
+    "description": "The SAML 2.0 model for PHP: the samlp:, saml: and md: objects of the Web Browser SSO and Single Logout profiles, read strictly (what is read is what a signature covers, a peer's keys from its metadata only), validated against the rules of the profiles in code rather than in options, and written, on the safe DOM, XML Signature and XML Encryption of beffroi-php/xml-security. It knows no HTTP.",
+    "type": "library",
+    "license": "MIT",
+    "homepage": "https://github.com/beffroi-php/saml2-model",
+    "keywords": [
+        "saml",
+        "saml2",
+        "sso",
+        "single-sign-on",
+        "single-logout",
+        "identity-provider",
+        "service-provider",
+        "metadata",
+        "xml-signature",
+        "xml-security"
+    ],
+    "authors": [
+        {
+            "name": "All contributors"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/beffroi-php/xml-security.git"
+        }
+    ],
+    "require": {
+        "php": ">=8.4",
+        "beffroi-php/xml-security": "dev-main",
+        "psr/clock": "^1.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Beffroi\\Saml2\\Model\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Beffroi\\Saml2\\Model\\Tests\\": "tests/"
+        },
+        "exclude-from-classmap": [
+            "tests/Fixture/",
+            "tests/Interop/"
+        ]
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true
+    }
+}
