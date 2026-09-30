@@ -388,6 +388,25 @@ function deptrac(): void
  */
 const XMLSEC_ORACLE = 'tmp-phpqa/oracle';
 
+/**
+ * The signed documents the writers wrote and the repository commits, by the certificate of their signer (section
+ * 9.1): the identity provider's responses, logout request and metadata, the service provider's AuthnRequest and
+ * logout response. The job Oracle of the CI verifies the same files.
+ */
+const XMLSEC_COMMITTED = [
+    'tests/Fixture/keys/idp-signing-certificate.pem' => [
+        'tests/Fixture/behaviour/response-written-signed-assertion.xml',
+        'tests/Fixture/behaviour/response-written-signed-assertion-and-response.xml',
+        'tests/Fixture/behaviour/response-written-failure-signed-refused.xml',
+        'tests/Fixture/behaviour/logout-request-written-and-signed-by-the-writer.xml',
+        'tests/Fixture/behaviour/metadata-written-and-signed-by-the-writer.xml',
+    ],
+    'tests/Fixture/keys/sp-signing-certificate.pem' => [
+        'tests/Fixture/behaviour/authn-request-written-and-signed-by-the-writer.xml',
+        'tests/Fixture/behaviour/logout-response-written-and-signed-by-the-writer.xml',
+    ],
+];
+
 #[AsTask(
     description: 'Verify every signature of a written file with xmlsec1, the implementation that is not this one (spec/model.md section 9.1), in Alpine 3.22: castor xmlsec tests/Fixture/behaviour/response-written-signed-assertion-and-response.xml',
 )]
@@ -403,7 +422,7 @@ function xmlsec(
 }
 
 #[AsTask(
-    description: 'Write and sign responses with every scheme this build offers, then have xmlsec1 verify every signature of each (spec/model.md section 9.1), what the job Oracle of the CI runs: PHP_VERSION=8.5 castor xmlsec-oracle',
+    description: 'Write and sign responses with every scheme this build offers, then have xmlsec1 verify every signature of each, and of every signed document the writers committed, each under its signer\'s certificate (spec/model.md section 9.1), what the job Oracle of the CI runs: PHP_VERSION=8.5 castor xmlsec-oracle',
 )]
 function xmlsec_oracle(): void
 {
@@ -424,6 +443,9 @@ function xmlsec_oracle(): void
         ['XMLSEC_ORACLE' => XMLSEC_ORACLE],
     );
     xmlsec1(glob(XMLSEC_ORACLE . '/*.xml') ?: [], 'tests/Fixture/keys/idp-signing-certificate.pem');
+    foreach (XMLSEC_COMMITTED as $certificate => $files) {
+        xmlsec1($files, $certificate);
+    }
 }
 
 /**
