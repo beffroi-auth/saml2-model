@@ -116,6 +116,10 @@ final class ResponseFixtureBuilder
                 ),
                 ['_assertion'],
             ),
+            'behaviour/response-without-destination-accepted.xml' => self::signed(
+                self::replace(self::DESTINATION, '', $base),
+                ['_assertion'],
+            ),
             'behaviour/response-without-issuer-accepted.xml' => self::signed(
                 self::replace(self::RESPONSE_ISSUER, '', $base),
                 ['_assertion'],
