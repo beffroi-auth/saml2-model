@@ -96,3 +96,83 @@ Under their defaults, a Keycloak broker and a Keycloak SAML client do not intero
 requires a signed request (`saml.client.signature=true`) that the broker does not sign (`wantAuthnRequestsSigned`
 off), and the broker requires a signed assertion (`wantAssertionsSigned=true`) that the client does not sign
 (`saml.assertion.signature` absent). Each of the two settings above lifts one of the two refusals, both measured.
+
+## Capture
+
+From the root of the repository, Keycloak started as above:
+
+```
+bash tests/Interop/keycloak/capture.sh
+docker compose -f tests/Interop/keycloak/compose.yaml down
+```
+
+`capture.sh` needs bash 3.2 or later, curl and perl with its core modules. It waits for Keycloak (180 s at most), then
+plays the exchange with curl and one cookie jar, following no redirect by itself, as a browser would:
+
+1. `GET /realms/idp/protocol/saml/descriptor` and `GET /realms/sp/broker/idp/endpoint/descriptor`: both metadata,
+   kept as served.
+2. `GET /realms/sp/protocol/openid-connect/auth?client_id=capture&response_type=code&scope=openid&redirect_uri=...&kc_idp_hint=idp`:
+   realm `sp` redirects to its broker, which redirects to realm `idp` with the `AuthnRequest` in the query string
+   (HTTP-Redirect): kept.
+3. That redirect followed, the login form of realm `idp` is posted with `alice` and `alice`; realm `idp` answers with
+   the page whose form carries the `Response` (HTTP-POST): kept.
+4. The form posted to the broker endpoint; the redirects of the first broker login followed to the redirect URI of
+   `capture`; the authorization code exchanged for the tokens.
+5. `GET /realms/sp/protocol/openid-connect/logout?id_token_hint=...&post_logout_redirect_uri=...`: realm `sp` ends the
+   session and its broker sends the `LogoutRequest` to realm `idp` (HTTP-Redirect): kept; realm `idp` answers with the
+   `LogoutResponse` (HTTP-POST): kept; posted to the broker, which redirects to the client.
+
+A document HTTP-Redirect carries is URL-decoded, base64-decoded and inflated (raw DEFLATE, no zlib header); one
+HTTP-POST carries has the character references of the form value resolved, then is base64-decoded. Each is written
+byte for byte as decoded, into `tests/Fixture/real/keycloak-<version>-<idp|sp>-<document>-<YYYY-MM-DD>.xml`, where
+`idp` or `sp` names the realm that produced it, the version is read from `compose.yaml` and the date is the UTC day
+of the run. The output of the run of 30 September 2026 that produced the committed files:
+
+```
+Keycloak 26.7.4 on http://localhost:8180, capture of 2026-09-30 into .../tests/Fixture/real
+Metadata
+  keycloak-26.7.4-idp-metadata-2026-09-30.xml: GET /realms/idp/protocol/saml/descriptor
+  keycloak-26.7.4-sp-metadata-2026-09-30.xml: GET /realms/sp/broker/idp/endpoint/descriptor
+Login
+  keycloak-26.7.4-sp-authn-request-2026-09-30.xml: HTTP-Redirect to http://localhost:8180/realms/idp/protocol/saml, parameters: SAMLRequest RelayState
+  keycloak-26.7.4-idp-response-2026-09-30.xml: HTTP-POST to http://localhost:8180/realms/sp/broker/idp/endpoint
+  logged in at the client of realm sp
+Logout
+  keycloak-26.7.4-sp-logout-request-2026-09-30.xml: HTTP-Redirect to http://localhost:8180/realms/idp/protocol/saml, parameters: SAMLRequest RelayState
+  keycloak-26.7.4-idp-logout-response-2026-09-30.xml: HTTP-POST to http://localhost:8180/realms/sp/broker/idp/endpoint
+  logged out, back at the client of realm sp
+```
+
+Keycloak brokers the logout: the broker sends a `LogoutRequest` to realm `idp` and completes on its
+`LogoutResponse`. Neither redirect carried a detached signature (no `SigAlg`, no `Signature` parameter): the broker
+signs no request under its defaults.
+
+## Verification by xmlsec1
+
+Every signature of the captured documents is verified by xmlsec1, which shares nothing with Keycloak's Java stack,
+under the signing certificate of the producer's metadata captured in the same run, with the SAML `ID` attributes
+declared (`Response`, `AuthnRequest`, `LogoutRequest`, `LogoutResponse`, `Assertion`, `EntityDescriptor`), the command
+of `xml-security`'s `castor xmlsec` extended to the protocol messages:
+
+```
+docker run --rm -v "$PWD:/project:ro" -w /project alpine:3.22 sh -c \
+    'apk add -q xmlsec libxml2-utils openssl >/dev/null && sh tests/Interop/keycloak/verify.sh tests/Fixture/real'
+```
+
+`verify.sh` verifies each `ds:Signature` child of the root and of a direct `saml:Assertion` child on its own
+(`--node-xpath`), so that a document holding two signatures has both verified. Two controls per signature must fail:
+the same verification under a throwaway RSA key, which shows that xmlsec1 took the key from the metadata and not from
+the certificate the message carries in its `KeyInfo`, and the verification of a copy whose signed `IssueInstant` is
+altered. On 30 September 2026, with xmlsec1 1.3.7 (OpenSSL 3.5.9) on Alpine 3.22.6:
+
+```
+OK   keycloak-26.7.4-idp-logout-response-2026-09-30 /*/*[local-name()="Signature"]: verified under keycloak-26.7.4-idp-metadata-2026-09-30.xml; throwaway key and altered copy refused
+--   keycloak-26.7.4-idp-metadata-2026-09-30: no signature
+OK   keycloak-26.7.4-idp-response-2026-09-30 /*/*[local-name()="Signature"]: verified under keycloak-26.7.4-idp-metadata-2026-09-30.xml; throwaway key and altered copy refused
+--   keycloak-26.7.4-sp-authn-request-2026-09-30: no signature
+--   keycloak-26.7.4-sp-logout-request-2026-09-30: no signature
+--   keycloak-26.7.4-sp-metadata-2026-09-30: no signature
+2 signatures, 0 failures.
+```
+
+Two documents are signed, both by realm `idp`, one signature each; the four others carry none.
