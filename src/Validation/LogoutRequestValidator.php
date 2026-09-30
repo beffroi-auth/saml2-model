@@ -94,8 +94,7 @@ final readonly class LogoutRequestValidator
     ): LogoutContext {
         return LogoutContext::forRequest(
             $this->clock->now(),
-            $this->bounds->clockSkew,
-            $this->bounds->maxMessageAge,
+            $this->bounds,
             $peer,
             $self,
             $receivedAt,

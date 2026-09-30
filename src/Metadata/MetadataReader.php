@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Metadata;
 
-use Dom\Element;
 use Beffroi\Saml2\Model\Exception\MessageRefused;
 use Beffroi\Saml2\Model\Exception\SignatureRequired;
 use Beffroi\Saml2\Model\Internal\Metadata\EntityDescriptorReader;
+use Beffroi\Saml2\Model\Internal\Window;
 use Beffroi\Saml2\Model\Validation\TimeBounds;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\RefusedXml;
@@ -15,8 +15,8 @@ use Beffroi\Xml\Core\Loader;
 use Beffroi\Xml\Dsig\VerificationKeys;
 use Beffroi\Xml\Dsig\Verifier;
 use DateTimeImmutable;
+use Dom\Element;
 use Psr\Clock\ClockInterface;
-use function sprintf;
 
 /**
  * A peer's md:EntityDescriptor read strictly, in the order of section 6.5 (section 5.6): where its keys come from
@@ -75,6 +75,6 @@ final readonly class MetadataReader
      */
     private function expired(): DateTimeImmutable
     {
-        return $this->clock->now()->modify(sprintf('-%d seconds', $this->bounds->clockSkew));
+        return new Window($this->clock->now(), $this->bounds)->earliest();
     }
 }

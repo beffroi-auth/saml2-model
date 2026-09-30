@@ -63,6 +63,8 @@ const INFECTION_STRICT_FILES = [
     // Section 9: the one reading model of the SAML schemas, every strict reader's (M-5).
     'src/Internal/Schema.php',
     'src/Internal/Particle.php',
+    // Section 9: the edges of the windows of M-7, which every reader takes.
+    'src/Internal/Window.php',
     // Section 9: the strict readers of metadata and the rules its roles share.
     'src/Internal/Metadata/EndpointReader.php',
     'src/Internal/Metadata/EntityDescriptorReader.php',

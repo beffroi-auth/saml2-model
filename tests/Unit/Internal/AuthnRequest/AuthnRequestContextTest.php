@@ -7,6 +7,7 @@ namespace Beffroi\Saml2\Model\Tests\Unit\Internal\AuthnRequest;
 use Beffroi\Saml2\Model\Internal\AuthnRequest\AuthnRequestContext;
 use Beffroi\Saml2\Model\Tests\Unit\Validation\AuthnRequestFixtures;
 use Beffroi\Saml2\Model\Validation\Authentication;
+use Beffroi\Saml2\Model\Validation\TimeBounds;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -20,15 +21,15 @@ final class AuthnRequestContextTest extends TestCase
     public function itHoldsWhatTheValidatorStates(): void
     {
         // Given
-        $latest = new DateTimeImmutable('2026-10-01T12:03:00Z');
-        $oldest = new DateTimeImmutable('2026-10-01T11:55:00Z');
+        $now = new DateTimeImmutable('2026-10-01T12:00:00Z');
+        $bounds = new TimeBounds();
         $sp = AuthnRequestFixtures::serviceProvider();
         $idp = AuthnRequestFixtures::identityProvider();
 
         // When
         $context = new AuthnRequestContext(
-            $latest,
-            $oldest,
+            $now,
+            $bounds,
             $sp,
             $idp,
             AuthnRequestFixtures::SINGLE_SIGN_ON,
@@ -37,10 +38,10 @@ final class AuthnRequestContextTest extends TestCase
 
         // Then
         static::assertSame(
-            [$latest, $oldest, $sp, $idp, AuthnRequestFixtures::SINGLE_SIGN_ON, Authentication::Binding],
+            [$now, $bounds, $sp, $idp, AuthnRequestFixtures::SINGLE_SIGN_ON, Authentication::Binding],
             [
-                $context->latest,
-                $context->oldest,
+                $context->window->now,
+                $context->window->bounds,
                 $context->serviceProvider,
                 $context->identityProvider,
                 $context->receivedAt,

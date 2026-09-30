@@ -88,7 +88,7 @@ final readonly class LogoutRequestReader
         $sessionIndexes = array_map(Text::of(...), Children::named($root, Schema::samlp('SessionIndex')));
         $notOnOrAfter = Attributes::optional($root, new Name(null, 'NotOnOrAfter'));
         $notOnOrAfter = $notOnOrAfter === null ? null : Time::read($notOnOrAfter);
-        if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $context->expired) {
+        if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $context->window->earliest()) {
             throw new OutsideValidityWindow('The NotOnOrAfter of the LogoutRequest is at or before now minus the clock skew (M-7).');
         }
         // a request that expires when it is issued, or before, is no request (SAML Core §3.7.1)

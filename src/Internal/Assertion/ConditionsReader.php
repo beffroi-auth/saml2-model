@@ -78,11 +78,11 @@ final readonly class ConditionsReader
             ));
         }
         $notBefore = self::time($conditions, 'NotBefore');
-        if ($notBefore instanceof DateTimeImmutable && $notBefore > $context->latest()) {
+        if ($notBefore instanceof DateTimeImmutable && $notBefore > $context->window->latest()) {
             throw new OutsideValidityWindow('The NotBefore of the Conditions is later than now plus the clock skew (M-7).');
         }
         $notOnOrAfter = self::time($conditions, 'NotOnOrAfter');
-        if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $context->earliest()) {
+        if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $context->window->earliest()) {
             throw new OutsideValidityWindow('The NotOnOrAfter of the Conditions is at or before now minus the clock skew (M-7).');
         }
 

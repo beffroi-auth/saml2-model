@@ -41,12 +41,12 @@ final readonly class AuthnStatementReader
             Particle::of(Schema::saml('AuthnContext'), 1, 1),
         ]);
         $authnInstant = Time::read(Schema::attribute($statement, 'saml:AuthnStatement', 'AuthnInstant'));
-        if ($authnInstant > $context->latest()) {
+        if ($authnInstant > $context->window->latest()) {
             throw new OutsideValidityWindow('The AuthnInstant of the authentication statement is later than now plus the clock skew (M-7).');
         }
         $session = Attributes::optional($statement, new Name(null, 'SessionNotOnOrAfter'));
         $sessionNotOnOrAfter = $session === null ? null : Time::read($session);
-        if ($sessionNotOnOrAfter instanceof DateTimeImmutable && $sessionNotOnOrAfter <= $context->earliest()) {
+        if ($sessionNotOnOrAfter instanceof DateTimeImmutable && $sessionNotOnOrAfter <= $context->window->earliest()) {
             throw new OutsideValidityWindow('The SessionNotOnOrAfter of the authentication statement is at or before now minus the clock skew (M-7).');
         }
 
