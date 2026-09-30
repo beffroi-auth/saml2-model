@@ -234,6 +234,8 @@ logout() {
 }
 
 echo "== default configuration: SimpleSAMLphp $version as it ships, the response and the assertion signed"
+# The directory of the exchange's metadata, mounted by compose.yaml: created here, so that Docker does not, as root.
+mkdir -p "$here/../written"
 compose up -d --build --force-recreate
 wait_until_up
 curl -fsS -o "$(fixture idp-metadata)" "$idp/module.php/saml/idp/metadata"

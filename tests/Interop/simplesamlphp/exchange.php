@@ -26,7 +26,7 @@ declare(strict_types=1);
  * From the root of the repository, the installation up in its third configuration (castor simplesamlphp runs it all):
  *   docker run --rm --network saml2-model-simplesamlphp_default \
  *       -e EXCHANGE_CONNECT_TO=localhost:8081:idp:80,localhost:8082:sp:80 -v "$PWD:/project" -w /project \
- *       ghcr.io/spomky-labs/phpqa:8.4 php tests/Interop/simplesamlphp/exchange.php [--keep]
+ *       ghcr.io/spomky-labs/phpqa:8.5 php tests/Interop/simplesamlphp/exchange.php [--keep]
  */
 
 use Beffroi\Saml2\Model\Assertion\Assertion;
