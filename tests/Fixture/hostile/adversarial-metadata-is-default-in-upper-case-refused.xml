@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://sp.example.com/saml">
+  <md:SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol" AuthnRequestsSigned="true" WantAssertionsSigned="true">
+    <md:KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIIDXTCCAkWgAwIBAgIUWzhv+aXeJTxD1MwhZiDQSaq0XeswDQYJKoZIhvcNAQELBQAwPjE8MDoGA1UEAwwzc2FtbDItbW9kZWwgdGVzdCBzZXJ2aWNlIHByb3ZpZGVyIGtleSwgbm90IGEgc2VjcmV0MB4XDTI2MDkzMDEwMTMzNFoXDTM2MDkyNzEwMTMzNFowPjE8MDoGA1UEAwwzc2FtbDItbW9kZWwgdGVzdCBzZXJ2aWNlIHByb3ZpZGVyIGtleSwgbm90IGEgc2VjcmV0MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0nGvu2X5qhB1IUSAOJIbZvllCTm6TYF9JYlXYSd3xcWcvkEpJ2PioYAIccOb3bXEY9A9/ZaCnwnOnHmfQVcR2tCGk5huxkhSaOBS1osJSlik2Fgzo2cICqsGiEgeaJtxoNwIUSgfMWhbaq7puNoUNVxTdl97gSpOrW2nAorLmlBlNIUGShXN1h5B8NzreCfY/hjR3PgQ95qSOK0JokDQNU2CSLiqHMvfjwCRFWpDFtEvxN+lKJe7TjEGeHwKswDp816Yf6hN3A1i0pgwCajHqhuVPin93N3Wkip6NobKCkDfBgcb+iKwFQ5yJGlAoHwKck8pjA2Cam3nm/2y5C2TBwIDAQABo1MwUTAdBgNVHQ4EFgQUFhZfzaQZ3s5bmPp339Szc/SVKDIwHwYDVR0jBBgwFoAUFhZfzaQZ3s5bmPp339Szc/SVKDIwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAOplu0js7JvQefDxlGPm/CepYfdYwqHGLOLb9QObXQS7z6xQ3OeF4tXJi98E87rLi7TYIAYeVyUddXkIrUMAsLuCinPQGCuG1Dw2KaarZ/FqEI81IUcLujU6nvCRFNFwbpzjoRbF72501fraNrYm4LIL9H0uLI260D/O0QM7FJubIam1jNuZ/kkeX9BFCyiKjE/lDjTxeQA/P8hC7CS6C0RTDM2SWaO4esqM4hxqmH4NuaEPmwDLKP4BzSOahP/GrLD9MQ5NNWLT4hGWFXil+Ws1vhv5wIj3utWnw2hXWXf3sKmtWfxlmo18dNViZBLEFeleJbekn3jFFp8aL2RkfAw==</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sp.example.com/saml/slo"/>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat>
+    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sp.example.com/saml/acs" index="0" isDefault="TRUE"/>
+  </md:SPSSODescriptor>
+</md:EntityDescriptor>
