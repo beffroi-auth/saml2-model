@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Tests\Unit\Protocol;
 
+use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Protocol\AuthnContextComparison;
 use Beffroi\Saml2\Model\Protocol\RequestedAuthnContext;
+use function array_fill;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -48,6 +50,33 @@ final class RequestedAuthnContextTest extends TestCase
 
         // When
         new RequestedAuthnContext(AuthnContextComparison::Exact, []);
+    }
+
+    /**
+     * Section 7, M-17: sixteen class references, the bound, whoever builds it.
+     */
+    #[Test]
+    public function itHoldsSixteenClassReferences(): void
+    {
+        // When
+        $context = new RequestedAuthnContext(AuthnContextComparison::Exact, array_fill(0, 16, self::X509));
+
+        // Then
+        static::assertSame(array_fill(0, 16, self::X509), $context->authnContextClassRefs);
+    }
+
+    /**
+     * Section 7, M-17: seventeen class references, one over the bound, whoever builds it.
+     */
+    #[Test]
+    public function itRefusesSeventeenClassReferences(): void
+    {
+        // Then
+        $this->expectException(LimitExceeded::class);
+        $this->expectExceptionMessageIs('A samlp:RequestedAuthnContext holds more than 16 saml:AuthnContextClassRef, the bound of section 7 (M-17).');
+
+        // When
+        new RequestedAuthnContext(AuthnContextComparison::Exact, array_fill(0, 17, self::X509));
     }
 
     /**

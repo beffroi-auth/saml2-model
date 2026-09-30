@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Tests\Unit\Internal\AuthnRequest;
 
+use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Internal\AuthnRequest\RequestedAuthnContextReader;
 use Beffroi\Saml2\Model\Protocol\AuthnContextComparison;
 use Beffroi\Saml2\Model\Protocol\RequestedAuthnContext;
 use Beffroi\Saml2\Model\SamlLoader;
+use function array_fill;
 use Dom\Element;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use function sprintf;
+use function str_repeat;
 
 /**
  * Section 6.2 step 5: a samlp:RequestedAuthnContext read strictly (SAML Core §3.3.2.2.1), section 8 and M-5 on the
@@ -64,6 +67,47 @@ final class RequestedAuthnContextReaderTest extends TestCase
 
         // Then
         static::assertSame(AuthnContextComparison::Exact, $read->comparison);
+    }
+
+    /**
+     * Section 7, M-17: sixteen class references, the bound, are read.
+     */
+    #[Test]
+    public function itReadsSixteenClassReferences(): void
+    {
+        // Given
+        $context = $this->context('', str_repeat(
+            sprintf('<saml:AuthnContextClassRef>%s</saml:AuthnContextClassRef>', self::X509),
+            16,
+        ));
+
+        // When
+        $read = RequestedAuthnContextReader::read($context);
+
+        // Then
+        static::assertSame(array_fill(0, 16, self::X509), $read->authnContextClassRefs);
+    }
+
+    /**
+     * Section 7, M-17: seventeen class references, one over the bound, are refused before any is read, the last one
+     * holding an element that reading it would refuse otherwise.
+     */
+    #[Test]
+    public function itRefusesSeventeenClassReferencesBeforeReadingThem(): void
+    {
+        // Given
+        $context = $this->context('', str_repeat(
+            sprintf('<saml:AuthnContextClassRef>%s</saml:AuthnContextClassRef>', self::X509),
+            16,
+        )
+            . '<saml:AuthnContextClassRef><saml:Hint/></saml:AuthnContextClassRef>');
+
+        // Then
+        $this->expectException(LimitExceeded::class);
+        $this->expectExceptionMessageIs('A samlp:RequestedAuthnContext holds more than 16 saml:AuthnContextClassRef, the bound of section 7 (M-17).');
+
+        // When
+        RequestedAuthnContextReader::read($context);
     }
 
     /**
