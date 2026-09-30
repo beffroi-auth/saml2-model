@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://idp.example.com/saml">
+  <md:AffiliationDescriptor affiliationOwnerID="https://idp.example.com/saml"><md:AffiliateMember>https://sp.example.com/saml</md:AffiliateMember></md:AffiliationDescriptor>
+</md:EntityDescriptor>
