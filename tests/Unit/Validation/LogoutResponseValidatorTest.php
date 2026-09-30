@@ -417,8 +417,8 @@ final class LogoutResponseValidatorTest extends TestCase
     }
 
     /**
-     * M-8, §9.2 row "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6: the
-     * Issuer of a response carries none of the three qualifiers an entity identifier omits.
+     * M-8, §9.2 row 16, "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6:
+     * the Issuer of a response carries none of the three qualifiers an entity identifier omits.
      *
      * @param array<string, string> $replacements
      */

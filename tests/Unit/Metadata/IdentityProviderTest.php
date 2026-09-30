@@ -97,7 +97,7 @@ final class IdentityProviderTest extends TestCase
     }
 
     /**
-     * M-17, section 9.2 row "one over each bound of section 7": 65 single sign-on services.
+     * M-17, §9.2 row 36, "one over each bound of section 7": 65 single sign-on services.
      */
     #[Test]
     public function itRefusesSixtyFiveSingleSignOnServices(): void

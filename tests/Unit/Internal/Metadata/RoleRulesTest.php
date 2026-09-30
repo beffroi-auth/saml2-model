@@ -43,7 +43,7 @@ final class RoleRulesTest extends TestCase
     }
 
     /**
-     * M-17, section 9.2 row "seventeen signing certificates" and "one over each bound of section 7".
+     * M-17, §9.2 rows 35 and 36, "seventeen signing certificates" and "one over each bound of section 7".
      *
      * @param list<string> $signing
      * @param list<string> $encryption

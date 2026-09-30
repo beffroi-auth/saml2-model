@@ -91,7 +91,7 @@ final class AssertionConsumerServiceTest extends TestCase
     }
 
     /**
-     * Section 9.3 row "an AuthnRequest without an assertion consumer service", M-9: the default of SAML Metadata
+     * §9.3 row 13, "an AuthnRequest without an assertion consumer service", M-9: the default of SAML Metadata
      * §2.2.3, the ProtocolBinding HTTP-POST or absent.
      */
     #[Test]
@@ -119,7 +119,7 @@ final class AssertionConsumerServiceTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list; whose index it
+     * §9.2 row 30, "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list; whose index it
      * does not list", M-9: UnknownEndpoint.
      */
     #[Test]
@@ -157,7 +157,7 @@ final class AssertionConsumerServiceTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest with both", M-9, SAML Core §3.4.1: an index next to a URL or a ProtocolBinding,
+     * §9.2 row 30, "an AuthnRequest with both", M-9, SAML Core §3.4.1: an index next to a URL or a ProtocolBinding,
      * the URL listed or not.
      */
     #[Test]
@@ -190,7 +190,7 @@ final class AssertionConsumerServiceTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest with ProtocolBinding HTTP-Redirect", section 8: Unsupported, after the service
+     * §9.2 row 33, "an AuthnRequest with ProtocolBinding HTTP-Redirect", section 8: Unsupported, after the service
      * is resolved; the Artifact binding as well.
      */
     #[Test]

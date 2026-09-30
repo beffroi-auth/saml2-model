@@ -95,7 +95,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an unsigned AuthnRequest from a service provider whose metadata says AuthnRequestsSigned", M-2,
+     * §9.2 row 31, "an unsigned AuthnRequest from a service provider whose metadata says AuthnRequestsSigned", M-2,
      * Profiles §4.1.6: refused, and refused as well when our own metadata wants the requests signed.
      */
     #[Test]
@@ -175,7 +175,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest with a ds:Signature given to validateAuthenticatedByBinding()", SAML Bindings
+     * §9.2 row 32, "an AuthnRequest with a ds:Signature given to validateAuthenticatedByBinding()", SAML Bindings
      * §3.4.4.1: the HTTP-Redirect encoding removes the signature of the message.
      */
     #[Test]
@@ -244,7 +244,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * M-9, section 9.3 row "an AuthnRequest without an assertion consumer service": the service of the URL, of the
+     * M-9, §9.3 row 13, "an AuthnRequest without an assertion consumer service": the service of the URL, of the
      * index, or the default of the metadata (SAML Metadata §2.2.3), never a location the request brings.
      */
     #[Test]
@@ -286,7 +286,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list; whose index it
+     * §9.2 row 30, "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list; whose index it
      * does not list; with both", M-9, SAML Core §3.4.1.
      *
      * @param class-string<MessageRefused> $exception
@@ -338,7 +338,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest with ProtocolBinding HTTP-Redirect", section 8: the Redirect binding cannot
+     * §9.2 row 33, "an AuthnRequest with ProtocolBinding HTTP-Redirect", section 8: the Redirect binding cannot
      * carry a response.
      */
     #[Test]
@@ -356,7 +356,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest without Issuer", Profiles §4.1.4.1, M-4.
+     * §9.2 row 33, "an AuthnRequest without Issuer", Profiles §4.1.4.1, M-4.
      */
     #[Test]
     public function itRefusesARequestWithoutIssuer(): void
@@ -373,7 +373,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest with a saml:Subject", section 8: saml:Subject, saml:Conditions and
+     * §9.2 row 33, "an AuthnRequest with a saml:Subject", section 8: saml:Subject, saml:Conditions and
      * samlp:Scoping refused by name, wherever they are.
      */
     #[Test]
@@ -456,8 +456,9 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "Destination wrong", M-8, Bindings §3.4.5.2, §3.5.5.2: the Destination is the URL at which the
-     * request arrived, byte for byte, whether the request is signed, unsigned or authenticated by the binding.
+     * §9.2 row 12, a Destination other than the URL of arrival, M-8, Bindings §3.4.5.2, §3.5.5.2: the Destination is
+     * the URL at which the request arrived, byte for byte, whether the request is signed, unsigned or authenticated by
+     * the binding.
      */
     #[Test]
     #[DataProvider('provideDestinationsOfAnotherUrl')]
@@ -628,8 +629,8 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * M-8, §9.2 row "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6: the
-     * Issuer of a request carries none of the three qualifiers an entity identifier omits.
+     * M-8, §9.2 row 16, "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6:
+     * the Issuer of a request carries none of the three qualifiers an entity identifier omits.
      */
     #[Test]
     #[DataProvider('provideIssuerQualifiers')]
@@ -715,7 +716,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "IssueInstant too old", M-7: an IssueInstant one second beyond now plus the skew, or one second
+     * §9.2 row 18, M-7: an IssueInstant one second beyond now plus the skew, or one second
      * older than maxMessageAge.
      */
     #[Test]
@@ -855,7 +856,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.3 row "a samlp:Extensions with content in a request": accepted, not read.
+     * §9.3 row 9, "a samlp:Extensions with content in a request": accepted, not read.
      */
     #[Test]
     public function itAcceptsExtensionsWithContentUnread(): void

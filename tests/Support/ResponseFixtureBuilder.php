@@ -228,7 +228,7 @@ final class ResponseFixtureBuilder
     }
 
     /**
-     * §9.2 rows 12 to 17, 21, 22, 25, 26 and 29, section 6.1 steps 2 and 6: the envelope around the assertion.
+     * §9.2 rows 12 to 17, 22, 25, 26 and 29, section 6.1 steps 2 and 6: the envelope around the assertion.
      *
      * @return array<string, string>
      */

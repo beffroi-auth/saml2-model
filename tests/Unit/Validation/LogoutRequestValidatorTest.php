@@ -336,8 +336,8 @@ final class LogoutRequestValidatorTest extends TestCase
     }
 
     /**
-     * §9.2 rows 16, 26 and 27, M-6, M-8, M-12: a value of the request that is not of its lexical form or not the
-     * peer's; the message carries nothing of it (M-16).
+     * §9.2 rows 16, 25, 26 and 27, M-5, M-6, M-8, M-12: a value of the request that is not of its lexical form or not
+     * the peer's; the message carries nothing of it (M-16).
      *
      * @param array<string, string> $replacements
      * @param class-string<MessageRefused> $exception

@@ -53,7 +53,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * M-17, section 9.2 row "one over each bound of section 7": 65 endpoints of one kind.
+     * M-17, §9.2 row 36, "one over each bound of section 7": 65 endpoints of one kind.
      */
     #[Test]
     public function itRefusesSixtyFiveEndpoints(): void
@@ -67,7 +67,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "a duplicate index", SAML Metadata §2.2.3: an index names one endpoint.
+     * §9.2 row 35, "a duplicate index", SAML Metadata §2.2.3: an index names one endpoint.
      */
     #[Test]
     public function itRefusesADuplicateIndex(): void
@@ -81,7 +81,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * Section 9.3 row "IndexedEndpoints::default() over the three cases", SAML Metadata §2.2.3: the first whose
+     * §9.3 row 12, "IndexedEndpoints::default() over the three cases", SAML Metadata §2.2.3: the first whose
      * isDefault is true; else the first without isDefault false; else the first.
      *
      * @param list<?bool> $isDefaults
@@ -148,7 +148,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * M-9, section 9.2 row "an AuthnRequest whose index the metadata does not list": UnknownEndpoint.
+     * M-9, §9.2 row 30, "an AuthnRequest whose index the metadata does not list": UnknownEndpoint.
      */
     #[Test]
     public function itRefusesAnIndexItDoesNotList(): void
@@ -183,7 +183,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * M-8, M-9, section 9.2 row "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list":
+     * M-8, M-9, §9.2 row 30, "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list":
      * compared exactly, no normalisation.
      */
     #[Test]

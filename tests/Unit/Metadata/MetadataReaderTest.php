@@ -104,7 +104,7 @@ final class MetadataReaderTest extends TestCase
     }
 
     /**
-     * Section 9.3 row "a metadata listing Artifact and SOAP endpoints next to POST and Redirect ones", section 6.5
+     * §9.3 row 11, "a metadata listing Artifact and SOAP endpoints next to POST and Redirect ones", section 6.5
      * step 6: it loads, the HTTP-Redirect and HTTP-POST endpoints kept in order, the assertion consumer services on
      * HTTP-POST only.
      */
@@ -319,7 +319,7 @@ final class MetadataReaderTest extends TestCase
     }
 
     /**
-     * M-7, section 6.5 step 3, section 9.3 row "the edges of M-7": a validUntil one second after now minus the skew
+     * M-7, section 6.5 step 3: a validUntil one second after now minus the skew
      * is still valid, and returned.
      */
     #[Test]
@@ -350,7 +350,7 @@ final class MetadataReaderTest extends TestCase
     }
 
     /**
-     * M-7, section 9.2 row "validUntil passed": a validUntil at or before now minus the skew is refused.
+     * M-7, §9.2 row 35, "validUntil passed": a validUntil at or before now minus the skew is refused.
      */
     #[Test]
     #[DataProvider('provideClocksPastValidUntil')]
@@ -382,7 +382,7 @@ final class MetadataReaderTest extends TestCase
     }
 
     /**
-     * M-7, section 6.5 step 4, section 9.2 row "validUntil passed": the validUntil of a role that is read, one second
+     * M-7, section 6.5 step 4, §9.2 row 35, "validUntil passed": the validUntil of a role that is read, one second
      * after now minus the skew, holds, as the entity's does.
      */
     #[Test]
@@ -404,7 +404,7 @@ final class MetadataReaderTest extends TestCase
     }
 
     /**
-     * M-7, section 6.5 step 4, section 9.2 row "validUntil passed": a role that is read, at or before its own
+     * M-7, section 6.5 step 4, §9.2 row 35, "validUntil passed": a role that is read, at or before its own
      * validUntil minus the skew, refuses the metadata rather than being dropped.
      */
     #[Test]
@@ -531,7 +531,7 @@ final class MetadataReaderTest extends TestCase
     }
 
     /**
-     * M-2, M-3, section 9.2 rows "a signed metadata verified with a key not pinned" and the signed metadata altered:
+     * M-2, M-3, §9.2 row 35, "a signed metadata verified with a key not pinned" and the signed metadata altered:
      * Dsig's refusals, as they are (section 5.8).
      *
      * @param class-string<RefusedXml> $exception
