@@ -66,6 +66,8 @@ const INFECTION_STRICT_FILES = [
     'src/Internal/Metadata/RoleReader.php',
     'src/Internal/Metadata/RoleRules.php',
     'src/Internal/Metadata/Schema.php',
+    // Section 9: the rule of M-2 for a received protocol message.
+    'src/Internal/Protocol/MessageAuthentication.php',
     // Section 9, each added by the story that writes it:
     // the strict readers and the selection of the signed element, every file of src/Internal/;
     // the validators, every other file of src/Validation/.
