@@ -42,8 +42,13 @@ const INFECTION_STRICT_FILES = [
     'src/Protocol/StatusCode.php',
     'src/Protocol/SecondLevelStatusCode.php',
     'src/Protocol/Status.php',
+    // Section 9: the lexical forms of M-6 and SamlId, every file of src/Value/.
+    'src/Value/Time.php',
+    'src/Value/Boolean.php',
+    'src/Value/SamlId.php',
+    'src/Value/Uri.php',
+    'src/Value/Version.php',
     // Section 9, each added by the story that writes it:
-    // the lexical forms of M-6 and SamlId, every file of src/Value/;
     // src/Assertion/NameId.php;
     // src/Metadata/IndexedEndpoints.php;
     // src/Metadata/MetadataReader.php;
