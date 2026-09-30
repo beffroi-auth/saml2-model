@@ -255,7 +255,7 @@ final class AssertionConsumerServiceTest extends TestCase
      */
     public static function provideMalformedAttributes(): iterable
     {
-        $index = 'The AssertionConsumerServiceIndex of an AuthnRequest is not an xs:unsignedShort without sign or leading zero (M-6).';
+        $index = 'An index is not an xs:unsignedShort, digits without sign or leading zero from 0 to 65535 (M-6).';
         yield 'an index with a leading zero' => ['AssertionConsumerServiceIndex="01"', $index];
         yield 'an index with a sign' => ['AssertionConsumerServiceIndex="+1"', $index];
         yield 'a negative index' => ['AssertionConsumerServiceIndex="-1"', $index];

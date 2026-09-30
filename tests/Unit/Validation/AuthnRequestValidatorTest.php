@@ -1094,7 +1094,7 @@ final class AuthnRequestValidatorTest extends TestCase
             ],
             $issuer,
             MalformedMessage::class,
-            'The AssertionConsumerServiceIndex of an AuthnRequest is not an xs:unsignedShort without sign or leading zero (M-6).',
+            'An index is not an xs:unsignedShort, digits without sign or leading zero from 0 to 65535 (M-6).',
         ];
         yield 'step 4 before step 5: HTTP-Redirect and IsPassive="yes"' => [
             ['ProtocolBinding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect', 'IsPassive' => 'yes'],

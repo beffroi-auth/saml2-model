@@ -877,7 +877,7 @@ final class MetadataReaderTest extends TestCase
         $post = 'Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://idp.example.com/saml/sso"';
         $uri = 'A URI is not absolute (M-6).';
         $boolean = 'A boolean is not one of true, false, 1 and 0 (M-6).';
-        $unsignedShort = 'An md:AssertionConsumerService index is not an xs:unsignedShort without sign or leading zero (M-6).';
+        $unsignedShort = 'An index is not an xs:unsignedShort, digits without sign or leading zero from 0 to 65535 (M-6).';
         yield 'a relative entityID' => [
             'identity-provider',
             $entityId,

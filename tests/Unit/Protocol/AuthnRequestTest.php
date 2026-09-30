@@ -188,7 +188,7 @@ final class AuthnRequestTest extends TestCase
     {
         // Then
         $this->expectException(MalformedMessage::class);
-        $this->expectExceptionMessageIs('The AssertionConsumerServiceIndex of an AuthnRequest is not an xs:unsignedShort, from 0 to 65535 (M-6).');
+        $this->expectExceptionMessageIs('An index is not an xs:unsignedShort, digits without sign or leading zero from 0 to 65535 (M-6).');
 
         // When
         $this->request(index: $index);
