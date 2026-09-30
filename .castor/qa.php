@@ -76,6 +76,9 @@ const INFECTION_STRICT_FILES = [
     'src/Internal/Assertion/HeaderReader.php',
     'src/Internal/Assertion/SubjectReader.php',
     'src/Internal/Assertion/ConditionsReader.php',
+    'src/Internal/Assertion/AuthnStatementReader.php',
+    'src/Internal/Assertion/AttributeStatementReader.php',
+    'src/Internal/Assertion/AssertionReader.php',
     // Section 9, each added by the story that writes it:
     // the other strict readers and the selection of the signed element, every other file of src/Internal/;
     // the validators, every other file of src/Validation/.
