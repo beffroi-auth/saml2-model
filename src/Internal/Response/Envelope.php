@@ -7,6 +7,7 @@ namespace Beffroi\Saml2\Model\Internal\Response;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Protocol\StatusReader;
 use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\Status;
 use Beffroi\Saml2\Model\Protocol\StatusCode;
@@ -52,7 +53,9 @@ final readonly class Envelope
             Particle::of(Schema::samlp('Status'), 1, 1),
             Particle::of(Schema::saml('Assertion'), 0, Particle::UNBOUNDED),
         ]);
-        $status = StatusReader::read(Children::one($response, Schema::samlp('Status')));
+        $element = Children::one($response, Schema::samlp('Status'));
+        StatusReader::structure($element);
+        $status = StatusReader::read($element);
         $assertions = Children::named($response, Schema::saml('Assertion'));
         if ($status->code !== StatusCode::Success) {
             if ($assertions !== []) {

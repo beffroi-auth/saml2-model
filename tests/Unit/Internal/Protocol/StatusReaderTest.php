@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Beffroi\Saml2\Model\Tests\Unit\Internal\Response;
+namespace Beffroi\Saml2\Model\Tests\Unit\Internal\Protocol;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
-use Beffroi\Saml2\Model\Internal\Response\StatusReader;
+use Beffroi\Saml2\Model\Internal\Protocol\StatusReader;
 use Beffroi\Saml2\Model\Protocol\SecondLevelStatusCode;
 use Beffroi\Saml2\Model\Protocol\StatusCode;
 use Beffroi\Saml2\Model\Saml;
@@ -19,7 +19,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * M-5, M-13, SAML Core §3.2.2: the status of a response, its two codes, and nothing the peer wrote around them.
+ * M-5, M-13, SAML Core §3.2.2: the status of a response or a logout response, its two codes, and nothing the peer wrote
+ * around them.
  */
 final class StatusReaderTest extends TestCase
 {
@@ -76,7 +77,7 @@ final class StatusReaderTest extends TestCase
 
     /**
      * M-4, M-5, SAML Core §3.2.2.2: a top-level code of no SAML Core vocabulary, a code without Value, the
-     * StatusMessage before the StatusCode, two second-level codes.
+     * StatusMessage before the StatusCode, two second-level codes, two third-level codes.
      */
     #[Test]
     #[DataProvider('provideMalformedStatuses')]
@@ -91,7 +92,7 @@ final class StatusReaderTest extends TestCase
         self::assertCarriesNothingOf($message, $document);
 
         // When
-        StatusReader::read($this->statusOf($document));
+        $this->readChecked($this->statusOf($document));
     }
 
     /**
@@ -119,6 +120,19 @@ final class StatusReaderTest extends TestCase
             'hostile/response-status-two-second-level-codes-refused.xml',
             'The samlp:StatusCode holds more than one samlp:StatusCode (M-4).',
         ];
+        yield 'two third-level codes' => [
+            'hostile/logout-response-two-third-level-status-codes-refused.xml',
+            'The samlp:StatusCode holds more than one samlp:StatusCode (M-4).',
+        ];
+    }
+
+    /**
+     * The structure of the status checked, then its values read, as the envelope of a response reads it.
+     */
+    private function readChecked(Element $status): void
+    {
+        StatusReader::structure($status);
+        StatusReader::read($status);
     }
 
     private function statusOf(Document $document): Element

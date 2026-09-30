@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Beffroi\Saml2\Model\Internal\Logout;
+namespace Beffroi\Saml2\Model\Internal\Protocol;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Internal\Particle;
@@ -14,12 +14,12 @@ use Beffroi\Xml\Core\Children;
 use Dom\Element;
 
 /**
- * A samlp:Status read strictly (SAML Core §3.2.2): one samlp:StatusCode, then samlp:StatusMessage and
- * samlp:StatusDetail, neither read (M-13, M-16); the top-level code one of the four of SAML Core (M-5), the second-level
- * one when it has one, an unknown URI reading as null. Each code holds at most one code, and a third-level code is not
- * read.
+ * The one reader of a samlp:Status, a response's and a logout response's (SAML Core §3.2.2): one samlp:StatusCode, then
+ * samlp:StatusMessage and samlp:StatusDetail, neither read (M-13, M-16); the top-level code one of the four of SAML Core
+ * (M-5), the second-level one when it has one, an unknown URI reading as null. Each code holds at most one code, and a
+ * third-level code is not read.
  *
- * @internal
+ * @internal outside the compatibility promise of section 5
  */
 final readonly class StatusReader
 {

@@ -10,6 +10,7 @@ use Beffroi\Saml2\Model\Exception\IssuerMismatch;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Protocol\StatusReader;
 use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\LogoutResponse;
 use Beffroi\Xml\Core\Attributes;
