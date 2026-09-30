@@ -169,32 +169,35 @@ The objects of the three vocabularies, with the fields the rules of section 6 re
 | Namespace | Class | Fields |
 |---|---|---|
 | `Assertion` | `NameIdFormat` (enum) | the eight URIs of Core §8.3: `Unspecified`, `EmailAddress`, `X509SubjectName`, `WindowsDomainQualifiedName` (`urn:oasis:names:tc:SAML:1.1:nameid-format:*`), `Kerberos`, `Entity`, `Persistent`, `Transient` (`urn:oasis:names:tc:SAML:2.0:nameid-format:*`) |
-| | `NameId` | `value`, `format`, `nameQualifier`, `spNameQualifier`, `spProvidedId` |
+| | `NameId` | `value`, `format` (`Unspecified` by default), `nameQualifier`, `spNameQualifier`, `spProvidedId` (each `null` by default) |
 | | `Issuer` | `entityId`; its `Format` is written omitted, read omitted or `entity` |
 | | `SubjectConfirmation` | bearer only: `recipient`, `notOnOrAfter`, `inResponseTo`, `address` |
-| | `Conditions` | `notBefore`, `notOnOrAfter`, `audiences` (a list of `AudienceRestriction`, each a list of URIs), `oneTimeUse` |
+| | `Conditions` | `notBefore`, `notOnOrAfter`, `audiences` (a list of `AudienceRestriction`, each a list of URIs), `oneTimeUse`; at least one restriction (`AudienceMismatch`), none empty, the counts of section 7 |
 | | `AuthnStatement` | `authnInstant`, `sessionIndex`, `sessionNotOnOrAfter`, `authnContextClassRef` |
 | | `AttributeNameFormat` (enum) | `Unspecified`, `Uri`, `Basic` (Core §8.2) |
-| | `Attribute` | `name`, `nameFormat`, `friendlyName`, `values` (a list of strings, section 6.1 step 11) |
-| | `Assertion` | `id`, `issueInstant`, `issuer`, `nameId`, `confirmation`, `conditions`, `authnStatement`, `attributes` |
+| | `Attribute` | `name`, `nameFormat`, `friendlyName`, `values` (a list of strings, section 6.1 step 11, at most the count of section 7) |
+| | `Assertion` | `id`, `issueInstant`, `issuer`, `nameId`, `confirmation`, `conditions`, `authnStatement`, `attributes` (at most the count of section 7) |
 | `Protocol` | `StatusCode` (enum) | the four top-level codes of Core §3.2.2.2 |
 | | `SecondLevelStatusCode` (enum) | the nineteen second-level codes of Core §3.2.2.2; an unknown one reads as `null` |
-| | `Status` | `code`, `secondLevel`; the `StatusMessage` and `StatusDetail` are not kept |
+| | `Status` | `code`, `secondLevel` (`null` by default); the `StatusMessage` and `StatusDetail` are not kept |
 | | `AuthnContextComparison` (enum) | `Exact`, `Minimum`, `Maximum`, `Better` (Core §3.3.2.2.1) |
-| | `NameIdPolicy` | `format`, `spNameQualifier`, `allowCreate` |
-| | `AuthnRequest` | `id`, `issueInstant`, `issuer`, `destination`, `assertionConsumerServiceUrl`, `assertionConsumerServiceIndex`, `protocolBinding`, `nameIdPolicy`, `forceAuthn`, `isPassive`, `requestedAuthnContext` (a `RequestedAuthnContext`: a comparison and a list of class references); `protocolBinding` is the binding's URI, checked to be HTTP-POST's in one place, since `Protocol` does not depend on `Metadata`; `NameIdPolicy::format` is one of the eight URIs of `NameIdFormat` or the `encrypted` format, `allowCreate` absent read as `false` (Core §3.4.1.1) |
+| | `NameIdPolicy` | `format` (a string, the URI, `NameIdPolicy::ENCRYPTED` for the `encrypted` format), `spNameQualifier`, `allowCreate` |
+| | `RequestedAuthnContext` | `comparison` (an `AuthnContextComparison`), `authnContextClassRefs` (a list of URIs, at least one, at most the count of section 7) |
+| | `AuthnRequest` | `id`, `issueInstant`, `issuer`, `destination`, `assertionConsumerServiceUrl`, `assertionConsumerServiceIndex`, `protocolBinding`, `nameIdPolicy`, `forceAuthn`, `isPassive`, `requestedAuthnContext` (a `RequestedAuthnContext`); `destination` is optional in the object and required by its writer (section 6.6); `assertionConsumerServiceIndex` is an `int`, an index of `Value\UnsignedShort`; `protocolBinding` is the binding's URI, checked to be HTTP-POST's in one place, since `Protocol` does not depend on `Metadata`; `NameIdPolicy::format` is one of the eight URIs of `NameIdFormat` or the `encrypted` format, `allowCreate` absent read as `false` (Core §3.4.1.1) |
 | | `Response` | `id`, `issueInstant`, `issuer`, `destination`, `inResponseTo`, `status`, `assertion` (`null` on a failure) |
-| | `LogoutRequest` | `id`, `issueInstant`, `issuer`, `destination`, `notOnOrAfter`, `nameId`, `sessionIndexes`, `reason` |
+| | `LogoutRequest` | `id`, `issueInstant`, `issuer`, `destination`, `notOnOrAfter`, `nameId`, `sessionIndexes` (none by default, at most the count of section 7), `reason` |
 | | `LogoutResponse` | `id`, `issueInstant`, `issuer`, `destination`, `inResponseTo`, `status`; for both logout messages `destination` is required, since both paths are authenticated and 6.3 requires it when signed, and the response's `inResponseTo` is required (M-10) |
 | `Metadata` | `Binding` (enum) | `HttpRedirect`, `HttpPost` |
 | | `Endpoint` | `binding`, `location`, `responseLocation` |
-| | `IndexedEndpoint` | `binding`, `location`, `index`, `isDefault` |
-| | `IndexedEndpoints` | the list, its indexes unique; `default()` (Metadata §2.2.3), `byIndex()`, `byLocation()` |
-| | `IdentityProvider` | `entityId`, `signingCertificates`, `encryptionCertificates` (the base64 of each `X509Certificate`), `singleSignOnServices`, `singleLogoutServices`, `nameIdFormats`, `wantAuthnRequestsSigned`; `verificationKeys(): ?VerificationKeys` |
-| | `ServiceProvider` | `entityId`, `signingCertificates`, `encryptionCertificates`, `assertionConsumerServices`, `singleLogoutServices`, `nameIdFormats`, `authnRequestsSigned`, `wantAssertionsSigned`; `verificationKeys(): ?VerificationKeys` |
-| | `EntityDescriptor` | `entityId`, `validUntil`, `identityProvider`, `serviceProvider` (each `null` when the role is absent) |
+| | `IndexedEndpoint` | `binding`, `location`, `index` (an index of `Value\UnsignedShort`), `isDefault` (`null` when the attribute is absent) |
+| | `IndexedEndpoints` | `endpoints`, the list, its indexes unique, at most the count of section 7; `default(): IndexedEndpoint` (Metadata §2.2.3), `byIndex(int $index): IndexedEndpoint`, `byLocation(string $location): IndexedEndpoint`, each `UnknownEndpoint` when nothing matches (M-9) |
+| | `IdentityProvider` | `entityId`, `signingCertificates`, `encryptionCertificates` (the base64 of each `X509Certificate`), `singleSignOnServices`, `singleLogoutServices`, `nameIdFormats`, `wantAuthnRequestsSigned` (the last three empty or `false` by default); `verificationKeys(): ?VerificationKeys` |
+| | `ServiceProvider` | `entityId`, `signingCertificates`, `encryptionCertificates`, `assertionConsumerServices` (an `IndexedEndpoints`), `singleLogoutServices`, `nameIdFormats`, `authnRequestsSigned`, `wantAssertionsSigned` (the last four empty or `false` by default); `verificationKeys(): ?VerificationKeys` |
+| | `EntityDescriptor` | `entityId`, `validUntil`, `identityProvider`, `serviceProvider` (each `null` when absent, by default); a role of another entity ID is an `\InvalidArgumentException` |
 
-`verificationKeys()` builds the `Dsig` keys from the signing certificates, `VerificationKey::fromCertificateBase64()` each, which refuses a key that is not RSA of at least 2048 bits (D-16), and returns `null` for a role without a signing certificate, since `Dsig`'s `VerificationKeys` refuses an empty list as a programming error while a peer's metadata is input: a validator that needs keys from such a role refuses the message with `SignatureRequired`, naming M-3.
+The constructor of each role checks its entity ID (M-6), the counts of section 7 and every certificate, signing and encryption, by building its `Dsig` key, which refuses what is not RSA of at least 2048 bits (`InvalidKey`, D-16); `verificationKeys()` builds the `Dsig` keys from the signing certificates, `VerificationKey::fromCertificateBase64()` each, which refuses a key that is not RSA of at least 2048 bits (D-16), and returns `null` for a role without a signing certificate, since `Dsig`'s `VerificationKeys` refuses an empty list as a programming error while a peer's metadata is input: a validator that needs keys from such a role refuses the message with `SignatureRequired`, naming M-3.
+
+The enums are backed by their URI, or by their value for `AuthnContextComparison`; each reads one through a named constructor that refuses with the exception of its rule: `NameIdFormat::fromUri()` (`InvalidNameId`, absent meaning `Unspecified`), `AttributeNameFormat::fromUri()` (absent meaning `Unspecified`), `StatusCode::fromUri()` and `AuthnContextComparison::fromAttribute()` (`exact` when absent) refuse with `MalformedMessage`, `SecondLevelStatusCode::tryFromUri()` reads an unknown code as `null`. `Value\` holds the lexical forms of M-6 the objects and the readers share, each a class of static methods refusing with `MalformedMessage`: `Boolean::read()` and the two forms it writes, `Boolean::TRUE` and `Boolean::FALSE`; `Time::read()` and `Time::write()`; `Uri::read()`; `Version::read()`; `SamlId::generate()` and `SamlId::read()`; `UnsignedShort::read()` and `UnsignedShort::check()`, an index; and `Counts`, the counts of section 7 as constants and `Counts::check()`, which refuses with `LimitExceeded`.
 
 ### 5.4 Reading before verifying
 
@@ -243,6 +246,10 @@ final readonly class ExpectedResponse
 
     /** An unsolicited response (Profiles §4.1.5): InResponseTo absent everywhere */
     public static function unsolicited(string $receivedAt, string $audience): self;
+
+    public ?string $requestId;     // null for an unsolicited response
+    public string $receivedAt;
+    public string $audience;
 }
 
 final readonly class ResponseValidator
@@ -301,6 +308,9 @@ final readonly class AuthnRequestValidator
      * verified with $sp's keys (M-2); none is accepted only when neither $sp nor $self asks for signed requests.
      *
      * @param string $receivedAt the URL of our SingleSignOnService at which the request arrived
+     *
+     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
+     * @throws \Beffroi\Xml\Core\Exception\RefusedXml what Core and Dsig refuse, as they refuse it
      */
     public function validate(UnverifiedAuthnRequest $request, ServiceProvider $sp, IdentityProvider $self, string $receivedAt): AcceptedAuthnRequest;
 
@@ -308,6 +318,9 @@ final readonly class AuthnRequestValidator
      * The request as it arrived over HTTP-Redirect with a signature over its query string, which saml2-bindings
      * verified with Verifier::verifyDetached() under $sp's keys before calling: the caller asserts it. A ds:Signature
      * child is refused (Bindings §3.4.4.1 removes it before encoding).
+     *
+     * @throws MessageRefused
+     * @throws \Beffroi\Xml\Core\Exception\RefusedXml what Core refuses
      */
     public function validateAuthenticatedByBinding(UnverifiedAuthnRequest $request, ServiceProvider $sp, IdentityProvider $self, string $receivedAt): AcceptedAuthnRequest;
 }
@@ -322,7 +335,7 @@ final readonly class AcceptedAuthnRequest
 }
 ```
 
-`LogoutRequestValidator` and `LogoutResponseValidator` have the same two methods, with `IdentityProvider|ServiceProvider $peer` in place of `$sp`, `IdentityProvider|ServiceProvider $self` our own role, the URL of our `SingleLogoutService` at which the message arrived, and, for the response, the ID of the `LogoutRequest` it answers: `validate(UnverifiedLogoutRequest $request, IdentityProvider|ServiceProvider $peer, IdentityProvider|ServiceProvider $self, string $receivedAt)`, and `validate(UnverifiedLogoutResponse $response, IdentityProvider|ServiceProvider $peer, IdentityProvider|ServiceProvider $self, string $receivedAt, string $requestId)`. `$self` is the role that faces the peer's, our identity provider facing a service provider and our service provider facing an identity provider (`\InvalidArgumentException` otherwise); its entity ID is ours, and its single logout services are where a logout message may arrive: a request at the `Location` of one of them, a response at its `ResponseLocation`, or at its `Location` when it has none (Metadata §2.2.2). `validate()` refuses a message without a `ds:Signature` (`SignatureRequired`, Profiles §4.4.4.1, §4.4.4.2), and they return `AcceptedLogoutRequest` and `AcceptedLogoutResponse`, each carrying the message and its `Authentication`.
+`LogoutRequestValidator` and `LogoutResponseValidator` take what `AuthnRequestValidator` takes, `(Loader $loader, ClockInterface $clock, TimeBounds $bounds = new TimeBounds())`, and have the same two methods, with the same refusals, with `IdentityProvider|ServiceProvider $peer` in place of `$sp`, `IdentityProvider|ServiceProvider $self` our own role, the URL of our `SingleLogoutService` at which the message arrived, and, for the response, the ID of the `LogoutRequest` it answers: `validate(UnverifiedLogoutRequest $request, IdentityProvider|ServiceProvider $peer, IdentityProvider|ServiceProvider $self, string $receivedAt)`, and `validate(UnverifiedLogoutResponse $response, IdentityProvider|ServiceProvider $peer, IdentityProvider|ServiceProvider $self, string $receivedAt, string $requestId)`. `$self` is the role that faces the peer's, our identity provider facing a service provider and our service provider facing an identity provider (`\InvalidArgumentException` otherwise); its entity ID is ours, and its single logout services are where a logout message may arrive: a request at the `Location` of one of them, a response at its `ResponseLocation`, or at its `Location` when it has none (Metadata §2.2.2). `validate()` refuses a message without a `ds:Signature` (`SignatureRequired`, Profiles §4.4.4.1, §4.4.4.2), and they return `AcceptedLogoutRequest(LogoutRequest $request, Authentication $authentication)` and `AcceptedLogoutResponse(LogoutResponse $response, Authentication $authentication)`, each carrying the message and how it was authenticated.
 
 ```php
 namespace Beffroi\Saml2\Model\Metadata;
@@ -331,10 +344,22 @@ final readonly class MetadataReader
 {
     public function __construct(private Loader $loader, private ClockInterface $clock, private TimeBounds $bounds = new TimeBounds()) {}
 
-    /** Metadata the consumer trusts by the channel it came through (an administrator's upload, a pinned URL over TLS): a ds:Signature is not verified here, the consumer said why */
+    /**
+     * Metadata the consumer trusts by the channel it came through (an administrator's upload, a pinned URL over TLS): a
+     * ds:Signature is not verified here, the consumer said why
+     *
+     * @throws MessageRefused
+     * @throws \Beffroi\Xml\Core\Exception\RefusedXml what Core refuses, and Dsig's InvalidKey for a certificate (D-16)
+     */
     public function readTrusted(Document $document): EntityDescriptor;
 
-    /** Metadata signed by a key the consumer pinned: the signature is verified (M-2), the descriptor read from Verified::$document (M-1) */
+    /**
+     * Metadata signed by a key the consumer pinned: the signature is verified (M-2), the descriptor read from
+     * Verified::$document (M-1); unsigned metadata is SignatureRequired
+     *
+     * @throws MessageRefused
+     * @throws \Beffroi\Xml\Core\Exception\RefusedXml what Core and Dsig refuse, as they refuse it
+     */
     public function readSigned(Document $document, VerificationKeys $keys): EntityDescriptor;
 }
 ```
@@ -367,10 +392,11 @@ enum SignedParts
 | `AuthnRequestWriter` | `write(AuthnRequest $request, ?Signing $signing): Document` | the request, signed when `$signing` is given; unsigned for HTTP-Redirect, whose binding signs (section 6.8) |
 | `ResponseWriter` | `write(Response $response, Signing $signing, SignedParts $parts = SignedParts::Assertion): Document` | the response with its signed assertion, the response signed too on request |
 | | `writeFailure(Response $response, ?Signing $signing): Document` | a response whose status is not `Success`, without assertion (Profiles §4.1.4.1) |
-| `LogoutRequestWriter`, `LogoutResponseWriter` | `write(LogoutRequest\|LogoutResponse $message, ?Signing $signing): Document` | the message, signed for HTTP-POST, unsigned for HTTP-Redirect |
+| `LogoutRequestWriter` | `write(LogoutRequest $request, ?Signing $signing): Document` | the request, signed for HTTP-POST, unsigned for HTTP-Redirect |
+| `LogoutResponseWriter` | `write(LogoutResponse $response, ?Signing $signing): Document` | the response, signed for HTTP-POST, unsigned for HTTP-Redirect |
 | `MetadataWriter` | `write(EntityDescriptor $descriptor, ?Signing $signing): Document` | an `md:EntityDescriptor` with the roles it holds, signed on request, the `Signature` its first child |
 
-The objects carry their `ID`: `SamlId::generate()` draws it (M-15), and the consumer keeps the `ID` of a request to name it later in `ExpectedResponse::toRequest()`. A writer returns a `Document`; serializing it is `Core`'s `Serializer`, called by the binding.
+Every writer declares what it refuses: an `\InvalidArgumentException` for what section 6.6 step 1 checks across its objects, `MalformedMessage` for a time whose year is not of four digits, which `Time::write()` would write and its reader refuse (M-15), and what `Core` and `Dsig` refuse while signing, `SigningFailed` among them when the key fails. The objects carry their `ID`: `SamlId::generate()` draws it (M-15), and the consumer keeps the `ID` of a request to name it later in `ExpectedResponse::toRequest()`. A writer returns a `Document`; serializing it is `Core`'s `Serializer`, called by the binding.
 
 ### 5.8 Exceptions
 
@@ -393,7 +419,10 @@ final class InResponseToMismatch extends MessageRefused {}    // M-10
 final class Replayed extends MessageRefused {}                // M-11
 final class InvalidNameId extends MessageRefused {}           // M-12
 final class IndeterminateCondition extends MessageRefused {}  // M-13
-final class UnsuccessfulResponse extends MessageRefused {}    // M-13, carries the Status as a public readonly property
+final class UnsuccessfulResponse extends MessageRefused       // M-13, carries the Status; \InvalidArgumentException for Success
+{
+    public function __construct(public readonly Status $status) {}
+}
 final class OutsideValidityWindow extends MessageRefused {}   // M-7, the window named
 final class LimitExceeded extends MessageRefused {}           // M-17, the bound named
 ```
