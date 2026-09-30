@@ -102,6 +102,11 @@ const INFECTION_STRICT_FILES = [
     // Section 9: the validator of an AuthnRequest and what it returns (section 6.2).
     'src/Validation/AuthnRequestValidator.php',
     'src/Validation/AcceptedAuthnRequest.php',
+    // Section 6.6: the builders of a response and its assertion, whose output the validator of section 6.1 reads
+    // back (M-15).
+    'src/Internal/Writing/Tree.php',
+    'src/Internal/Writing/AssertionBuilder.php',
+    'src/Internal/Writing/ResponseBuilder.php',
     // Section 9, each added by the story that writes it:
     // the other strict readers and the selection of the signed element, every other file of src/Internal/;
     // the validators, every other file of src/Validation/.
