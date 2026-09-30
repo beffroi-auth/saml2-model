@@ -11,7 +11,7 @@ documents into Keycloak waits for the writers (stories #9 and #10).
 | | |
 |---|---|
 | Keycloak | `quay.io/keycloak/keycloak:26.7.4`, manifest `sha256:82a77884f3af238beab1e7afd63b5f530e1b5c0590bd7aa60b40a40463e29b2c`, published on 16 September 2026 |
-| How the tag was chosen | On 30 September 2026, the highest `x.y.z` tag of the registry, whose manifest is also the one of `latest` (`nightly` is not a release): `curl -s 'https://quay.io/api/v1/repository/keycloak/keycloak/tag/?limit=100&onlyActiveTags=true' \| jq -r '.tags[] \| "\(.name) \(.manifest_digest) \(.last_modified)"' \| sort -V` |
+| How the tag was chosen | On 30 September 2026, the highest `x.y.z` tag of the registry, whose manifest is also the one of `latest` (`nightly` is not a release), over every page of the listing: `for page in 1 2 3; do curl -s "https://quay.io/api/v1/repository/keycloak/keycloak/tag/?limit=100&onlyActiveTags=true&page=$page"; done \| jq -r '.tags[] \| "\(.name) \(.manifest_digest) \(.last_modified)"' \| sort -V`, until a page answers `"has_additional": false` |
 | Mode | `start-dev`: HTTP, the H2 database inside the container, the realms imported at startup from `realms/` |
 | Port | 8180 on the host and in the container (8081 and 8082 are SimpleSAMLphp's, story #11) |
 | Machine of the capture | macOS 26 (Darwin 25.6), Docker 29.8.1, Docker Compose 5.5.1, GNU bash 3.2.57, curl 8.7.1, perl 5.34.1 |
@@ -72,7 +72,8 @@ administrator gets them:
 - the SAML identity provider of realm `sp` carries the defaults of the console's form (`SamlGeneralSettings-*.js` in
   `org.keycloak.keycloak-admin-ui-26.7.4.jar`): `validateSignature=true`, `wantAssertionsSigned=true`,
   `nameIDPolicyFormat=...:nameid-format:persistent`, `principalType=SUBJECT`, `allowCreate=true`,
-  `entityId=<realm URL>`, `sendIdTokenOnLogout=true`, `allowedClockSkew=0`, `attributeConsumingServiceIndex=0`; the
+  `entityId=<realm URL>`, `allowedClockSkew=0`, `attributeConsumingServiceIndex=0`; the form also sets
+  `sendIdTokenOnLogout=true`, which only `OIDCIdentityProviderConfig` reads in 26.7.4 and is left out; the
   switches the form leaves off are written `false` where they decide the shape of a document (`postBindingResponse`,
   `postBindingAuthnRequest`, `postBindingLogout`, `wantAuthnRequestsSigned`, `wantAssertionsEncrypted`) and left out
   elsewhere, off either way.
@@ -242,12 +243,13 @@ is for the coordinator, who alone edits it.
 
 1. **`sp-authn-request`: `ProtocolBinding` HTTP-Redirect.** Refused as `Unsupported` by 6.2 step 4 and section 8 (a
    `ProtocolBinding` other than HTTP-POST): the broker writes HTTP-Redirect whenever its "HTTP-POST binding response"
-   is off, its default in the console and in the API, although Keycloak's own identity provider answers with
-   HTTP-POST anyway. As it stands, the model as an identity provider refuses every login of a Keycloak broker left
-   at its defaults; with `postBindingResponse` on, the broker writes `ProtocolBinding="...:HTTP-POST"` (measured on 30
-   September 2026 with `kcadm.sh update identity-provider/instances/idp -r sp -s config.postBindingResponse=true`). Either the refusal stays and is documented
-   with Keycloak's name, or 6.2 step 4 answers such a request over HTTP-POST, as Keycloak's identity provider does: a
-   question for the specification.
+   is off, its default in the console's form and in an import that leaves it out, although Keycloak's own identity
+   provider answers with HTTP-POST anyway. As it stands, the model as an identity provider refuses every login of a
+   Keycloak broker left at its defaults; with `postBindingResponse` on, the broker writes
+   `ProtocolBinding="...:HTTP-POST"` (measured on 30 September 2026 with
+   `kcadm.sh update identity-provider/instances/idp -r sp -s config.postBindingResponse=true`). Either the refusal
+   stays and is documented with Keycloak's name, or 6.2 step 4 answers such a request over HTTP-POST, as Keycloak's
+   identity provider does: a question for the specification.
 2. **`sp-logout-request`: unsigned.** Refused as `SignatureRequired` by M-2 and 6.3 (Profiles §4.4.4.1, as the
    specification cites it): the request carries no `ds:Signature` and its redirect no `SigAlg` or `Signature`, so
    neither `validate()` nor `validateAuthenticatedByBinding()` accepts it. The broker signs no request under its

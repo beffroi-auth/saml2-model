@@ -24,7 +24,6 @@
         "idpEntityId": "http://localhost:8180/realms/idp",
         "singleSignOnServiceUrl": "http://localhost:8180/realms/idp/protocol/saml",
         "singleLogoutServiceUrl": "http://localhost:8180/realms/idp/protocol/saml",
-        "sendIdTokenOnLogout": "true",
         "nameIDPolicyFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
         "principalType": "SUBJECT",
         "allowCreate": "true",
