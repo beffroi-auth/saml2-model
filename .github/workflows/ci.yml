@@ -115,8 +115,10 @@ jobs:
     needs: [quality]
     # The writers against the implementation that is not this one (spec/model.md section 9.1): a response signed with
     # every scheme of PHP 8.5, its assertion alone and the response over it, and a signed failure, written in the phpqa
-    # image; every signature of each, and of the responses the writer committed, verified by xmlsec1 in Alpine. Two
-    # images, hence Docker on the runner rather than a job container; castor xmlsec-oracle is the same on a workstation.
+    # image; every signature of each verified by xmlsec1 in Alpine, and of every signed document the writers committed,
+    # each under its signer's certificate: the identity provider's responses, logout request and metadata, the service
+    # provider's AuthnRequest and logout response (XMLSEC_COMMITTED in .castor/qa.php). Two images, hence Docker on the
+    # runner rather than a job container; castor xmlsec-oracle is the same on a workstation.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -133,7 +135,12 @@ jobs:
           docker run --rm -v "$PWD:/project:ro" -w /project alpine:3.22
           sh -c 'apk add -q xmlsec libxml2-utils && xmlsec1 --version
           && sh tests/Fixture/oracle/verify-signatures.sh tests/Fixture/keys/idp-signing-certificate.pem
-          tmp-phpqa/oracle/*.xml tests/Fixture/behaviour/response-written-*.xml'
+          tmp-phpqa/oracle/*.xml tests/Fixture/behaviour/response-written-*.xml
+          tests/Fixture/behaviour/logout-request-written-and-signed-by-the-writer.xml
+          tests/Fixture/behaviour/metadata-written-and-signed-by-the-writer.xml
+          && sh tests/Fixture/oracle/verify-signatures.sh tests/Fixture/keys/sp-signing-certificate.pem
+          tests/Fixture/behaviour/authn-request-written-and-signed-by-the-writer.xml
+          tests/Fixture/behaviour/logout-response-written-and-signed-by-the-writer.xml'
 
   infection:
     name: "3️⃣ Mutation Testing"
