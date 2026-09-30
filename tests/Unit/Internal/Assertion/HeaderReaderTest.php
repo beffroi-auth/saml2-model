@@ -75,6 +75,42 @@ final class HeaderReaderTest extends TestCase
     }
 
     /**
+     * M-7: an assertion exactly maxMessageAge old, the edge of its window, the skew not added, is accepted.
+     */
+    #[Test]
+    public function itAcceptsAnAssertionExactlyMaxMessageAgeOld(): void
+    {
+        // Given
+        $document = $this->document('behaviour/assertion-issue-instant-max-message-age-ago-accepted.xml');
+
+        // When
+        [, $issueInstant] = HeaderReader::read($document->root(), $this->context());
+
+        // Then
+        static::assertSame('2026-09-30T11:55:00Z', $issueInstant->format('Y-m-d\TH:i:s\Z'));
+    }
+
+    /**
+     * §9.2 row 18, M-7: an assertion one second older than maxMessageAge, which a fresh response may carry, is a replay
+     * the bearer window does not see.
+     */
+    #[Test]
+    public function itRefusesAnAssertionOlderThanMaxMessageAge(): void
+    {
+        // Given
+        $document = $this->document('hostile/assertion-issue-instant-older-than-max-message-age-refused.xml');
+        $message = 'The IssueInstant of the assertion is older than maxMessageAge (M-7).';
+
+        // Then
+        $this->expectException(OutsideValidityWindow::class);
+        $this->expectExceptionMessageIs($message);
+        self::assertCarriesNothingOf($message, $document);
+
+        // When
+        HeaderReader::read($document->root(), $this->context());
+    }
+
+    /**
      * §9.2 row 26, M-6: Version="2.1".
      */
     #[Test]

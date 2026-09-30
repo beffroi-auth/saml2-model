@@ -428,6 +428,11 @@ final class AdversarialTest extends TestCase
             InvalidNameId::class,
             'The NameID holds a format character, invisible or reordering (M-12).',
         ];
+        yield 'assertion issued a year ago within its bearer window' => [
+            'response-assertion-issued-a-year-ago-within-its-bearer-window',
+            OutsideValidityWindow::class,
+            'The IssueInstant of the assertion is older than maxMessageAge (M-7).',
+        ];
         yield 'recipient scheme in upper case' => [
             'response-recipient-scheme-in-upper-case',
             RecipientMismatch::class,
@@ -678,10 +683,6 @@ final class AdversarialTest extends TestCase
         ];
         yield 'name id in a cdata section' => ['response-name-id-in-a-cdata-section', []];
         yield 'failing signature in the extensions' => ['response-failing-signature-in-the-extensions', []];
-        yield 'assertion issued a year ago within its bearer window' => [
-            'response-assertion-issued-a-year-ago-within-its-bearer-window',
-            [],
-        ];
     }
 
     /**

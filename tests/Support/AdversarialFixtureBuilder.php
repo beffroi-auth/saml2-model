@@ -939,7 +939,7 @@ final class AdversarialFixtureBuilder
                 'ID="_another-response" Version="2.0" IssueInstant="2026-09-30T11:59:59.5Z"',
                 $signed,
             )),
-            self::accepted('response-assertion-issued-a-year-ago-within-its-bearer-window') => self::signed(
+            self::refused('response-assertion-issued-a-year-ago-within-its-bearer-window') => self::signed(
                 self::replace(
                     'ID="_assertion" Version="2.0" IssueInstant="2026-09-30T11:59:58Z"',
                     'ID="_assertion" Version="2.0" IssueInstant="2025-09-30T11:59:58Z"',
