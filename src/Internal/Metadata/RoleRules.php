@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Internal\Metadata;
 
+use function array_map;
 use Beffroi\Saml2\Model\Assertion\NameIdFormat;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Metadata\Endpoint;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\Uri;
 use Beffroi\Xml\Dsig\Exception\InvalidKey;
 use Beffroi\Xml\Dsig\VerificationKey;
 use Beffroi\Xml\Dsig\VerificationKeys;
-use function array_map;
 use function count;
 
 /**
@@ -24,14 +25,6 @@ use function count;
  */
 final readonly class RoleRules
 {
-    private const int MAX_SIGNING_CERTIFICATES = 16;
-
-    private const int MAX_ENCRYPTION_CERTIFICATES = 16;
-
-    private const int MAX_ENDPOINTS = 64;
-
-    private const int MAX_NAME_ID_FORMATS = 16;
-
     /**
      * @param list<string> $signingCertificates
      * @param list<string> $encryptionCertificates
@@ -50,16 +43,22 @@ final readonly class RoleRules
         array $nameIdFormats,
     ): void {
         Uri::read($entityId);
-        if (count($signingCertificates) > self::MAX_SIGNING_CERTIFICATES) {
-            throw new LimitExceeded('A role holds more than 16 signing certificates, the bound of section 7 (M-17).');
-        }
-        if (count($encryptionCertificates) > self::MAX_ENCRYPTION_CERTIFICATES) {
-            throw new LimitExceeded('A role holds more than 16 encryption certificates, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count($signingCertificates),
+            Counts::SIGNING_CERTIFICATES,
+            'A role holds more than 16 signing certificates, the bound of section 7 (M-17).',
+        );
+        Counts::check(
+            count($encryptionCertificates),
+            Counts::ENCRYPTION_CERTIFICATES,
+            'A role holds more than 16 encryption certificates, the bound of section 7 (M-17).',
+        );
         self::checkEndpoints($singleLogoutServices, 'single logout services');
-        if (count($nameIdFormats) > self::MAX_NAME_ID_FORMATS) {
-            throw new LimitExceeded('A role holds more than 16 NameID formats, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count($nameIdFormats),
+            Counts::NAME_ID_FORMATS,
+            'A role holds more than 16 NameID formats, the bound of section 7 (M-17).',
+        );
         foreach ([...$signingCertificates, ...$encryptionCertificates] as $certificate) {
             VerificationKey::fromCertificateBase64($certificate);
         }
@@ -72,9 +71,11 @@ final readonly class RoleRules
      */
     public static function checkEndpoints(array $endpoints, string $kind): void
     {
-        if (count($endpoints) > self::MAX_ENDPOINTS) {
-            throw new LimitExceeded('A role holds more than 64 ' . $kind . ', the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count($endpoints),
+            Counts::ENDPOINTS,
+            'A role holds more than 64 ' . $kind . ', the bound of section 7 (M-17).',
+        );
     }
 
     /**

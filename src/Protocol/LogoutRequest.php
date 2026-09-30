@@ -8,6 +8,7 @@ use Beffroi\Saml2\Model\Assertion\Issuer;
 use Beffroi\Saml2\Model\Assertion\NameId;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\SamlId;
 use Beffroi\Saml2\Model\Value\Uri;
 use function count;
@@ -23,8 +24,6 @@ use DateTimeImmutable;
  */
 final readonly class LogoutRequest
 {
-    public const int MAX_SESSION_INDEXES = 16;
-
     /**
      * @param list<string> $sessionIndexes
      *
@@ -43,9 +42,11 @@ final readonly class LogoutRequest
     ) {
         SamlId::read($id);
         Uri::read($destination);
-        if (count($sessionIndexes) > self::MAX_SESSION_INDEXES) {
-            throw new LimitExceeded('A LogoutRequest names more than 16 session indexes, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count($sessionIndexes),
+            Counts::SESSION_INDEXES,
+            'A LogoutRequest names more than 16 session indexes, the bound of section 7 (M-17).',
+        );
         if ($reason !== null) {
             Uri::read($reason);
         }

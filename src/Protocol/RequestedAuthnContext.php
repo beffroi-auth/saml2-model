@@ -6,6 +6,7 @@ namespace Beffroi\Saml2\Model\Protocol;
 
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\Uri;
 use function count;
 
@@ -17,8 +18,6 @@ use function count;
  */
 final readonly class RequestedAuthnContext
 {
-    public const int MAX_AUTHN_CONTEXT_CLASS_REFS = 16;
-
     /**
      * @param list<string> $authnContextClassRefs
      *
@@ -32,9 +31,11 @@ final readonly class RequestedAuthnContext
         if ($authnContextClassRefs === []) {
             throw new MalformedMessage('A samlp:RequestedAuthnContext holds no saml:AuthnContextClassRef (M-5).');
         }
-        if (count($authnContextClassRefs) > self::MAX_AUTHN_CONTEXT_CLASS_REFS) {
-            throw new LimitExceeded('A samlp:RequestedAuthnContext holds more than 16 saml:AuthnContextClassRef, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count($authnContextClassRefs),
+            Counts::AUTHN_CONTEXT_CLASS_REFS,
+            'A samlp:RequestedAuthnContext holds more than 16 saml:AuthnContextClassRef, the bound of section 7 (M-17).',
+        );
         foreach ($authnContextClassRefs as $authnContextClassRef) {
             Uri::read($authnContextClassRef);
         }

@@ -14,6 +14,7 @@ use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Internal\Particle;
 use Beffroi\Saml2\Model\Internal\Schema;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
@@ -35,16 +36,6 @@ use function sprintf;
  */
 final readonly class ConditionsReader
 {
-    /**
-     * AudienceRestriction per assertion, section 7.
-     */
-    private const int MAX_AUDIENCE_RESTRICTIONS = 8;
-
-    /**
-     * Audience per AudienceRestriction, section 7.
-     */
-    private const int MAX_AUDIENCES = 16;
-
     /**
      * @throws Unsupported when the conditions hold a saml:ProxyRestriction (section 8)
      * @throws IndeterminateCondition when they hold a condition the package does not understand (M-13)
@@ -71,12 +62,14 @@ final readonly class ConditionsReader
             throw new MalformedMessage('The Conditions hold more than one saml:OneTimeUse (M-5).');
         }
         $restrictions = Children::named($conditions, Schema::saml('AudienceRestriction'));
-        if (count($restrictions) > self::MAX_AUDIENCE_RESTRICTIONS) {
-            throw new LimitExceeded(sprintf(
+        Counts::check(
+            count($restrictions),
+            Counts::AUDIENCE_RESTRICTIONS,
+            sprintf(
                 'The Conditions hold more than %d AudienceRestriction, the bound of section 7 (M-17).',
-                self::MAX_AUDIENCE_RESTRICTIONS,
-            ));
-        }
+                Counts::AUDIENCE_RESTRICTIONS,
+            ),
+        );
         $notBefore = self::time($conditions, 'NotBefore');
         if ($notBefore instanceof DateTimeImmutable && $notBefore > $context->window->latest()) {
             throw new OutsideValidityWindow('The NotBefore of the Conditions is later than now plus the clock skew (M-7).');
@@ -120,12 +113,14 @@ final readonly class ConditionsReader
     private static function audiences(Element $restriction, AssertionContext $context): array
     {
         $audiences = Children::named($restriction, Schema::saml('Audience'));
-        if (count($audiences) > self::MAX_AUDIENCES) {
-            throw new LimitExceeded(sprintf(
+        Counts::check(
+            count($audiences),
+            Counts::AUDIENCES,
+            sprintf(
                 'An AudienceRestriction holds more than %d Audience, the bound of section 7 (M-17).',
-                self::MAX_AUDIENCES,
-            ));
-        }
+                Counts::AUDIENCES,
+            ),
+        );
         Schema::children($restriction, 'saml:AudienceRestriction', [Particle::of(
             Schema::saml('Audience'),
             1,

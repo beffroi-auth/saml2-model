@@ -12,6 +12,7 @@ use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Internal\Particle;
 use Beffroi\Saml2\Model\Internal\Schema;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Exception\MixedContent;
@@ -33,16 +34,6 @@ use function sprintf;
 final readonly class AttributeStatementReader
 {
     /**
-     * Attributes per statement, section 7.
-     */
-    private const int MAX_ATTRIBUTES = 256;
-
-    /**
-     * Values per attribute, section 7.
-     */
-    private const int MAX_VALUES = 256;
-
-    /**
      * @return list<Attribute>
      *
      * @throws Unsupported when the statement holds a saml:EncryptedAttribute (section 6.7)
@@ -59,12 +50,14 @@ final readonly class AttributeStatementReader
             'The attribute statement holds a saml:EncryptedAttribute, which the package does not support until sub-spike 9e (section 6.7).',
         );
         $attributes = Children::named($statement, Schema::saml('Attribute'));
-        if (count($attributes) > self::MAX_ATTRIBUTES) {
-            throw new LimitExceeded(sprintf(
+        Counts::check(
+            count($attributes),
+            Counts::ATTRIBUTES,
+            sprintf(
                 'The AttributeStatement holds more than %d Attribute, the bound of section 7 (M-17).',
-                self::MAX_ATTRIBUTES,
-            ));
-        }
+                Counts::ATTRIBUTES,
+            ),
+        );
         Schema::children($statement, 'saml:AttributeStatement', [Particle::of(
             Schema::saml('Attribute'),
             1,
@@ -77,12 +70,14 @@ final readonly class AttributeStatementReader
     private static function attribute(Element $attribute): Attribute
     {
         $values = Children::named($attribute, Schema::saml('AttributeValue'));
-        if (count($values) > self::MAX_VALUES) {
-            throw new LimitExceeded(sprintf(
+        Counts::check(
+            count($values),
+            Counts::ATTRIBUTE_VALUES,
+            sprintf(
                 'An Attribute holds more than %d AttributeValue, the bound of section 7 (M-17).',
-                self::MAX_VALUES,
-            ));
-        }
+                Counts::ATTRIBUTE_VALUES,
+            ),
+        );
         Schema::children($attribute, 'saml:Attribute', [Particle::of(
             Schema::saml('AttributeValue'),
             0,
