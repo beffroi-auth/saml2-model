@@ -132,9 +132,6 @@ const INFECTION_STRICT_FILES = [
     'src/Validation/LogoutResponseValidator.php',
     'src/Validation/AcceptedLogoutRequest.php',
     'src/Validation/AcceptedLogoutResponse.php',
-    // Section 9, each added by the story that writes it:
-    // the other strict readers and the selection of the signed element, every other file of src/Internal/;
-    // the validators, every other file of src/Validation/.
 ];
 
 /**
