@@ -9,6 +9,7 @@ use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Internal\AuthnRequest\AssertionConsumerService;
 use Beffroi\Saml2\Model\Value\SamlId;
+use Beffroi\Saml2\Model\Value\UnsignedShort;
 use Beffroi\Saml2\Model\Value\Uri;
 use DateTimeImmutable;
 
@@ -23,8 +24,6 @@ use DateTimeImmutable;
  */
 final readonly class AuthnRequest
 {
-    private const int MAX_INDEX = 65_535;
-
     /**
      * @throws MalformedMessage when the ID is not an NCName of at most 128 bytes, the Destination or the
      *                          AssertionConsumerServiceURL is not a URI (M-6), the index is not an
@@ -51,11 +50,8 @@ final readonly class AuthnRequest
         if ($assertionConsumerServiceUrl !== null) {
             Uri::read($assertionConsumerServiceUrl);
         }
-        if (
-            $assertionConsumerServiceIndex !== null
-            && ($assertionConsumerServiceIndex < 0 || $assertionConsumerServiceIndex > self::MAX_INDEX)
-        ) {
-            throw new MalformedMessage('The AssertionConsumerServiceIndex of an AuthnRequest is not an xs:unsignedShort, from 0 to 65535 (M-6).');
+        if ($assertionConsumerServiceIndex !== null) {
+            UnsignedShort::check($assertionConsumerServiceIndex);
         }
         AssertionConsumerService::exclusive(
             $assertionConsumerServiceUrl,
