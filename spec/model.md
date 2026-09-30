@@ -654,7 +654,7 @@ Both halves run with `castor simplesamlphp` on the developer's machine; each exc
 
 ### 9.6 Performance
 
-One soft assertion in the suite, skipped outside CI: validating SimpleSAMLphp's response with a signed assertion, from `UnverifiedResponse::of()` to `AcceptedAssertion`, takes less than 15 ms. Provisional until measured.
+Validating SimpleSAMLphp's response with a signed assertion, from `UnverifiedResponse::of()` to `AcceptedAssertion`, takes less than 15 ms. Measured outside the suite by `tests/Interop/simplesamlphp/timing.php`, since section 8 bans every reading of the machine's clock in the tests as in `src/`: 0.3 ms with the assertion signed and 0.5 ms with both signed, medians on PHP 8.5 and 8.4 on an Apple M4, on 30 September 2026 (section 13). The figure is measured again at every change of SimpleSAMLphp's version, with the judge of 9.5.
 
 ### 9.7 Test form
 
@@ -673,30 +673,42 @@ composer.json          beffroi-php/saml2-model, MIT, php >=8.4, beffroi-php/xml-
                        (it has no tag yet, section 12), psr/clock ^1.0; PSR-4 Beffroi\Saml2\Model\ => src/,
                        Beffroi\Saml2\Model\Tests\ => tests/; no dev dependency: the tools live in the phpqa image
 spec/model.md          this document, the law of the package
-src/                   Saml, SamlLoader; Value/ (the lexical forms of M-6, SamlId); Assertion/, Protocol/, Metadata/ (the
-                       objects of 5.3, the Unverified* classes, MetadataReader); Validation/ (the validators, TimeBounds,
-                       ExpectedResponse, the Accepted* results); Writing/ (the writers, Signing, SignedParts); Port/
-                       (ReplayGuardInterface); Exception/; Internal/ (one strict reader per element, the selection of the
-                       signed element), marked @internal, outside the compatibility promise of section 5
-tests/                 Unit/ (one class per class of src/, plus TraceabilityTest, SourceGuardTest, RoundTripTest,
-                       AdversarialTest, RealDocumentsTest, PerformanceTest), Support/ (FrozenClock, InMemoryReplayGuard,
-                       the test keys, the fixture reader, the builders of the hostile variants), Fixture/ (keys, hostile,
-                       behaviour, real, each with a README carrying its commands), Interop/simplesamlphp/ and Interop/keycloak/ (9.5),
-                       PhpStan/ (the rules of core.md §8, copied, extended with section 8)
-castor.php, .castor/   install (Composer in the phpqa image, the private xml-security read with the GitHub CLI's token passed
-                       by name, never written), phpunit, phpstan, deptrac, mago-format, mago-lint, rector, lint, composer-validate,
-                       infect, prepare-pr,
-                       xmlsec (xmlsec1 verifies a written file), simplesamlphp and keycloak (9.5)
+src/                   Saml, SamlLoader; Value/ (the lexical forms of M-6, SamlId, the index UnsignedShort, the counts of
+                       section 7); Assertion/, Protocol/, Metadata/ (the objects of 5.3, the Unverified* classes,
+                       MetadataReader); Validation/ (the validators, TimeBounds, ExpectedResponse, Authentication,
+                       SignatureCoverage, the Accepted* results); Writing/ (the writers, Signing, SignedParts); Port/
+                       (ReplayGuardInterface); Exception/; Internal/, marked @internal, outside the compatibility promise
+                       of section 5: Schema and Particle, the one reading model of the schemas, Window, the edges of M-7,
+                       one strict reader per element (Assertion/, AuthnRequest/, Logout/, Metadata/, Protocol/, Response/,
+                       the selection of the signed element among them), and Writing/, the tree every writer builds on
+tests/                 Unit/ (one class per public class of src/ and per strict reader, plus TraceabilityTest,
+                       SourceGuardTest, Exception/RefusalMessagesTest, AdversarialTest; the round trips of 9.1 in the test
+                       of each writer;
+                       the real documents of 9.4 in RealDocumentsTest, metadata and responses,
+                       Validation/RealAuthnRequestsTest and Validation/LogoutRealDocumentsTest, requests and logout
+                       messages, Interop/SimpleSamlPhpDocumentsTest and Interop/KeycloakDocumentsTest, what the exchanges
+                       of 9.5 captured), Support/ (FrozenClock, InMemoryReplayGuard, the builders of the response and
+                       adversarial fixtures, Traceability), Fixture/ (keys and oracle, each with its README; hostile and
+                       behaviour, the builders' commands in hostile/response-README.md and hostile/adversarial-README.md;
+                       real, each capture recorded in the README of its harness), Interop/simplesamlphp/ and
+                       Interop/keycloak/ (9.5, the timing of 9.6 in simplesamlphp/timing.php), PhpStan/ (the rules of
+                       core.md §8, copied, extended with section 8)
+castor.php, .castor/   qa.php: install (Composer in the phpqa image, the private xml-security read with the GitHub CLI's
+                       token passed by name, never written), phpunit, phpstan, deptrac, mago-format, mago-lint, rector,
+                       lint, composer-validate, infect, prepare-pr, phpqa-update, xmlsec (xmlsec1 verifies a written
+                       file) and xmlsec-oracle (every signature the writers make and commit); simplesamlphp.php and
+                       keycloak.php, the harnesses of 9.5
 .ci-tools/             phpstan.neon (level max, strict rules, deprecation rules, phpunit, banned code), deptrac.yaml (Value
-                       below Assertion, Protocol and Metadata, below Validation and Writing; Port beside; TimeBounds a leaf
-                       layer of its own, since MetadataReader and the validators both take it; Exception and Protocol see
-                       each other, UnsuccessfulResponse carrying a Status and StatusCode refusing with MalformedMessage; the
-                       public classes of Core and Dsig, psr/clock, and nothing of HTTP), rector.php, phpunit.xml.dist
+                       below Assertion, Protocol and Metadata, below Validation and Writing; Port beside; TimeBounds and
+                       Authentication leaf layers of their own, since MetadataReader and Internal take the first and
+                       Internal returns the second; Exception and Protocol see each other, UnsuccessfulResponse carrying
+                       a Status and StatusCode refusing with MalformedMessage; the public classes of Core and Dsig,
+                       psr/clock, and nothing of HTTP), rector.php, phpunit.xml.dist
 infection.json.dist    at the root; the strict list of section 9 in .castor/qa.php
 mago.toml              the formatter and the linter
 .github/workflows/     ci.yml on ghcr.io/spomky-labs/phpqa, PHP 8.4 and 8.5: format, lint, rector, phpstan, deptrac, composer,
-                       syntax, phpunit with coverage, Infection on the files of section 9 then on the diff, the xmlsec1 oracle;
-                       dependency-review.yml; scorecards.yml; release-on-milestone-closed.yml
+                       syntax, phpunit with coverage, Infection on the files of section 9 then on the diff, the xmlsec1
+                       oracle; dependency-review.yml; scorecards.yml; release-on-milestone-closed.yml
 LICENSE, README.md, SECURITY.md, CODE_OF_CONDUCT.md, .editorconfig, .gitattributes, .gitignore
 ```
 
