@@ -8,7 +8,6 @@ use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Xml\Core\Document;
-use Beffroi\Xml\Core\Exception\ForeignNode;
 use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
 
@@ -30,7 +29,6 @@ final readonly class UnverifiedAuthnRequest
      * @throws MalformedMessage when the root is another element, holds more than one saml:Issuer (M-4), or its Issuer
      *                          is not a URI of M-6
      * @throws MixedContent when the Issuer holds an element
-     * @throws ForeignNode when the document is not one Core loaded
      */
     public static function of(Document $document): self
     {
@@ -38,6 +36,7 @@ final readonly class UnverifiedAuthnRequest
         if (! new Name(Saml::PROTOCOL, 'AuthnRequest')->matches($root)) {
             throw new MalformedMessage('The root of the document is not a samlp:AuthnRequest (section 6.2).');
         }
+
         return new self($document, IssuerReader::unverified($root, 'samlp:AuthnRequest'));
     }
 }
