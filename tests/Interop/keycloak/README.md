@@ -3,8 +3,10 @@
 Story #14, sections 9.4 and 9.5 of `spec/model.md`: Keycloak as an identity provider (realm `idp`) and as a service
 provider (realm `sp`, whose SAML identity provider `idp` brokers the login to realm `idp`), in one container, run by
 hand, never in the CI and never a dependency of the package. It reinforces the judge of 9.5 (SimpleSAMLphp) and is
-not a condition of it. This phase builds the installation and captures what Keycloak writes; posting the model's own
-documents into Keycloak waits for the writers (stories #9 and #10).
+not a condition of it. The first phase built the installation and captured what two Keycloaks write to each other
+(sections Installation to Findings); the second plays the model against Keycloak, both ways, as an identity provider
+behind realm `sp`'s broker and as a service provider behind realm `idp` (section The exchange with the model and
+after). `castor keycloak` runs both.
 
 ## Versions
 
@@ -15,6 +17,7 @@ documents into Keycloak waits for the writers (stories #9 and #10).
 | Mode | `start-dev`: HTTP, the H2 database inside the container, the realms imported at startup from `realms/` |
 | Port | 8180 on the host and in the container (8081 and 8082 are SimpleSAMLphp's, story #11) |
 | Machine of the capture | macOS 26 (Darwin 25.6), Docker 29.8.1, Docker Compose 5.5.1, GNU bash 3.2.57, curl 8.7.1, perl 5.34.1 |
+| The exchange | `ghcr.io/spomky-labs/phpqa:8.5`, manifest `sha256:55fb69b22faad3c0e2ddcb4b76f66c1a5e664ea02acea1708a844e747a7c6dec` (PHP 8.5.10, libcurl 8.14.1), the package of this repository through its `vendor/autoload.php`; castor 1.7.0 on the host; xmlsec1 1.3.7 on Alpine 3.22 |
 
 ## Installation
 
@@ -311,3 +314,309 @@ is for the coordinator, who alone edits it.
     signature in this installation: the metadata states the realm's position, not the client's.
 16. **The first login.** Removing `Review Profile`, as story #14 asks, is not enough with 26.7.4: the required action
     `VERIFY_PROFILE` asks for the profile at the end of the first login, and is disabled here (settings, above).
+
+## `castor keycloak`
+
+The task of `.castor/keycloak.php` runs the whole of this document from the root of the repository:
+
+```
+castor keycloak
+```
+
+Without an option it runs every stage in order: `--up` (`docker compose ... up -d`, the realms imported with new
+keys), `--capture` (`capture.sh`, the first phase), `--exchange` (`exchange.php`, below), `--verify` (xmlsec1 over the
+documents the model wrote and over Keycloak's), `--down` (`docker compose ... down`, run even when a stage fails).
+Given one or more of these options, it runs those only. `--output` is where Keycloak's documents go: by default
+`tmp-phpqa/keycloak/`, ignored by git and emptied of its `keycloak-*.xml` before a capture or an exchange, so that a
+run from a clean checkout touches no fixture; the model's documents always go to `tmp-phpqa/keycloak/model/`. To renew
+the fixtures, `--output=tests/Fixture/real` with the stages named, since both scripts name their files by the UTC day
+and rewrite the files of that day: the committed exchange of 30 September 2026 was written by
+
+```
+docker compose -f tests/Interop/keycloak/compose.yaml up -d        # what castor keycloak --up runs
+castor keycloak --exchange --verify --down --output=tests/Fixture/real
+```
+
+without `--capture`, which would have rewritten the six files of the first phase, captured the same day under the keys
+of an earlier container. The same day, `castor keycloak` without an option ran every stage green from a stopped
+Keycloak into `tmp-phpqa/keycloak/`.
+
+The exchange runs in the phpqa image, in the network namespace of the Keycloak container, so that `localhost:8180`
+names Keycloak there as in every URL it builds and checks (`Destination`, `Recipient`, the broker endpoint):
+
+```
+docker run --rm --init -i --user "$(id -u):$(id -g)" \
+    --network container:$(docker compose -f tests/Interop/keycloak/compose.yaml ps -q keycloak) \
+    -v "$PWD:/project" -w /project -e XDEBUG_MODE=off ghcr.io/spomky-labs/phpqa:8.5 \
+    php tests/Interop/keycloak/exchange.php <output> tmp-phpqa/keycloak/model
+```
+
+It needs the dependencies installed (`castor install`): it loads the package from `vendor/autoload.php`, and
+`InMemoryReplayGuard` from `tests/Support/`.
+
+## The exchange with the model
+
+Section 9.5's second half, played against Keycloak: every message over HTTP-POST, base64 in a form field, the form
+written in `exchange.php` and not in `saml2-bindings`; curl as the browser, one cookie jar per direction, following no
+redirect by itself; the test keys of `tests/Fixture/keys/`, the identity provider pair for the model's identity
+provider, the service provider pair for its service provider; for the two ports of section 5.2, a PSR-20 clock written
+in the script, which reads the machine's time in UTC, and `InMemoryReplayGuard` of `tests/Support/`.
+
+### The model's two roles, and what Keycloak makes of their metadata
+
+| | The model's identity provider | The model's service provider |
+|---|---|---|
+| Entity ID | `https://idp.saml2-model.test/metadata` | `https://sp.saml2-model.test/metadata` |
+| Services, all on HTTP-POST | single sign-on `https://idp.saml2-model.test/sso`, single logout `https://idp.saml2-model.test/slo` | assertion consumer `https://sp.saml2-model.test/acs`, `index="0"`, `isDefault="true"`; single logout `https://sp.saml2-model.test/slo` |
+| Flags | `WantAuthnRequestsSigned="true"`; `NameIDFormat` persistent | `AuthnRequestsSigned="true"`, `WantAssertionsSigned="false"` |
+| Key | `idp-signing-certificate.pem`, `use="signing"` | `sp-signing-certificate.pem`, `use="signing"` |
+| Written by | `MetadataWriter`, signed with `idp-signing-key.pem` | `MetadataWriter`, signed with `sp-signing-key.pem` |
+
+Nothing answers at these URLs: Keycloak's auto-submitted forms say where a message goes, and the script reads the form
+instead of posting it. Keycloak is configured from these two documents by its own importers, through the admin REST
+API and the disposable administrator of `compose.yaml`, as an administrator does who imports a metadata file in the
+console:
+
+- **Realm `sp`, identity provider `model`.** `POST /admin/realms/sp/identity-provider/import-config` (multipart,
+  `providerId=saml`, `file=` the model's identity provider metadata) returns the configuration it reads from the
+  document; `POST /admin/realms/sp/identity-provider/instances` creates the identity provider with it, over the
+  defaults of the console's form that the import does not return (`entityId` the realm URL, `wantAssertionsSigned=true`,
+  `nameIDPolicyFormat` persistent, `principalType=SUBJECT`, `allowCreate=true`, `allowedClockSkew=0`,
+  `attributeConsumingServiceIndex=0`, as in the first phase) and the first broker login flow without review of
+  `realms/sp.json`.
+- **Realm `idp`, client `https://sp.saml2-model.test/metadata`.** `POST /admin/realms/idp/client-description-converter`
+  (the model's service provider metadata as the body) returns a client representation; `POST /admin/realms/idp/clients`
+  creates it, and the server adds its defaults to what the converter did not set, as the first phase measured.
+
+Both are deleted first when they exist, with the user the model's subject became in realm `sp` on an earlier run (the
+deletion of the identity provider removes the user's link, not the user, and the first broker login would then ask to
+link the account instead of creating it), so that an exchange can run again on a live container. The configuration
+read back after the creation, measured on 30 September 2026:
+
+| Where | Setting | Value | From |
+|---|---|---|---|
+| realm `sp`, identity provider `model` | `singleSignOnServiceUrl`, `singleLogoutServiceUrl` | the model's two services | import-config |
+| | `postBindingAuthnRequest`, `postBindingResponse`, `postBindingLogout` | `true`, `true`, `true` | import-config: the metadata lists an HTTP-POST single sign-on service (below, finding 17) |
+| | `wantAuthnRequestsSigned` | `true` | import-config, from `WantAuthnRequestsSigned="true"` |
+| | `validateSignature`, `signingCertificate` | `true`, the identity provider test certificate | import-config, from the `KeyDescriptor` |
+| | `idpEntityId`, `nameIDPolicyFormat` | the model's entity ID, persistent | import-config |
+| | `addExtensionsElementWithKeyInfo`, `artifactBindingResponse`, `loginHint`, `enabledFromMetadata` | `false`, `false`, `false`, `true` | import-config |
+| | `entityId`, `wantAssertionsSigned`, `principalType`, `allowCreate`, `allowedClockSkew`, `attributeConsumingServiceIndex` | `http://localhost:8180/realms/sp`, `true`, `SUBJECT`, `true`, `0`, `0` | the console's form |
+| | `firstBrokerLoginFlowAlias` | `first broker login without review profile` | `realms/sp.json`: no review screen in a scripted login (story #14) |
+| realm `idp`, client of the model | `saml.signing.certificate`, `saml_assertion_consumer_url_post`, `saml_single_logout_service_url_post`, `redirectUris` | the service provider test certificate, the model's two services, the consumer service | the converter |
+| | `saml.client.signature` ("Client signature required") | `true`, Keycloak's default | the converter, from `AuthnRequestsSigned="true"` |
+| | `saml.server.signature`, `saml.signature.algorithm`, `saml.authnstatement`, `saml.server.signature.keyinfo.ext` | `true`, `RSA_SHA256`, `true`, `false` | the converter |
+| | `saml.assertion.signature` ("Sign assertions") | absent, off | the converter sets it only for `WantAssertionsSigned="true"`: realm `idp` signs the response only, its default |
+| | `saml.force.post.binding`, `saml_name_id_format`, `saml_force_name_id_format`, `saml.allow.ecp.flow`, `saml_signature_canonicalization_method`, `frontchannelLogout` | `true`, `username`, `false`, `false`, exc-c14n, on | the server's defaults |
+
+No setting of the first phase changes, and no setting is added by hand to make a direction pass: F1 and F2 are
+answered by what the model's identity provider metadata says, read by Keycloak's own importer.
+
+### The run
+
+`exchange.php`, after the configuration:
+
+1. **Keycloak's metadata**: realm `idp`'s and the broker `model`'s, kept, then read with `MetadataReader::readTrusted()`.
+2. **Two controls**, each in a browser of its own, so that the logins below prove something: a response to a real
+   request of the broker, its assertion signed by the service provider test key, which the broker was not given, is
+   posted to the broker endpoint; an `AuthnRequest` signed by the identity provider test key, which realm `idp`'s
+   client was not given, is posted to realm `idp`. Each must be refused by an error page, neither a redirect nor a form
+   going on.
+3. **The model as identity provider.** `GET /realms/sp/protocol/openid-connect/auth?...&kc_idp_hint=model`, the
+   redirects followed to the broker's page, whose form posts the `AuthnRequest` to the model's single sign-on service:
+   kept, validated by `AuthnRequestValidator::validate()` (HTTP-POST, a `ds:Signature`: the path of 6.2 for it), its
+   assertion consumer service resolved in the broker's metadata. The model answers with `ResponseWriter::write()`, the
+   identity provider test key, `SignedParts::Assertion` (the broker wants the assertion signed): the persistent subject
+   `model-alice`, a bearer window and conditions of 300 s, a `SessionIndex`, two attributes (`email`, and `Role` with
+   two values) without `xsi:type`; posted to the broker endpoint with the `RelayState` of the request and the cookie
+   jar. The first broker login creates the user, and the redirects end at the client `capture` with a code, exchanged
+   for the tokens. Then `GET /realms/sp/protocol/openid-connect/logout?id_token_hint=...`: the broker's page posts its
+   `LogoutRequest` to the model's single logout service: kept, validated by `LogoutRequestValidator::validate()`; the
+   model answers with `LogoutResponseWriter::write()`, signed, `Success`, posted to the broker's single logout service
+   with the `RelayState`, and the redirects end at the client.
+4. **The model as service provider.** `AuthnRequestWriter::write()`, signed with the service provider test key, the
+   persistent format asked (`AllowCreate="true"`), HTTP-POST as `ProtocolBinding`, posted to realm `idp`'s single sign-on
+   service with a `RelayState`; the login form posted with `alice`, `alice`; realm `idp`'s page posts the response to the
+   model's consumer service with the same `RelayState`: kept, validated by `ResponseValidator::validate()` against
+   `ExpectedResponse::toRequest()`. Then `LogoutRequestWriter::write()`, signed, the `NameID` and the `SessionIndex` of
+   the accepted assertion, posted to realm `idp` with the same cookie jar; realm `idp`'s page posts its
+   `LogoutResponse` to the model's single logout service: kept, validated by `LogoutResponseValidator::validate()`.
+
+Keycloak's documents are written byte for byte as decoded from the form, into
+`<output>/keycloak-<version>-exchange-<producer>-<document>-<YYYY-MM-DD>.xml`, where the producer is `idp` (realm
+`idp`) or `broker` (realm `sp`'s identity provider `model`); the model's, serialized by `Core`'s `Serializer`, into
+`tmp-phpqa/keycloak/model/model-<idp|sp>-<document>.xml`, with the two configurations read back as JSON. The output of
+the run of 30 September 2026 that produced the committed files (the two lines of settings are those of the table
+above):
+
+```
+Keycloak 26.7.4 on http://localhost:8180, exchange of 2026-09-30, Keycloak's documents into tests/Fixture/real, the model's into tmp-phpqa/keycloak/model
+The model's metadata, given to Keycloak
+  realm sp, identity provider model from import-config: addExtensionsElementWithKeyInfo=false, artifactBindingResponse=false, enabledFromMetadata=true, idpEntityId=https://idp.saml2-model.test/metadata, loginHint=false, nameIDPolicyFormat=urn:oasis:names:tc:SAML:2.0:nameid-format:persistent, postBindingAuthnRequest=true, postBindingLogout=true, postBindingResponse=true, signingCertificate=<1156 characters>, singleLogoutServiceUrl=https://idp.saml2-model.test/slo, singleSignOnServiceUrl=https://idp.saml2-model.test/sso, validateSignature=true, wantAuthnRequestsSigned=true
+  realm idp, client https://sp.saml2-model.test/metadata from client-description-converter: saml.authnstatement=true, saml.client.signature=true, saml.server.signature=true, saml.server.signature.keyinfo.ext=false, saml.signature.algorithm=RSA_SHA256, saml.signing.certificate=<1156 characters>, saml_assertion_consumer_url_post=https://sp.saml2-model.test/acs, saml_single_logout_service_url_post=https://sp.saml2-model.test/slo
+Keycloak's metadata
+  keycloak-26.7.4-exchange-idp-metadata-2026-09-30.xml: GET /realms/idp/protocol/saml/descriptor
+  keycloak-26.7.4-exchange-broker-metadata-2026-09-30.xml: GET /realms/sp/broker/model/endpoint/descriptor
+  read by MetadataReader::readTrusted(): realm idp, 1 signing certificate; the broker, 1 signing certificate, AuthnRequestsSigned true, WantAssertionsSigned true
+Controls: a signature by the other test key
+  refused by the broker, a response whose assertion the service provider test key signed: HTTP 400, "Invalid signature in response from identity provider."
+  refused by realm idp, an AuthnRequest the identity provider test key signed: HTTP 400, "Invalid requester"
+The model as identity provider, realm sp's broker in front
+  keycloak-26.7.4-exchange-broker-authn-request-2026-09-30.xml: HTTP-POST to https://idp.saml2-model.test/sso, fields SAMLRequest RelayState
+  accepted by AuthnRequestValidator::validate(): XmlSignature, ID ID_fdae0d1a-7165-4939-be02-2cc70ac0b155, assertion consumer service http://localhost:8180/realms/sp/broker/model/endpoint index 1, ProtocolBinding urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST, NameIDPolicy urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
+  the model's response _981f771ccb21b558615cb9197bcef828fdd54fcd, its assertion signed (SignedParts::Assertion), posted to http://localhost:8180/realms/sp/broker/model/endpoint
+  logged in at the client of realm sp: preferred_username model-alice
+  keycloak-26.7.4-exchange-broker-logout-request-2026-09-30.xml: HTTP-POST to https://idp.saml2-model.test/slo, fields SAMLRequest RelayState
+  accepted by LogoutRequestValidator::validate(): XmlSignature, ID ID_7fb80c65-0821-4bee-a28d-1bd88def3f61, NameID model-alice, SessionIndex _2a9f36d46739894e683decb7f7705c0dcf19635a
+  the model's LogoutResponse _c097cbdd5be29ffe3be98aad18125f4f9525e104, signed, posted to http://localhost:8180/realms/sp/broker/model/endpoint
+  logged out, back at the client of realm sp
+The model as service provider, realm idp in front
+  the model's AuthnRequest _8b44214fbfab0a7dccde575a0028ce774831e27f, signed, posted to http://localhost:8180/realms/idp/protocol/saml
+  keycloak-26.7.4-exchange-idp-response-2026-09-30.xml: HTTP-POST to https://sp.saml2-model.test/acs, fields SAMLResponse RelayState
+  accepted by ResponseValidator::validate(): SignatureCoverage::Response, response ID_19abf153-cab9-41ae-9f81-76b13888fe0a, NameID G-41eee78d-0ec1-43d9-b7fc-584c8bccc500 (Persistent), SessionIndex _95NiAiPWiL8nAJmSq5Hlflp::e23c7b4f-7c1b-45c3-8ded-744f3c749829, 6 attributes
+  the model's LogoutRequest _9f51ef48331c006c5d1afd246989666af224d283, signed, posted to http://localhost:8180/realms/idp/protocol/saml
+  keycloak-26.7.4-exchange-idp-logout-response-2026-09-30.xml: HTTP-POST to https://sp.saml2-model.test/slo, fields SAMLResponse RelayState
+  accepted by LogoutResponseValidator::validate(): XmlSignature, ID ID_0f8c9087-49ff-4053-bd42-a0faed07f994, status Success
+Both directions completed.
+```
+
+The IDs of the model's two requests, `_8b44214fbfab0a7dccde575a0028ce774831e27f` and
+`_9f51ef48331c006c5d1afd246989666af224d283`, are those `tests/Unit/Interop/KeycloakDocumentsTest.php` names as what
+realm `idp`'s response and `LogoutResponse` answer.
+
+### Results
+
+| Direction | Result |
+|---|---|
+| The model as identity provider, the broker in front: login | Green. The broker's signed `AuthnRequest` accepted by the model (`Authentication::XmlSignature`); the model's response, its assertion signed, accepted by the broker, which completes the first broker login (user `model-alice` created) and redirects to its client with a code |
+| The broker's logout toward the model | Green. The broker's signed `LogoutRequest` accepted by the model (`Authentication::XmlSignature`); the model's signed `LogoutResponse` accepted by the broker, which redirects to the client |
+| The model as service provider, realm `idp` in front: login | Green. The model's signed `AuthnRequest` accepted by realm `idp`, which shows its login form; its response accepted by the model, `SignatureCoverage::Response` |
+| The model's logout toward realm `idp` | Green. The model's signed `LogoutRequest` accepted by realm `idp`; its signed `LogoutResponse` accepted by the model (`Authentication::XmlSignature`, `Success`) |
+| Controls | Both refused, HTTP 400: the broker verifies the assertion's signature under the certificate imported from the model's metadata, and realm `idp` the request's under the client's certificate |
+
+Not played: realm `idp` sending a `LogoutRequest` to the model's service provider (a logout started at another
+client of the same session), and every HTTP-Redirect exchange, whose detached signature is `saml2-bindings`' judge.
+Keycloak's encrypted assertions are sub-spike 9e's.
+
+## Verification of the exchange by xmlsec1
+
+**What the model wrote**, the six documents of `tmp-phpqa/keycloak/model/`, each under the test certificate of the
+role that signed it, by `tests/Fixture/oracle/verify-signatures.sh` (`castor xmlsec`'s script):
+
+```
+docker run --rm -i -v "$PWD:/project:ro" -w /project alpine:3.22 sh -c 'apk add -q xmlsec libxml2-utils >/dev/null 2>&1 && xmlsec1 --version && sh tests/Fixture/oracle/verify-signatures.sh tests/Fixture/keys/idp-signing-certificate.pem tmp-phpqa/keycloak/model/model-idp-logout-response.xml tmp-phpqa/keycloak/model/model-idp-metadata.xml tmp-phpqa/keycloak/model/model-idp-response.xml'
+docker run --rm -i -v "$PWD:/project:ro" -w /project alpine:3.22 sh -c 'apk add -q xmlsec libxml2-utils >/dev/null 2>&1 && xmlsec1 --version && sh tests/Fixture/oracle/verify-signatures.sh tests/Fixture/keys/sp-signing-certificate.pem tmp-phpqa/keycloak/model/model-sp-authn-request.xml tmp-phpqa/keycloak/model/model-sp-logout-request.xml tmp-phpqa/keycloak/model/model-sp-metadata.xml'
+```
+
+On 30 September 2026, on the documents of the run above:
+
+```
+xmlsec1 1.3.7 (openssl)
+Verification status: OK
+tmp-phpqa/keycloak/model/model-idp-logout-response.xml: 1 signatures verified by xmlsec1.
+Verification status: OK
+tmp-phpqa/keycloak/model/model-idp-metadata.xml: 1 signatures verified by xmlsec1.
+Verification status: OK
+tmp-phpqa/keycloak/model/model-idp-response.xml: 1 signatures verified by xmlsec1.
+xmlsec1 1.3.7 (openssl)
+Verification status: OK
+tmp-phpqa/keycloak/model/model-sp-authn-request.xml: 1 signatures verified by xmlsec1.
+Verification status: OK
+tmp-phpqa/keycloak/model/model-sp-logout-request.xml: 1 signatures verified by xmlsec1.
+Verification status: OK
+tmp-phpqa/keycloak/model/model-sp-metadata.xml: 1 signatures verified by xmlsec1.
+```
+
+Six documents, six signatures: the response carries one, its assertion's (`SignedParts::Assertion`). These documents
+are not committed: each run draws new IDs and times, and the model's writers are judged by the suite (section 9.1)
+and by the oracle of the CI.
+
+**What Keycloak wrote**, by `verify.sh` over the output directory, with the command of the first phase; the documents
+of the exchange are verified under the metadata the exchange captured, since the realm keys of that container are not
+those of the first phase's:
+
+```
+OK   keycloak-26.7.4-exchange-broker-authn-request-2026-09-30 /*/*[local-name()="Signature"]: verified under keycloak-26.7.4-exchange-broker-metadata-2026-09-30.xml; throwaway key and altered copy refused
+OK   keycloak-26.7.4-exchange-broker-logout-request-2026-09-30 /*/*[local-name()="Signature"]: verified under keycloak-26.7.4-exchange-broker-metadata-2026-09-30.xml; throwaway key and altered copy refused
+--   keycloak-26.7.4-exchange-broker-metadata-2026-09-30: no signature
+OK   keycloak-26.7.4-exchange-idp-logout-response-2026-09-30 /*/*[local-name()="Signature"]: verified under keycloak-26.7.4-exchange-idp-metadata-2026-09-30.xml; throwaway key and altered copy refused
+--   keycloak-26.7.4-exchange-idp-metadata-2026-09-30: no signature
+OK   keycloak-26.7.4-exchange-idp-response-2026-09-30 /*/*[local-name()="Signature"]: verified under keycloak-26.7.4-exchange-idp-metadata-2026-09-30.xml; throwaway key and altered copy refused
+OK   keycloak-26.7.4-idp-logout-response-2026-09-30 /*/*[local-name()="Signature"]: verified under keycloak-26.7.4-idp-metadata-2026-09-30.xml; throwaway key and altered copy refused
+--   keycloak-26.7.4-idp-metadata-2026-09-30: no signature
+OK   keycloak-26.7.4-idp-response-2026-09-30 /*/*[local-name()="Signature"]: verified under keycloak-26.7.4-idp-metadata-2026-09-30.xml; throwaway key and altered copy refused
+--   keycloak-26.7.4-sp-authn-request-2026-09-30: no signature
+--   keycloak-26.7.4-sp-logout-request-2026-09-30: no signature
+--   keycloak-26.7.4-sp-metadata-2026-09-30: no signature
+6 signatures, 0 failures.
+```
+
+## Measurements of the exchange
+
+The same reading as the first phase's, on the six documents of the exchange. Realm `idp`'s metadata has the shape of
+the first phase's, element for element, with a new key.
+
+| Document | Bytes | Signed | Against the first phase |
+|---|---|---|---|
+| `exchange-idp-metadata` | 3 374 | nothing | the same elements and attributes; another certificate and key name |
+| `exchange-broker-metadata` | 2 610 | nothing | a `KeyDescriptor use="signing"` (the realm's key, with a `KeyName`), `AuthnRequestsSigned="true"`, and the HTTP-POST assertion consumer service first, `index="1" isDefault="true"`, HTTP-Redirect `index="2"` and HTTP-Artifact `index="3"` after it; single logout on HTTP-POST then HTTP-Redirect |
+| `exchange-broker-authn-request` | 2 777 | the request, enveloped, rsa-sha256, sha256, exc-c14n; `KeyInfo` an `X509Data` without `KeyName` | `ProtocolBinding` HTTP-POST; `Destination` the model's single sign-on service; `ForceAuthn="false"`, `AttributeConsumingServiceIndex="0"`, no `IsPassive`; `NameIDPolicy` persistent, `AllowCreate="true"`; 3 fractional digits |
+| `exchange-broker-logout-request` | 2 656 | the request, as above | the `NameID` and the `SessionIndex` of the model's assertion, persistent; no `NotOnOrAfter`, no `Reason` |
+| `exchange-idp-response` | 5 664 | the `Response`, not the `Assertion` | the windows of the first phase: `Conditions` 2 s before and 58 s after the assertion's `IssueInstant`, bearer 298 s after, `SessionNotOnOrAfter` 10 h after the `AuthnInstant`; `NameID` persistent `G-` and a UUID, as the model's `NameIDPolicy` asked although the client's format is `username` (not forced); `AuthnContextClassRef` `unspecified`; the six `Role` attributes |
+| `exchange-idp-logout-response` | 2 698 | the `LogoutResponse` | its `Issuer` unprefixed in the default namespace, as in the first phase |
+
+## Findings of the exchange
+
+Numbered after those of the first phase. F1 is finding 1, F2 finding 2.
+
+**F1 and F2, answered by the model's metadata.**
+
+17. **F1 does not arise when the broker is configured from the model's metadata.** Keycloak's `import-config` sets
+    `postBindingAuthnRequest`, `postBindingResponse` and `postBindingLogout` together, to `true` whenever the metadata
+    lists a single sign-on service on HTTP-POST, whatever its place among the services, and to `false` when it lists
+    HTTP-Redirect only (measured on 30 September 2026 with three variants of the model's metadata: HTTP-POST only,
+    HTTP-Redirect then HTTP-POST, HTTP-POST then HTTP-Redirect, all `true`; HTTP-Redirect only, all `false`). The
+    broker then asks for `ProtocolBinding` HTTP-POST, and sends its requests over HTTP-POST. F1 stays for a broker
+    configured by hand, whose form leaves `postBindingResponse` off, and for an identity provider metadata without an
+    HTTP-POST single sign-on service. The specification refuses a response over HTTP-Redirect (section 8, 6.2 step 4),
+    which HTTP-Redirect cannot carry (Profiles §4.1.2): the rule stands, and the metadata of `heidi/saml` listing an
+    HTTP-POST single sign-on service is what makes a Keycloak broker comply.
+18. **F2 does not arise when the model's metadata says `WantAuthnRequestsSigned="true"`.** `import-config` carries it to
+    the broker's `wantAuthnRequestsSigned`, which signs both its `AuthnRequest` and its `LogoutRequest`, and publishes
+    the realm's key in the broker's metadata (the first phase's had none); over HTTP-POST the signature is an enveloped
+    `ds:Signature` that `validate()` verifies under that key. Without it, the broker's `LogoutRequest` is unsigned and
+    refused (`SignatureRequired`, M-2), as the first phase found. The metadata of `heidi/saml`'s identity provider
+    saying `WantAuthnRequestsSigned="true"` is what makes a Keycloak broker's logout acceptable.
+
+**What Keycloak accepted from the model.**
+
+19. **Attribute values without `xsi:type`.** The broker parsed the model's `AttributeStatement` (section 6.6, section
+    12: values as text, without `xsi:type`) and completed the login. No mapper of the broker reads the two attributes,
+    so the measure is that Keycloak's parser accepts them, not that it maps them.
+20. **The assertion signed, the response not** (`SignedParts::Assertion`, the writer's default), under the broker's
+    default `wantAssertionsSigned=true`; the model's times to the second under `allowedClockSkew=0`; its IDs, `_` and 40
+    hexadecimal digits; a persistent `NameID` that became the username `model-alice`.
+21. **A signature by another key is refused, both ways** (the two controls): the broker answers "Invalid signature in
+    response from identity provider.", realm `idp` "Invalid requester", HTTP 400 each. The logins above are therefore
+    proofs of the model's signatures under the certificates Keycloak imported, not of Keycloak's leniency.
+22. **The model's signed metadata**: both importers accept a document whose first child is a `ds:Signature`; whether
+    they verify it is not established here (neither is given a key to verify it with).
+23. **The model's requests without `KeyInfo`**: realm `idp` verifies the `AuthnRequest` and the `LogoutRequest` under
+    the client's certificate alone, as M-3 has the model do.
+
+**What the model accepted from Keycloak, with what it reads.**
+
+24. **The broker's `AuthnRequest`**: `AttributeConsumingServiceIndex="0"`, not read (6.2 step 5); its assertion
+    consumer service resolved to the HTTP-POST one by its URL (M-9), `index="1"`.
+25. **The broker's `LogoutRequest`**: no `NotOnOrAfter`, which 6.3 reads only when present.
+26. **Realm `idp`'s response to the model**: as the first phase's, `SignatureCoverage::Response`, six `Role`
+    attributes kept as six `Attribute` (6.1 step 11). The request's `NameIDPolicy` decides the format over the client's
+    `saml_name_id_format=username`, which is not forced.
+
+**Observations, no rule touched.**
+
+27. **`KeyName`**: realm `idp`'s signatures carry a `KeyName` next to the certificate, the broker's do not, while the
+    broker's metadata carries one; the model reads neither (M-3, D-7).
+28. **A re-run of the exchange** on a live container needs the user `model-alice` deleted from realm `sp`: deleting an
+    identity provider deletes its links and keeps the users, and the first broker login would then ask to link an
+    existing account. The script does it.
