@@ -77,4 +77,35 @@ final class IssuerReaderTest extends TestCase
             'The Issuer has a Format other than entity (M-8).',
         ];
     }
+
+    /**
+     * M-8, SAML Core §8.3.6: an entity identifier omits NameQualifier, SPNameQualifier and SPProvidedID, and an Issuer
+     * carrying one is not the peer's entity ID.
+     */
+    #[Test]
+    #[DataProvider('provideQualifiedIssuers')]
+    public function itRefusesAnIssuerCarryingAQualifier(string $fixture): void
+    {
+        // Given
+        $document = $this->document($fixture);
+        $message = 'The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).';
+
+        // Then
+        $this->expectException(IssuerMismatch::class);
+        $this->expectExceptionMessageIs($message);
+        self::assertCarriesNothingOf($message, $document);
+
+        // When
+        IssuerReader::read($this->child($document, 'Issuer'), 'https://idp.example.com/saml');
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideQualifiedIssuers(): iterable
+    {
+        yield 'NameQualifier' => ['hostile/assertion-issuer-name-qualifier-refused.xml'];
+        yield 'SPNameQualifier' => ['hostile/assertion-issuer-sp-name-qualifier-refused.xml'];
+        yield 'SPProvidedID' => ['hostile/assertion-issuer-sp-provided-id-refused.xml'];
+    }
 }
