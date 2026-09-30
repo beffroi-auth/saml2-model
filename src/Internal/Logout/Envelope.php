@@ -11,9 +11,8 @@ use Beffroi\Saml2\Model\Exception\IssuerMismatch;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
-use Beffroi\Saml2\Model\Internal\Metadata\Particle;
-use Beffroi\Saml2\Model\Internal\Metadata\Schema;
-use Beffroi\Saml2\Model\Saml;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Saml2\Model\Value\Uri;
 use Beffroi\Saml2\Model\Value\Version;
@@ -24,9 +23,9 @@ use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Core\Text;
 use function count;
-use function in_array;
 use DateTimeImmutable;
 use Dom\Element;
+use function in_array;
 use function sprintf;
 
 /**
@@ -41,14 +40,6 @@ use function sprintf;
 final readonly class Envelope
 {
     /**
-     * The name of an element of the protocol namespace.
-     */
-    public static function samlp(string $local): Name
-    {
-        return new Name(Saml::PROTOCOL, $local);
-    }
-
-    /**
      * Section 5.4: the root of a received message, checked to be samlp:$local.
      *
      * @throws MalformedMessage when it is another element
@@ -56,7 +47,7 @@ final readonly class Envelope
     public static function root(Document $document, string $local): Element
     {
         $root = $document->root();
-        if (! self::samlp($local)->matches($root)) {
+        if (! Schema::samlp($local)->matches($root)) {
             throw new MalformedMessage(sprintf('The root of the message is not a samlp:%s (section 5.4).', $local));
         }
 
@@ -98,7 +89,7 @@ final readonly class Envelope
         $children = Schema::children($root, $element, [
             Particle::of(Schema::saml('Issuer'), 0, 1),
             Particle::of(Schema::ds('Signature'), 0, 1),
-            new Particle('samlp:Extensions', [self::samlp('Extensions')], 0, 1),
+            new Particle('samlp:Extensions', [Schema::samlp('Extensions')], 0, 1),
             ...$body,
         ]);
         if ($children[0] === []) {

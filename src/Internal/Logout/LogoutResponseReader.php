@@ -9,7 +9,8 @@ use Beffroi\Saml2\Model\Exception\InResponseToMismatch;
 use Beffroi\Saml2\Model\Exception\IssuerMismatch;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
-use Beffroi\Saml2\Model\Internal\Metadata\Particle;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\LogoutResponse;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
@@ -36,7 +37,7 @@ final readonly class LogoutResponseReader
     public static function structure(Element $root): void
     {
         [$status] = Envelope::children($root, self::ELEMENT, 'Profiles §4.4.4.2', [
-            new Particle('samlp:Status', [Envelope::samlp('Status')], 1, 1),
+            new Particle('samlp:Status', [Schema::samlp('Status')], 1, 1),
         ]);
         StatusReader::structure($status[0]);
     }
@@ -70,7 +71,7 @@ final readonly class LogoutResponseReader
             $issuer,
             $destination,
             $inResponseTo,
-            StatusReader::read(Children::one($root, Envelope::samlp('Status'))),
+            StatusReader::read(Children::one($root, Schema::samlp('Status'))),
         );
     }
 }

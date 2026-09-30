@@ -10,6 +10,8 @@ use Beffroi\Saml2\Model\Assertion\AttributeNameFormat;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Exception\MixedContent;
@@ -51,40 +53,44 @@ final readonly class AttributeStatementReader
      */
     public static function read(Element $statement): array
     {
-        Structure::unsupported(
+        Schema::unsupported(
             $statement,
-            [Structure::saml('EncryptedAttribute')],
+            [Schema::saml('EncryptedAttribute')],
             'The attribute statement holds a saml:EncryptedAttribute, which the package does not support until sub-spike 9e (section 6.7).',
         );
-        $attributes = Children::named($statement, Structure::saml('Attribute'));
+        $attributes = Children::named($statement, Schema::saml('Attribute'));
         if (count($attributes) > self::MAX_ATTRIBUTES) {
             throw new LimitExceeded(sprintf(
                 'The AttributeStatement holds more than %d Attribute, the bound of section 7 (M-17).',
                 self::MAX_ATTRIBUTES,
             ));
         }
-        Structure::sequence(
-            $statement,
-            [Particle::some(Structure::saml('Attribute'), 'saml:Attribute')],
-            'saml:AttributeStatement',
-        );
+        Schema::children($statement, 'saml:AttributeStatement', [Particle::of(
+            Schema::saml('Attribute'),
+            1,
+            Particle::UNBOUNDED,
+        )]);
 
         return array_map(self::attribute(...), $attributes);
     }
 
     private static function attribute(Element $attribute): Attribute
     {
-        $values = Children::named($attribute, Structure::saml('AttributeValue'));
+        $values = Children::named($attribute, Schema::saml('AttributeValue'));
         if (count($values) > self::MAX_VALUES) {
             throw new LimitExceeded(sprintf(
                 'An Attribute holds more than %d AttributeValue, the bound of section 7 (M-17).',
                 self::MAX_VALUES,
             ));
         }
-        Structure::sequence($attribute, [Particle::any([Structure::saml('AttributeValue')])], 'saml:Attribute');
+        Schema::children($attribute, 'saml:Attribute', [Particle::of(
+            Schema::saml('AttributeValue'),
+            0,
+            Particle::UNBOUNDED,
+        )]);
 
         return new Attribute(
-            Structure::attribute($attribute, 'Name', 'The saml:Attribute has no Name (M-5).'),
+            Schema::attribute($attribute, 'saml:Attribute', 'Name'),
             AttributeNameFormat::fromUri(Attributes::optional($attribute, new Name(null, 'NameFormat'))),
             Attributes::optional($attribute, new Name(null, 'FriendlyName')),
             array_map(Text::of(...), $values),

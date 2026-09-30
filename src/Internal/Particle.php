@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Beffroi\Saml2\Model\Internal\Metadata;
+namespace Beffroi\Saml2\Model\Internal;
 
+use function array_any;
 use Beffroi\Xml\Core\Name;
 use Dom\Element;
 use const PHP_INT_MAX;
 
 /**
- * One place of a sequence of the SAML metadata schema (M-5): the element names it accepts, a choice when there are
+ * One place of a sequence of the SAML 2.0 schemas (M-5): the element names it accepts, a choice when there are
  * several, and how many times, from $min to $max.
  *
- * @internal
+ * @internal outside the compatibility promise of section 5
  */
 final readonly class Particle
 {

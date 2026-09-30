@@ -611,7 +611,7 @@ final class MetadataReaderTest extends TestCase
         yield 'the signature after the role' => [
             'hostile/metadata-signature-not-first-refused.xml',
             MalformedMessage::class,
-            'An md:EntityDescriptor holds a child the schema does not allow there, or out of its order (M-5).',
+            'The md:EntityDescriptor holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'md:EntitiesDescriptor' => [
             'hostile/metadata-entities-descriptor-refused.xml',
@@ -729,7 +729,7 @@ final class MetadataReaderTest extends TestCase
         yield 'an md:KeyDescriptor without ds:KeyInfo' => [
             'key-descriptor-without-key-info',
             MalformedMessage::class,
-            'An md:KeyDescriptor holds no ds:KeyInfo (M-5).',
+            'The md:KeyDescriptor holds no ds:KeyInfo (M-4).',
         ];
         yield 'a certificate of an RSA key of 1024 bits' => [
             'rsa-1024-signing-certificate',
@@ -739,7 +739,7 @@ final class MetadataReaderTest extends TestCase
         yield 'an md:EncryptionMethod without Algorithm' => [
             'encryption-method-without-algorithm',
             MalformedMessage::class,
-            'An md:EncryptionMethod has no Algorithm (M-5).',
+            'The md:EncryptionMethod has no Algorithm (M-5).',
         ];
         yield 'a root that is not md:EntityDescriptor' => [
             'root-not-entity-descriptor',
@@ -749,27 +749,27 @@ final class MetadataReaderTest extends TestCase
         yield 'no entityID' => [
             'entity-descriptor-without-entity-id',
             MalformedMessage::class,
-            'An md:EntityDescriptor has no entityID (M-5).',
+            'The md:EntityDescriptor has no entityID (M-5).',
         ];
         yield 'md:Extensions after a role' => [
             'extensions-after-a-role',
             MalformedMessage::class,
-            'An md:EntityDescriptor holds a child the schema does not allow there, or out of its order (M-5).',
+            'The md:EntityDescriptor holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'two md:Extensions' => [
             'two-extensions',
             MalformedMessage::class,
-            'An md:EntityDescriptor holds more than one md:Extensions (M-5).',
+            'The md:EntityDescriptor holds more than one md:Extensions (M-4).',
         ];
         yield 'an unknown md: element in a role' => [
             'unknown-metadata-element',
             MalformedMessage::class,
-            'An md:IDPSSODescriptor holds a child the schema does not allow there, or out of its order (M-5).',
+            'The md:IDPSSODescriptor holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'an element of another namespace in a role' => [
             'element-of-another-namespace-in-a-role',
             MalformedMessage::class,
-            'An md:IDPSSODescriptor holds a child the schema does not allow there, or out of its order (M-5).',
+            'The md:IDPSSODescriptor holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'roles and an md:AffiliationDescriptor' => [
             'roles-and-affiliation',
@@ -789,12 +789,12 @@ final class MetadataReaderTest extends TestCase
         yield 'a role without protocolSupportEnumeration' => [
             'role-without-protocol-support-enumeration',
             MalformedMessage::class,
-            'An md:IDPSSODescriptor has no protocolSupportEnumeration (M-5).',
+            'The md:IDPSSODescriptor has no protocolSupportEnumeration (M-5).',
         ];
         yield 'an identity provider without single sign-on service' => [
             'identity-provider-without-single-sign-on-service',
             MalformedMessage::class,
-            'An md:IDPSSODescriptor holds no md:SingleSignOnService (M-5).',
+            'The md:IDPSSODescriptor holds no md:SingleSignOnService (M-4).',
         ];
         yield 'an identity provider with Artifact and SOAP single sign-on services only' => [
             'identity-provider-with-artifact-and-soap-single-sign-on-only',
@@ -804,7 +804,7 @@ final class MetadataReaderTest extends TestCase
         yield 'a service provider without assertion consumer service' => [
             'service-provider-without-assertion-consumer-service',
             MalformedMessage::class,
-            'An md:SPSSODescriptor holds no md:AssertionConsumerService (M-5).',
+            'The md:SPSSODescriptor holds no md:AssertionConsumerService (M-4).',
         ];
         yield 'a service provider with HTTP-Redirect and Artifact assertion consumer services only' => [
             'service-provider-with-redirect-assertion-consumer-service-only',
@@ -814,27 +814,27 @@ final class MetadataReaderTest extends TestCase
         yield 'an endpoint without Binding' => [
             'endpoint-without-binding',
             MalformedMessage::class,
-            'An md:SingleSignOnService has no Binding (M-5).',
+            'The md:SingleSignOnService has no Binding (M-5).',
         ];
         yield 'an endpoint without Location' => [
             'endpoint-without-location',
             MalformedMessage::class,
-            'An md:SingleSignOnService has no Location (M-5).',
+            'The md:SingleSignOnService has no Location (M-5).',
         ];
         yield 'an assertion consumer service without index' => [
             'assertion-consumer-service-without-index',
             MalformedMessage::class,
-            'An md:AssertionConsumerService has no index (M-5).',
+            'The md:AssertionConsumerService has no index (M-5).',
         ];
         yield 'an assertion consumer service without Location' => [
             'assertion-consumer-service-without-location',
             MalformedMessage::class,
-            'An md:AssertionConsumerService has no Location (M-5).',
+            'The md:AssertionConsumerService has no Location (M-5).',
         ];
         yield 'the signature after the role' => [
             'signature-not-first',
             MalformedMessage::class,
-            'An md:EntityDescriptor holds a child the schema does not allow there, or out of its order (M-5).',
+            'The md:EntityDescriptor holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
     }
 

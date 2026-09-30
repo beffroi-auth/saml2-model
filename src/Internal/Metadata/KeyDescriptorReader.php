@@ -7,6 +7,8 @@ namespace Beffroi\Saml2\Model\Internal\Metadata;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Value\Uri;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;

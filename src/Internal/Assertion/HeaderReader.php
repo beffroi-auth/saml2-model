@@ -9,6 +9,7 @@ use Beffroi\Saml2\Model\Exception\IssuerMismatch;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Saml2\Model\Value\Version;
 use Beffroi\Xml\Core\Children;
@@ -34,20 +35,16 @@ final readonly class HeaderReader
      */
     public static function read(Element $assertion, AssertionContext $context): array
     {
-        Version::read(Structure::attribute($assertion, 'Version', 'The saml:Assertion has no Version (M-5).'));
-        $id = Structure::attribute($assertion, 'ID', 'The saml:Assertion has no ID (M-5).');
-        $issueInstant = Time::read(Structure::attribute(
-            $assertion,
-            'IssueInstant',
-            'The saml:Assertion has no IssueInstant (M-5).',
-        ));
+        Version::read(Schema::attribute($assertion, 'saml:Assertion', 'Version'));
+        $id = Schema::attribute($assertion, 'saml:Assertion', 'ID');
+        $issueInstant = Time::read(Schema::attribute($assertion, 'saml:Assertion', 'IssueInstant'));
         if ($issueInstant > $context->latest()) {
             throw new OutsideValidityWindow('The IssueInstant of the assertion is later than now plus the clock skew (M-7).');
         }
-        $issuer = IssuerReader::read(Children::one($assertion, Structure::saml('Issuer')), $context->identityProvider);
-        Structure::unsupported(
+        $issuer = IssuerReader::read(Children::one($assertion, Schema::saml('Issuer')), $context->identityProvider);
+        Schema::unsupported(
             $assertion,
-            [Structure::saml('Advice')],
+            [Schema::saml('Advice')],
             'The assertion holds a saml:Advice, which the package does not support (section 8).',
         );
 

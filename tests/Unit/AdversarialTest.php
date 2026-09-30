@@ -772,7 +772,7 @@ final class AdversarialTest extends TestCase
         yield 'issuer in the protocol namespace' => [
             'authn-request-issuer-in-the-protocol-namespace',
             MalformedMessage::class,
-            'The samlp:AuthnRequest holds a child the schema does not allow there, or out of its order (M-5).',
+            'The samlp:AuthnRequest holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'relative assertion consumer service url under an xml base' => [
             'authn-request-relative-assertion-consumer-service-url-under-an-xml-base',
@@ -1185,7 +1185,7 @@ final class AdversarialTest extends TestCase
         yield 'key info in a namespace one character off' => [
             'metadata-key-info-in-a-namespace-one-character-off',
             MalformedMessage::class,
-            'An md:KeyDescriptor holds a child the schema does not allow there, or out of its order (M-5).',
+            'The md:KeyDescriptor holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'relative location under an xml base' => [
             'metadata-relative-location-under-an-xml-base',

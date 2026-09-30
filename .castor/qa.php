@@ -59,20 +59,19 @@ const INFECTION_STRICT_FILES = [
     'src/Metadata/IndexedEndpoints.php',
     // Section 9: the metadata reader (section 6.5).
     'src/Metadata/MetadataReader.php',
+    // Section 9: the one reading model of the SAML schemas, every strict reader's (M-5).
+    'src/Internal/Schema.php',
+    'src/Internal/Particle.php',
     // Section 9: the strict readers of metadata and the rules its roles share.
     'src/Internal/Metadata/EndpointReader.php',
     'src/Internal/Metadata/EntityDescriptorReader.php',
     'src/Internal/Metadata/KeyDescriptorReader.php',
-    'src/Internal/Metadata/Particle.php',
     'src/Internal/Metadata/RoleReader.php',
     'src/Internal/Metadata/RoleRules.php',
-    'src/Internal/Metadata/Schema.php',
     // Section 9: the rule of M-2 for a received protocol message.
     'src/Internal/Protocol/MessageAuthentication.php',
     // Section 9: the strict readers of the assertion and their rules, sections 6.1 steps 7 to 11.
     'src/Internal/Assertion/AssertionContext.php',
-    'src/Internal/Assertion/Particle.php',
-    'src/Internal/Assertion/Structure.php',
     'src/Internal/Assertion/IssuerReader.php',
     'src/Internal/Assertion/HeaderReader.php',
     'src/Internal/Assertion/SubjectReader.php',

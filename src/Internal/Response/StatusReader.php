@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Internal\Response;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
-use Beffroi\Saml2\Model\Internal\Assertion\Particle;
-use Beffroi\Saml2\Model\Internal\Assertion\Structure;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\SecondLevelStatusCode;
 use Beffroi\Saml2\Model\Protocol\Status;
 use Beffroi\Saml2\Model\Protocol\StatusCode;
@@ -30,21 +30,13 @@ final readonly class StatusReader
      */
     public static function read(Element $status): Status
     {
-        Structure::sequence(
-            $status,
-            [
-                Particle::one(self::samlp('StatusCode'), 'samlp:StatusCode'),
-                Particle::optional(self::samlp('StatusMessage'), 'samlp:StatusMessage'),
-                Particle::optional(self::samlp('StatusDetail'), 'samlp:StatusDetail'),
-            ],
-            'samlp:Status',
-        );
+        Schema::children($status, 'samlp:Status', [
+            Particle::of(self::samlp('StatusCode'), 1, 1),
+            Particle::of(self::samlp('StatusMessage'), 0, 1),
+            Particle::of(self::samlp('StatusDetail'), 0, 1),
+        ]);
         $code = Children::one($status, self::samlp('StatusCode'));
-        Structure::sequence(
-            $code,
-            [Particle::optional(self::samlp('StatusCode'), 'samlp:StatusCode')],
-            'samlp:StatusCode',
-        );
+        Schema::children($code, 'samlp:StatusCode', [Particle::of(self::samlp('StatusCode'), 0, 1)]);
         $second = Children::named($code, self::samlp('StatusCode'));
 
         return new Status(
@@ -55,7 +47,7 @@ final readonly class StatusReader
 
     private static function value(Element $code): string
     {
-        return Structure::attribute($code, 'Value', 'The samlp:StatusCode has no Value (M-5).');
+        return Schema::attribute($code, 'samlp:StatusCode', 'Value');
     }
 
     private static function samlp(string $local): Name

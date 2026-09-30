@@ -431,7 +431,7 @@ final class AuthnRequestValidatorTest extends TestCase
      */
     public static function provideStructuresOutsideTheSchema(): iterable
     {
-        $order = 'The samlp:AuthnRequest holds a child the schema does not allow there, or out of its order (M-5).';
+        $order = 'The samlp:AuthnRequest holds a child out of the order of the schema, or one it does not allow there (M-5).';
         yield 'a ds:Signature before the saml:Issuer' => [
             'hostile/authn-request-signature-before-issuer-refused.xml',
             $order,
