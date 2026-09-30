@@ -420,8 +420,13 @@ final class AdversarialTest extends TestCase
         ];
         yield 'destination with a zero width space' => [
             'response-destination-with-a-zero-width-space',
-            DestinationMismatch::class,
-            'The Destination of the response is not the URL at which it arrived (M-8).',
+            MalformedMessage::class,
+            'A URI holds whitespace, a control or format character, or bytes that are not UTF-8 (M-6).',
+        ];
+        yield 'name id with a right to left override' => [
+            'response-name-id-with-a-right-to-left-override',
+            InvalidNameId::class,
+            'The NameID holds a format character, invisible or reordering (M-12).',
         ];
         yield 'recipient scheme in upper case' => [
             'response-recipient-scheme-in-upper-case',
@@ -676,10 +681,6 @@ final class AdversarialTest extends TestCase
         yield 'assertion issued a year ago within its bearer window' => [
             'response-assertion-issued-a-year-ago-within-its-bearer-window',
             [],
-        ];
-        yield 'name id with a right to left override' => [
-            'response-name-id-with-a-right-to-left-override',
-            ['nameId' => "_7a2f\u{202E}4c1d9e"],
         ];
     }
 

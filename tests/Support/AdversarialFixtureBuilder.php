@@ -951,7 +951,7 @@ final class AdversarialFixtureBuilder
                 self::replace(self::AUDIENCE, self::AUDIENCE . '<saml:Audience/>', self::response()),
                 ['_assertion'],
             ),
-            self::accepted('response-name-id-with-a-right-to-left-override') => self::signed(
+            self::refused('response-name-id-with-a-right-to-left-override') => self::signed(
                 self::replace('>_7a2f4c1d9e<', ">_7a2f\u{202E}4c1d9e<", self::response()),
                 ['_assertion'],
             ),

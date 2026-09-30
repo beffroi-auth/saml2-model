@@ -12,8 +12,10 @@ use function preg_match;
 
 /**
  * A saml:NameID (SAML Core §2.2.3) under the rule of its format (M-12), whoever builds it: the value as read with
- * Text::of() on the verified document, never trimmed, neither empty nor surrounded by whitespace; at most 256
- * characters for a persistent or a transient identifier (SAML Core §8.3.7, §8.3.8), 1024 for the others (section 7);
+ * Text::of() on the verified document, never trimmed, neither empty nor surrounded by whitespace, and without a format
+ * character anywhere, a right-to-left override or a zero-width space, so that what is displayed is what is compared
+ * (M-6); at most 256 characters for a persistent or a transient identifier (SAML Core §8.3.7, §8.3.8), 1024 for the
+ * others (section 7);
  * an entity identifier is a URI without qualifier (SAML Core §8.3.6), an email address an addr-spec (SAML Core
  * §8.3.2), and the qualifiers of a persistent or a transient identifier name an entity, a URI (SAML Core §8.3.7).
  */
@@ -46,6 +48,9 @@ final readonly class NameId
         // false, for bytes that are not UTF-8, refuses too
         if (preg_match('~^[\p{Z}\p{Cc}]|[\p{Z}\p{Cc}]\z~u', $value) !== 0) {
             throw new InvalidNameId('The NameID starts or ends with whitespace or a control character, or is not UTF-8 (M-12).');
+        }
+        if (preg_match('~\p{Cf}~u', $value) === 1) {
+            throw new InvalidNameId('The NameID holds a format character, invisible or reordering (M-12).');
         }
         if ($format === NameIdFormat::Entity) {
             if ($nameQualifier !== null || $spNameQualifier !== null || $spProvidedId !== null) {

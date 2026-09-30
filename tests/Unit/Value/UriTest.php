@@ -71,7 +71,8 @@ final class UriTest extends TestCase
     }
 
     /**
-     * M-6, SAML Core §1.3.2: whitespace or a control character, anywhere, and bytes that are not UTF-8.
+     * §9.2 row 26, M-6, SAML Core §1.3.2: whitespace, a control or a format character, anywhere, and bytes that are not
+     * UTF-8.
      */
     #[Test]
     #[DataProvider('provideWhitespaceOrControl')]
@@ -79,7 +80,7 @@ final class UriTest extends TestCase
     {
         // Then
         $this->expectException(MalformedMessage::class);
-        $this->expectExceptionMessageIs('A URI holds whitespace, a control character or bytes that are not UTF-8 (M-6).');
+        $this->expectExceptionMessageIs('A URI holds whitespace, a control or format character, or bytes that are not UTF-8 (M-6).');
 
         // When
         Uri::read($value);
@@ -102,6 +103,9 @@ final class UriTest extends TestCase
         yield 'a line separator' => ["https://example.com/\u{2028}"];
         yield 'an ideographic space' => ["https://example.com/\u{3000}"];
         yield 'a byte that is not UTF-8' => ["https://example.com/\xFF"];
+        yield 'a zero-width space' => ["https://example.com/acs\u{200B}"];
+        yield 'a right-to-left override' => ["https://example.com/\u{202E}lmth.sca"];
+        yield 'a byte order mark' => ["\u{FEFF}https://example.com/"];
     }
 
     /**

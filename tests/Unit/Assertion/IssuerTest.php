@@ -89,7 +89,7 @@ final class IssuerTest extends TestCase
     {
         // Then
         $this->expectException(MalformedMessage::class);
-        $this->expectExceptionMessageIs('A URI holds whitespace, a control character or bytes that are not UTF-8 (M-6).');
+        $this->expectExceptionMessageIs('A URI holds whitespace, a control or format character, or bytes that are not UTF-8 (M-6).');
 
         // When
         new Issuer($entityId);

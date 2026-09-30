@@ -148,6 +148,35 @@ final class NameIdTest extends TestCase
     }
 
     /**
+     * §9.2 row 27, M-12, M-6: a Unicode format character anywhere in the value, invisible or reordering, so that the
+     * identifier displayed is the one compared.
+     */
+    #[Test]
+    #[DataProvider('provideValuesWithAFormatCharacter')]
+    public function itRefusesAFormatCharacterAnywhere(string $value): void
+    {
+        // Then
+        $this->expectException(InvalidNameId::class);
+        $this->expectExceptionMessageIs('The NameID holds a format character, invisible or reordering (M-12).');
+
+        // When
+        new NameId($value, NameIdFormat::Persistent);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideValuesWithAFormatCharacter(): iterable
+    {
+        yield 'a right-to-left override inside' => ["_7a2f\u{202E}4c1d9e"];
+        yield 'a zero-width space inside' => ["_7a2f\u{200B}4c1d9e"];
+        yield 'a leading zero-width space' => ["\u{200B}_7a2f4c1d9e"];
+        yield 'a trailing right-to-left override' => ["_7a2f4c1d9e\u{202E}"];
+        yield 'a byte order mark inside' => ["_7a2f\u{FEFF}4c1d9e"];
+        yield 'a soft hyphen inside' => ["_7a2f\u{AD}4c1d9e"];
+    }
+
+    /**
      * §9.2 row 27, M-12, SAML Core §8.3.7, §8.3.8: a persistent or a transient identifier over 256 characters.
      */
     #[Test]
