@@ -23,6 +23,7 @@ use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Core\Text;
 use DateTimeImmutable;
 use Dom\Element;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -131,6 +132,56 @@ final class LogoutRequestWriterTest extends TestCase
             LogoutFixtures::identityProvider(),
             LogoutFixtures::serviceProvider(),
         ];
+    }
+
+    /**
+     * Section 6.6 step 1, M-15, section 6.3: a NotOnOrAfter not later than the IssueInstant, the two compared as the
+     * writer writes them, to the second, is refused before anything is built, since the reader would refuse it.
+     */
+    #[Test]
+    #[DataProvider('provideNotOnOrAfterNotAfterTheIssueInstant')]
+    public function itRefusesANotOnOrAfterNotLaterThanTheIssueInstant(DateTimeImmutable $notOnOrAfter): void
+    {
+        // Given
+        $request = LogoutFixtures::request($notOnOrAfter);
+
+        // Then
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessageIs('The NotOnOrAfter of the LogoutRequest is not later than its IssueInstant, to the second, which its reader refuses (section 6.6).');
+
+        // When
+        new LogoutRequestWriter()->write($request, null);
+    }
+
+    /**
+     * @return iterable<string, array{DateTimeImmutable}>
+     */
+    public static function provideNotOnOrAfterNotAfterTheIssueInstant(): iterable
+    {
+        yield 'at the IssueInstant' => [new DateTimeImmutable('2026-09-30T12:00:00Z')];
+        yield 'a second before the IssueInstant' => [new DateTimeImmutable('2026-09-30T11:59:59Z')];
+        yield 'later within the second of the IssueInstant, written equal to it' => [
+            new DateTimeImmutable('2026-09-30T12:00:00.500000Z'),
+        ];
+    }
+
+    /**
+     * Section 6.6 step 1, M-15: a NotOnOrAfter one second after the IssueInstant is written, and read back.
+     */
+    #[Test]
+    public function itWritesANotOnOrAfterOneSecondAfterTheIssueInstant(): void
+    {
+        // Given
+        $request = LogoutFixtures::request(new DateTimeImmutable('2026-09-30T12:00:01Z'));
+
+        // When
+        $document = LogoutFixtures::reload(new LogoutRequestWriter()->write($request, null));
+
+        // Then
+        static::assertSame(
+            '2026-09-30T12:00:01Z',
+            Attributes::required($document->root(), new Name(null, 'NotOnOrAfter')),
+        );
     }
 
     /**

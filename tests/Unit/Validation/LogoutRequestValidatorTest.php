@@ -466,15 +466,15 @@ final class LogoutRequestValidatorTest extends TestCase
             'The IssueInstant of the message is older than maxMessageAge (M-7).',
         ];
         yield 'a NotOnOrAfter at now minus the skew' => [
-            0,
-            '2026-09-30T11:57:00Z',
+            200,
+            '2026-09-30T12:00:20Z',
             'The NotOnOrAfter of the LogoutRequest is at or before now minus the clock skew (M-7).',
         ];
     }
 
     /**
-     * M-7: the edges of the windows are accepted: an IssueInstant at now plus the skew, or exactly maxMessageAge old,
-     * a NotOnOrAfter one second after now minus the skew.
+     * M-7, section 6.3: the edges of the windows are accepted: an IssueInstant at now plus the skew, or exactly
+     * maxMessageAge old, a NotOnOrAfter one second after now minus the skew, or one second after the IssueInstant.
      */
     #[Test]
     #[DataProvider('provideInstantsAccepted')]
@@ -497,7 +497,36 @@ final class LogoutRequestValidatorTest extends TestCase
     {
         yield 'issued at now plus the skew' => [-180, '2026-09-30T12:05:00Z'];
         yield 'exactly maxMessageAge old' => [300, '2026-09-30T12:10:00Z'];
-        yield 'a NotOnOrAfter one second after now minus the skew' => [0, '2026-09-30T11:57:01Z'];
+        yield 'a NotOnOrAfter one second after now minus the skew' => [200, '2026-09-30T12:00:21Z'];
+        yield 'a NotOnOrAfter one second after the IssueInstant' => [0, '2026-09-30T12:00:01Z'];
+    }
+
+    /**
+     * §9.2 row 34, section 6.3, SAML Core §3.7.1: a request whose NotOnOrAfter is at or before its IssueInstant
+     * expires when it is issued, and is malformed, whatever the clock says.
+     */
+    #[Test]
+    #[DataProvider('provideNotOnOrAfterNotAfterTheIssueInstant')]
+    public function itRefusesANotOnOrAfterNotLaterThanTheIssueInstant(string $notOnOrAfter): void
+    {
+        // Given
+        $document = $this->variant(['NotOnOrAfter="2026-09-30T12:05:00Z"' => 'NotOnOrAfter="' . $notOnOrAfter . '"']);
+
+        // Then
+        $this->expectException(MalformedMessage::class);
+        $this->expectExceptionMessageIs('The NotOnOrAfter of the LogoutRequest is not later than its IssueInstant (section 6.3).');
+
+        // When
+        $this->byBinding($document);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideNotOnOrAfterNotAfterTheIssueInstant(): iterable
+    {
+        yield 'at the IssueInstant' => ['2026-09-30T12:00:00Z'];
+        yield 'a second before the IssueInstant' => ['2026-09-30T11:59:59Z'];
     }
 
     /**
