@@ -7,11 +7,14 @@ namespace Beffroi\Saml2\Model\Internal\Assertion;
 use Beffroi\Saml2\Model\Assertion\Assertion;
 use Beffroi\Saml2\Model\Exception\MessageRefused;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Saml;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
+use Beffroi\Xml\Dsig\Verified;
 use function count;
+use Dom\Element;
 
 /**
  * The strict reader of an assertion, section 6.1 steps 7 to 11 in order, over the document of a verification (M-1): the
@@ -19,8 +22,9 @@ use function count;
  * after the Issuer accepted and not read (the verification that handed the document over removed the one it verified,
  * D-10), one AuthnStatement, at most one AttributeStatement, any other statement refused by name (section 8); then the
  * header, the subject, the conditions, the authentication statement and the attributes, each by its reader. It takes a
- * Document, never an element: which element was verified is the validator's decision (story #7). The replay of step 13
- * is the validator's too, with the values this returns.
+ * Document or a Verified, never an element: which element was verified is the validator's decision (section 6.1 step
+ * 5), and readVerified() is the one entry point the package calls, so that no path reads an assertion outside the
+ * Document of a verification (M-1). The replay of step 13 is the validator's, with the values this returns.
  *
  * @internal outside the compatibility promise of section 5
  */
@@ -38,6 +42,41 @@ final readonly class AssertionReader
         if (! Structure::saml('Assertion')->matches($assertion)) {
             throw new MalformedMessage('The root of the document is not a saml:Assertion (M-4).');
         }
+
+        return self::assertion($assertion, $context);
+    }
+
+    /**
+     * The assertion a verification covered (M-1, section 6.1 step 5): the root of Verified::$document when the
+     * assertion's own signature was verified, or the one saml:Assertion child of that root when the response's
+     * signature covered an unsigned assertion; read as read() reads it, nothing more accepted.
+     *
+     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
+     * @throws MixedContent when a value holds an element
+     */
+    public static function readVerified(Verified $verified, AssertionContext $context): Assertion
+    {
+        $root = $verified->document->root();
+        if (Structure::saml('Assertion')->matches($root)) {
+            return self::assertion($root, $context);
+        }
+        if (! new Name(Saml::PROTOCOL, 'Response')->matches($root)) {
+            throw new MalformedMessage('The root of the verified document is neither a saml:Assertion nor a samlp:Response (M-1).');
+        }
+        $assertions = Children::named($root, Structure::saml('Assertion'));
+        if (count($assertions) !== 1) {
+            throw new MalformedMessage('The verified samlp:Response does not hold exactly one saml:Assertion (M-4).');
+        }
+
+        return self::assertion($assertions[0], $context);
+    }
+
+    /**
+     * @throws MessageRefused
+     * @throws MixedContent
+     */
+    private static function assertion(Element $assertion, AssertionContext $context): Assertion
+    {
         Structure::unsupported(
             $assertion,
             [Structure::saml('Statement'), Structure::saml('AuthzDecisionStatement')],
