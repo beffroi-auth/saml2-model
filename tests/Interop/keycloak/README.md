@@ -176,3 +176,136 @@ OK   keycloak-26.7.4-idp-response-2026-09-30 /*/*[local-name()="Signature"]: ver
 ```
 
 Two documents are signed, both by realm `idp`, one signature each; the four others carry none.
+
+`verify.sh` would verify both signatures of a document signed twice (a response and its assertion); no document of
+this capture holds two, so that path is not exercised by Keycloak's defaults.
+
+## What realm `idp` signs by default
+
+**The response, and not the assertion**, as section 9.5 of the specification expected; confirmed on 30 September 2026.
+
+- **The capture.** In `keycloak-26.7.4-idp-response-2026-09-30.xml` the one `dsig:Signature` is a direct child of
+  `samlp:Response`, right after its `saml:Issuer`, and its one `Reference` has `URI="#ID_68d700b7-9458-4006-9cff-06ee97ed6164"`,
+  the `ID` of the response; the `saml:Assertion` has no `Signature` child. xmlsec1 verifies that signature under the
+  certificate of realm `idp`'s metadata, and refuses it under a throwaway key and on an altered copy (above).
+- **The configuration.** The SAML client the admin REST API creates from a `clientId` and a `protocol` alone carries
+  `saml.server.signature=true` (the console's "Sign documents") and no `saml.assertion.signature` ("Sign assertions",
+  off). The client of realm `idp` carries the same.
+- **The consequence.** The broker as the console creates it wants the assertion signed (`wantAssertionsSigned=true`)
+  and refuses this response: `error="invalid_signature"`, HTTP 400 at the broker endpoint. For the model, a Keycloak
+  response under its defaults is the branch `SignatureCoverage::Response` of M-2, which SimpleSAMLphp's defaults
+  leave aside.
+
+The other defaults of realm `idp` as an identity provider, read on the same capture:
+
+| | |
+|---|---|
+| Encryption | None: the response holds a `saml:Assertion` in clear; `saml.encrypt` is not among the attributes the REST API sets ("Encrypt assertions" off) |
+| Signature algorithm | `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`, with the realm's generated RSA key of 2048 bits, its certificate self-signed (`CN=idp`, ten years) |
+| Digest algorithm | `http://www.w3.org/2001/04/xmlenc#sha256` |
+| Canonicalization | `http://www.w3.org/2001/10/xml-exc-c14n#` for `SignedInfo`; the transforms are `enveloped-signature` then `xml-exc-c14n#`; no `InclusiveNamespaces` anywhere |
+| Signature form | Enveloped, prefix `dsig`, after the `Issuer`; `KeyInfo` holds a `KeyName` (the key ID) and an `X509Data` with the certificate |
+| `NameID` format | Observed: `urn:oasis:names:tc:SAML:2.0:nameid-format:persistent`, value `G-` and a UUID, because the broker's `NameIDPolicy` asks for it and the client does not force its own (`saml_force_name_id_format=false`). The client's configured format, `saml_name_id_format=username`, is not exercised by this exchange |
+| `xsi:type` on attribute values | Yes: `xsi:type="xs:string"` on every `saml:AttributeValue`, with `xmlns:xs` and `xmlns:xsi` declared on that element itself |
+| Attributes | The default client scope `role_list`: one `saml:Attribute Name="Role"` per role of the user, composites expanded, realm roles (`default-roles-idp`, `offline_access`, `uma_authorization`) and roles of the client `account` (`manage-account`, `manage-account-links`, `view-profile`) alike, `NameFormat` basic, one value each |
+| Binding of the response | HTTP-POST ("Force POST binding" on by default), although the request asked for HTTP-Redirect |
+
+## Measurements
+
+One row per captured document. The windows are measured against the `IssueInstant` of the assertion
+(`10:27:56.329Z`), which its `Conditions` and its confirmation belong to; the response's `IssueInstant` is 2 ms later
+(`.331Z`) and the `AuthnInstant` 3 ms later (`.332Z`). Every `ID` is `ID_` followed by a UUID, 39 characters; the
+longest URI has 54 characters.
+
+| Document | Bytes | Signed | Algorithms, `InclusiveNamespaces` | `Conditions` against `IssueInstant` | Bearer `NotOnOrAfter` against `IssueInstant` | `SessionNotOnOrAfter` | Fractional digits | `NameID` format | Attributes, most values | `xsi:type` | `AudienceRestriction` | `SessionIndex` | `Destination` |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `idp-metadata` | 3 374 | nothing | none | | | | no time, no `validUntil` | lists `persistent`, `transient`, `1.1:unspecified`, `1.1:emailAddress` | | | | | |
+| `sp-metadata` | 1 506 | nothing | none | | | | no time, no `validUntil` | lists `persistent` | | | | | |
+| `sp-authn-request` | 714 | nothing, HTTP-Redirect without `SigAlg` | none | | | | 3 | asks `persistent`, `AllowCreate="true"` | | | | | the single sign-on service of realm `idp` |
+| `idp-response` | 5 695 | the `Response`, not the `Assertion` | rsa-sha256, sha256, exc-c14n, transforms enveloped then exc-c14n; no `InclusiveNamespaces` | `NotBefore` 2 s before, `NotOnOrAfter` 58 s after: 60 s wide | 298 s after (`NotBefore` + 300 s) | `AuthnInstant` + 36 000 s (10 h) | 3, on all seven times | `persistent`, 38 characters | 6 `Attribute`, all named `Role`, 1 value each | `xs:string` on every value | 1, with 1 `Audience`, the broker's entity ID | 62 characters, `<24 characters>::<UUID>` | the broker endpoint, equal to the bearer `Recipient` |
+| `sp-logout-request` | 639 | nothing, HTTP-Redirect without `SigAlg` | none | | no `NotOnOrAfter` | | 3 | `persistent`, the `NameID` of the response | | | | 1, the one of the response | the single logout service of realm `idp` |
+| `idp-logout-response` | 2 716 | the `LogoutResponse` | as the response | | | | 3 | | | | | | the broker endpoint |
+
+The widths equal defaults of realm `idp` read with `kcadm.sh get realms/idp`: `accessCodeLifespan` 60 s for
+`Conditions`, `ssoSessionMaxLifespan` 36 000 s for `SessionNotOnOrAfter`; the bearer window of 300 s equals both
+`accessTokenLifespan` and `accessCodeLifespanUserAction`, and which of the two sets it is not established here. No
+count comes near a bound of section 7 of the specification or of core.md §7 (depth 6, 16 namespace declarations in
+the response, at most 8 attributes on an element).
+
+## Findings
+
+Each document read against sections 4, 6, 7 and 8 of `spec/model.md`, and against `xml-security`'s `core.md` and
+`dsig.md`, whose refusals the model lets through (section 5.8). Nothing here changes the specification; each finding
+is for the coordinator, who alone edits it.
+
+**What the model would refuse.**
+
+1. **`sp-authn-request`: `ProtocolBinding` HTTP-Redirect.** Refused as `Unsupported` by 6.2 step 4 and section 8 (a
+   `ProtocolBinding` other than HTTP-POST): the broker writes HTTP-Redirect whenever its "HTTP-POST binding response"
+   is off, its default in the console and in the API, although Keycloak's own identity provider answers with
+   HTTP-POST anyway. As it stands, the model as an identity provider refuses every login of a Keycloak broker left
+   at its defaults; with `postBindingResponse` on, the broker writes `ProtocolBinding="...:HTTP-POST"` (measured on 30
+   September 2026 with `kcadm.sh update identity-provider/instances/idp -r sp -s config.postBindingResponse=true`). Either the refusal stays and is documented
+   with Keycloak's name, or 6.2 step 4 answers such a request over HTTP-POST, as Keycloak's identity provider does: a
+   question for the specification.
+2. **`sp-logout-request`: unsigned.** Refused as `SignatureRequired` by M-2 and 6.3 (Profiles §4.4.4.1, as the
+   specification cites it): the request carries no `ds:Signature` and its redirect no `SigAlg` or `Signature`, so
+   neither `validate()` nor `validateAuthenticatedByBinding()` accepts it. The broker signs no request under its
+   defaults (`wantAuthnRequestsSigned` off); realm `idp` accepted it only because of the setting of this installation
+   (`saml.client.signature=false`). A refusal to document with Keycloak's name. With `wantAuthnRequestsSigned` on,
+   both redirects of the broker carry `SigAlg` and `Signature` (measured the same day), the case of
+   `validateAuthenticatedByBinding()` once `saml2-bindings` has verified the query string.
+
+**What the model would accept, with what it reads.**
+
+3. **`idp-response`.** Accepted under the default `TimeBounds` with a clock frozen at its `IssueInstant`, as
+   `SignatureCoverage::Response` (6.1 step 5: the assertion unsigned, read from the response's `Verified::$document`).
+   Its `Conditions` close 58 s after issue, so it is refused by M-7 from 238 s after issue (58 s plus the default skew
+   of 180 s), before `maxMessageAge` (300 s) would refuse it.
+4. **`idp-logout-response`.** Accepted by 6.4: signed, `Destination`, `InResponseTo` equal to the `ID` of the captured
+   `LogoutRequest`, status `Success`. Its `Issuer` is unprefixed, in the default namespace the root declares; the
+   model reads names by namespace and local name, so nothing changes.
+5. **`idp-metadata`.** Read with `readTrusted()`; `readSigned()` has nothing to verify (unsigned). Its single sign-on
+   and single logout services also list SOAP and HTTP-Artifact, which 6.5 step 6 drops; its four `NameIDFormat` are
+   formats of Core §8.3; its `KeyInfo` holds a `KeyName` next to the certificate, a hint 6.5 step 5 does not read.
+6. **`sp-metadata`.** Read with `readTrusted()`. The broker publishes no `KeyDescriptor`, so `verificationKeys()` is
+   `null`; with `AuthnRequestsSigned="false"`, its unsigned requests are `Authentication::None` unless the model's
+   own metadata wants them signed.
+7. **Every document** passes `core.md` (no XML declaration, read as UTF-8, no DOCTYPE, absolute namespaces, IDs that
+   are NCNames of 39 bytes, no libxml diagnostic under `xmllint --noout`) and `dsig.md` (D-3 transforms, D-4 exclusive
+   canonicalization, D-5 algorithms, D-9 structure, D-16 RSA 2048, a `SignatureValue` of 256 bytes).
+
+**Questions for the specification.**
+
+8. **`md:ArtifactResolutionService`.** The metadata of realm `idp` carries one (SOAP, `index="0"`) before its single
+   logout services. 6.5 names the endpoints it reads and the role descriptors it skips, not the other children the
+   schema allows in an `IDPSSODescriptor` (`ArtifactResolutionService`, `ManageNameIDService`,
+   `NameIDMappingService`, `AssertionIDRequestService`, `AttributeProfile`, `saml:Attribute`): skipped, or
+   `MalformedMessage` under M-5? Keycloak's metadata loads only if skipped.
+9. **The default assertion consumer service.** The broker's metadata lists three at one `Location`: HTTP-Redirect
+   `index="1" isDefault="true"`, HTTP-POST `index="2"`, HTTP-Artifact `index="3"`. 6.5 step 6 keeps the first two.
+   Whether `IndexedEndpoints::default()` (M-9, Metadata §2.2.3) runs over every kept endpoint or over the HTTP-POST
+   ones decides whether a request naming no consumer service resolves to `index="2"` or to an endpoint that cannot
+   carry a response; and `byLocation()` must choose among the HTTP-POST ones, since the three share a `Location`.
+10. **Repeated attribute names.** The response carries six `saml:Attribute` named `Role`, one value each, where one
+    attribute with six values would say the same. 6.1 step 11 neither refuses nor merges them; the model returns six
+    `Attribute`, and whoever maps them to claims (`heidi/saml`) must know it.
+11. **An empty `md:NameIDFormat`.** Observed in a trial run, not committed: with the broker's identity provider
+    created through the API without `nameIDPolicyFormat`, the broker's metadata carries `<md:NameIDFormat></md:NameIDFormat>`.
+    6.5 step 7 drops a URI that is not a format of Core §8.3; whether an empty one is dropped, or refused as a value
+    that is not a URI (M-6), is not written.
+
+**Observations, no rule touched.**
+
+12. **ID entropy.** Every `ID` is `ID_` and a version 4 UUID, 122 random bits, below the 128 bits of Core §1.3.4 that
+    6.6 step 2 of the specification writes to. The model checks an `ID` as an NCName within `maxIdLength` (M-6, I-8),
+    not its entropy, and refuses nothing.
+13. **`AuthnInstant` after `IssueInstant`.** The `AuthnInstant` is 3 ms after the assertion's `IssueInstant` and 1 ms
+    after the response's. M-7 bounds it by `now + skew` only, so nothing is refused; a validator without skew would.
+14. **`xsi:type` outside the signed bytes.** `xmlns:xs` is declared on each `AttributeValue` and named only in an
+    attribute value, so exclusive canonicalization leaves it out of what the response's digest covers, as dsig.md
+    §6.3 says of SimpleSAMLphp; 6.1 step 11 reads the value as text and never resolves the prefix.
+15. **`WantAuthnRequestsSigned="true"`** in the metadata of realm `idp`, while its client for the broker requires no
+    signature in this installation: the metadata states the realm's position, not the client's.
+16. **The first login.** Removing `Review Profile`, as story #14 asks, is not enough with 26.7.4: the required action
+    `VERIFY_PROFILE` asks for the profile at the end of the first login, and is disabled here (settings, above).
