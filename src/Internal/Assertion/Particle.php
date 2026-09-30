@@ -37,11 +37,29 @@ final readonly class Particle
     }
 
     /**
+     * At most one element of that name.
+     */
+    public static function optional(Name $name, string $label): self
+    {
+        return new self([$name], $label, false, false);
+    }
+
+    /**
      * One element of that name or more.
      */
     public static function some(Name $name, string $label): self
     {
         return new self([$name], $label, true, true);
+    }
+
+    /**
+     * Any number of elements of those names, none included, in any order among themselves: a choice that repeats.
+     *
+     * @param list<Name> $names
+     */
+    public static function any(array $names): self
+    {
+        return new self($names, '', false, true);
     }
 
     public function matches(Element $child): bool
