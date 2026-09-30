@@ -8,6 +8,7 @@ declare(strict_types=1);
  * default, 8.4 with PHP_VERSION=8.4, the two versions the CI runs.
  */
 
+use Castor\Attribute\AsArgument;
 use Castor\Attribute\AsOption;
 use Castor\Attribute\AsRawTokens;
 use Castor\Attribute\AsTask;
@@ -358,6 +359,74 @@ function deptrac(): void
         '--config-file=.ci-tools/deptrac.yaml',
         '--cache-file=tmp-phpqa/.deptrac.cache',
         '--no-progress',
+    ]);
+}
+
+/**
+ * The directory the oracle writes its documents into, ignored by git with the rest of tmp-phpqa/.
+ */
+const XMLSEC_ORACLE = 'tmp-phpqa/oracle';
+
+#[AsTask(
+    description: 'Verify every signature of a written file with xmlsec1, the implementation that is not this one (spec/model.md section 9.1), in Alpine 3.22: castor xmlsec tests/Fixture/behaviour/response-written-signed-assertion-and-response.xml',
+)]
+function xmlsec(
+    #[AsArgument(description: 'The signed file, relative to the working directory')]
+    string $file,
+    #[AsOption(
+        description: 'The certificate whose key verifies, relative to the working directory: the identity provider\'s test certificate, or the service provider\'s for what it signs',
+    )]
+    string $certificate = 'tests/Fixture/keys/idp-signing-certificate.pem',
+): void {
+    xmlsec1([$file], $certificate);
+}
+
+#[AsTask(
+    description: 'Write and sign responses with every scheme this build offers, then have xmlsec1 verify every signature of each (spec/model.md section 9.1), what the job Oracle of the CI runs: PHP_VERSION=8.5 castor xmlsec-oracle',
+)]
+function xmlsec_oracle(): void
+{
+    foreach (glob(XMLSEC_ORACLE . '/*.xml') ?: [] as $file) {
+        unlink($file);
+    }
+    phpqa(
+        [
+            'composer',
+            'exec',
+            '--',
+            'phpunit',
+            '--configuration',
+            '.ci-tools/phpunit.xml.dist',
+            '--filter',
+            'ResponseWriterOracleTest',
+        ],
+        ['XMLSEC_ORACLE' => XMLSEC_ORACLE],
+    );
+    xmlsec1(glob(XMLSEC_ORACLE . '/*.xml') ?: [], 'tests/Fixture/keys/idp-signing-certificate.pem');
+}
+
+/**
+ * Runs tests/Fixture/oracle/verify-signatures.sh over $files with the key of $certificate, in Alpine 3.22, the
+ * repository mounted read-only.
+ *
+ * @param list<string> $files
+ */
+function xmlsec1(array $files, string $certificate): void
+{
+    run([
+        'docker',
+        'run',
+        '--rm',
+        '-i',
+        '-v',
+        getcwd() . ':/project:ro',
+        '-w',
+        '/project',
+        'alpine:3.22',
+        'sh',
+        '-c',
+        'apk add -q xmlsec libxml2-utils >/dev/null 2>&1 && xmlsec1 --version && sh tests/Fixture/oracle/verify-signatures.sh '
+            . implode(' ', array_map(escapeshellarg(...), [$certificate, ...$files])),
     ]);
 }
 
