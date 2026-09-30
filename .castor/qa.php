@@ -111,6 +111,8 @@ const INFECTION_STRICT_FILES = [
     // Section 6.6: the writer of a response, which checks what the validator would refuse and signs (M-15).
     'src/Writing/SignedParts.php',
     'src/Writing/ResponseWriter.php',
+    // Section 6.6: the writer of a logout request, which refuses a NotOnOrAfter its reader would refuse (M-15).
+    'src/Writing/LogoutRequestWriter.php',
     // Section 9: the strict readers of the two logout messages (sections 6.3, 6.4).
     'src/Internal/Logout/Envelope.php',
     'src/Internal/Logout/LogoutContext.php',
