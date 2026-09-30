@@ -111,6 +111,17 @@ const INFECTION_STRICT_FILES = [
     // Section 6.6: the writer of a response, which checks what the validator would refuse and signs (M-15).
     'src/Writing/SignedParts.php',
     'src/Writing/ResponseWriter.php',
+    // Section 9: the strict readers of the two logout messages (sections 6.3, 6.4).
+    'src/Internal/Logout/Envelope.php',
+    'src/Internal/Logout/LogoutContext.php',
+    'src/Internal/Logout/LogoutRequestReader.php',
+    'src/Internal/Logout/LogoutResponseReader.php',
+    'src/Internal/Logout/StatusReader.php',
+    // Section 9: the logout validators and what they return (section 5.6).
+    'src/Validation/LogoutRequestValidator.php',
+    'src/Validation/LogoutResponseValidator.php',
+    'src/Validation/AcceptedLogoutRequest.php',
+    'src/Validation/AcceptedLogoutResponse.php',
     // Section 9, each added by the story that writes it:
     // the other strict readers and the selection of the signed element, every other file of src/Internal/;
     // the validators, every other file of src/Validation/.
