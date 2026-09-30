@@ -8,7 +8,6 @@ use Beffroi\Saml2\Model\Assertion\Assertion;
 use Beffroi\Saml2\Model\Assertion\Attribute;
 use Beffroi\Saml2\Model\Assertion\AuthnStatement;
 use Beffroi\Saml2\Model\Assertion\Conditions;
-use Beffroi\Saml2\Model\Assertion\NameId;
 use Beffroi\Saml2\Model\Assertion\SubjectConfirmation;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\Value\Time;
@@ -46,23 +45,13 @@ final readonly class AssertionBuilder
         $element->setAttribute('IssueInstant', Time::write($assertion->issueInstant));
         $tree->saml($element, 'Issuer')->append($assertion->issuer->entityId);
         $subject = $tree->saml($element, 'Subject');
-        self::nameId($tree, $subject, $assertion->nameId);
+        NameIdBuilder::append($tree, $subject, $assertion->nameId);
         self::confirmation($tree, $subject, $assertion->confirmation);
         self::conditions($tree, $element, $assertion->conditions);
         self::authnStatement($tree, $element, $assertion->authnStatement);
         if ($assertion->attributes !== []) {
             self::attributes($tree, $element, $assertion->attributes);
         }
-    }
-
-    private static function nameId(Tree $tree, Element $subject, NameId $nameId): void
-    {
-        $element = $tree->saml($subject, 'NameID');
-        $element->setAttribute('Format', $nameId->format->value);
-        self::optional($element, 'NameQualifier', $nameId->nameQualifier);
-        self::optional($element, 'SPNameQualifier', $nameId->spNameQualifier);
-        self::optional($element, 'SPProvidedID', $nameId->spProvidedId);
-        $element->append($nameId->value);
     }
 
     /**

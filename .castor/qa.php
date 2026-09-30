@@ -110,13 +110,18 @@ const INFECTION_STRICT_FILES = [
     // Section 6.6: the builders of a response and its assertion, whose output the validator of section 6.1 reads
     // back (M-15).
     'src/Internal/Writing/Tree.php',
+    'src/Internal/Writing/NameIdBuilder.php',
+    'src/Internal/Writing/StatusBuilder.php',
     'src/Internal/Writing/AssertionBuilder.php',
     'src/Internal/Writing/ResponseBuilder.php',
     // Section 6.6: the writer of a response, which checks what the validator would refuse and signs (M-15).
     'src/Writing/SignedParts.php',
     'src/Writing/ResponseWriter.php',
-    // Section 6.6: the writer of a logout request, which refuses a NotOnOrAfter its reader would refuse (M-15).
+    // Section 6.6: the writers of the other messages and of metadata, each on the tree builder of the response's.
+    'src/Writing/AuthnRequestWriter.php',
+    'src/Writing/MetadataWriter.php',
     'src/Writing/LogoutRequestWriter.php',
+    'src/Writing/LogoutResponseWriter.php',
     // Section 9: the strict readers of the two logout messages (sections 6.3, 6.4).
     'src/Internal/Logout/Envelope.php',
     'src/Internal/Logout/LogoutContext.php',
