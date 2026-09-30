@@ -95,6 +95,13 @@ const INFECTION_STRICT_FILES = [
     'src/Validation/ResponseValidator.php',
     // Section 9: the strict reader of an AuthnRequest and the resolution of its assertion consumer service (M-9).
     'src/Internal/AuthnRequest/AssertionConsumerService.php',
+    'src/Internal/AuthnRequest/AuthnRequestContext.php',
+    'src/Internal/AuthnRequest/AuthnRequestReader.php',
+    'src/Internal/AuthnRequest/NameIdPolicyReader.php',
+    'src/Internal/AuthnRequest/RequestedAuthnContextReader.php',
+    // Section 9: the validator of an AuthnRequest and what it returns (section 6.2).
+    'src/Validation/AuthnRequestValidator.php',
+    'src/Validation/AcceptedAuthnRequest.php',
     // Section 9, each added by the story that writes it:
     // the other strict readers and the selection of the signed element, every other file of src/Internal/;
     // the validators, every other file of src/Validation/.
