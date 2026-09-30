@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:idpdisc="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" entityID="http://localhost:8082/simplesaml/module.php/saml/sp/metadata/default-sp">
+  <md:SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol" AuthnRequestsSigned="true">
+    <md:Extensions>
+      <idpdisc:DiscoveryResponse xmlns:idpdisc="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Location="http://localhost:8082/simplesaml/module.php/saml/sp/discoResponse/default-sp" index="0"/>
+    </md:Extensions>
+    <md:KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIIDcTCCAlmgAwIBAgIUcUbLWObVO2r2/azF6Gbdgqrg2owwDQYJKoZIhvcNAQELBQAwSDFGMEQGA1UEAww9c2FtbDItbW9kZWwgU2ltcGxlU0FNTHBocCB0ZXN0IHNlcnZpY2UgcHJvdmlkZXIsIG5vdCBhIHNlY3JldDAeFw0yNjA5MzAxMDI0MThaFw0zNjA5MjcxMDI0MThaMEgxRjBEBgNVBAMMPXNhbWwyLW1vZGVsIFNpbXBsZVNBTUxwaHAgdGVzdCBzZXJ2aWNlIHByb3ZpZGVyLCBub3QgYSBzZWNyZXQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDIttE3/9OS2QkfE3u7fKxckZzZylCmsreZzZFion2m78dS/xZc/PMjHPnOnzgT7+9lLSn8dy9hRunus+iRMmJsuF1JjZCAW9ukmzAZSk78jhY6abvwsPokzWBtKa18BH1Xe0zcaNksIcbA22tbUzNFo4KQ9AEeK05OPgguTOajmEeEIdAe05rPKY6ha/PJ5bFqgt05T0mSaCdHaqNVMaRYjUtd0IHxmUoUAP4vaLvuU5He551bbxbkP4DBmW2Fmx6tPyLRoKGcMhfED9b0pDbS0muy3rN8u6Ftu07EpVjRc/IMaQglETlefOtUWM/+jUTHb4p4VwrEmK1c7P5ODUoHAgMBAAGjUzBRMB0GA1UdDgQWBBSHplNFlZwyN2mVc5UDMgsd15h6BjAfBgNVHSMEGDAWgBSHplNFlZwyN2mVc5UDMgsd15h6BjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCunbTNkgKlr9ZfmIUM/g4fLydd2fhh1SvEd16f+820drzIjb8M64lXceJeucIzmHeoFRBKUBxmkcE9pWaeznrxGN/nS3euQ/u1yonvdh+9xONvgBalSf7CqaPDfDoJEjdQuGA2rKNeskzVfHAtg3yYadt1GjBpc+9FFEEIaSrx1vUkzUAQTdkGk85mPEeOscEnpENmflT1iqS2zA06cNlSh6h3lvfGLtiM2bByztpbwU7ZeufVcAoNs2WuApAbK5If+E2QLCk2Ri/yvCCBIb5j2WHjWiAOX4qC1JxWAQisBIvWa+H6FrH2PgYGqent3FkZokimo45HjHGpM+7eDmL6</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:KeyDescriptor use="encryption">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIIDcTCCAlmgAwIBAgIUcUbLWObVO2r2/azF6Gbdgqrg2owwDQYJKoZIhvcNAQELBQAwSDFGMEQGA1UEAww9c2FtbDItbW9kZWwgU2ltcGxlU0FNTHBocCB0ZXN0IHNlcnZpY2UgcHJvdmlkZXIsIG5vdCBhIHNlY3JldDAeFw0yNjA5MzAxMDI0MThaFw0zNjA5MjcxMDI0MThaMEgxRjBEBgNVBAMMPXNhbWwyLW1vZGVsIFNpbXBsZVNBTUxwaHAgdGVzdCBzZXJ2aWNlIHByb3ZpZGVyLCBub3QgYSBzZWNyZXQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDIttE3/9OS2QkfE3u7fKxckZzZylCmsreZzZFion2m78dS/xZc/PMjHPnOnzgT7+9lLSn8dy9hRunus+iRMmJsuF1JjZCAW9ukmzAZSk78jhY6abvwsPokzWBtKa18BH1Xe0zcaNksIcbA22tbUzNFo4KQ9AEeK05OPgguTOajmEeEIdAe05rPKY6ha/PJ5bFqgt05T0mSaCdHaqNVMaRYjUtd0IHxmUoUAP4vaLvuU5He551bbxbkP4DBmW2Fmx6tPyLRoKGcMhfED9b0pDbS0muy3rN8u6Ftu07EpVjRc/IMaQglETlefOtUWM/+jUTHb4p4VwrEmK1c7P5ODUoHAgMBAAGjUzBRMB0GA1UdDgQWBBSHplNFlZwyN2mVc5UDMgsd15h6BjAfBgNVHSMEGDAWgBSHplNFlZwyN2mVc5UDMgsd15h6BjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCunbTNkgKlr9ZfmIUM/g4fLydd2fhh1SvEd16f+820drzIjb8M64lXceJeucIzmHeoFRBKUBxmkcE9pWaeznrxGN/nS3euQ/u1yonvdh+9xONvgBalSf7CqaPDfDoJEjdQuGA2rKNeskzVfHAtg3yYadt1GjBpc+9FFEEIaSrx1vUkzUAQTdkGk85mPEeOscEnpENmflT1iqS2zA06cNlSh6h3lvfGLtiM2bByztpbwU7ZeufVcAoNs2WuApAbK5If+E2QLCk2Ri/yvCCBIb5j2WHjWiAOX4qC1JxWAQisBIvWa+H6FrH2PgYGqent3FkZokimo45HjHGpM+7eDmL6</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://localhost:8082/simplesaml/module.php/saml/sp/saml2-logout.php/default-sp"/>
+    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://localhost:8082/simplesaml/module.php/saml/sp/saml2-acs.php/default-sp" index="0"/>
+    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="http://localhost:8082/simplesaml/module.php/saml/sp/saml2-acs.php/default-sp" index="1"/>
+  </md:SPSSODescriptor>
+</md:EntityDescriptor>
