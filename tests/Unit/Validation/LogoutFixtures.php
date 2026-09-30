@@ -21,6 +21,9 @@ use Beffroi\Saml2\Model\Protocol\StatusCode;
 use Beffroi\Saml2\Model\SamlLoader;
 use Beffroi\Saml2\Model\Tests\Support\FrozenClock;
 use Beffroi\Saml2\Model\Tests\Unit\Metadata\MetadataFixtures;
+use Beffroi\Saml2\Model\Validation\LogoutRequestValidator;
+use Beffroi\Saml2\Model\Validation\LogoutResponseValidator;
+use Beffroi\Saml2\Model\Validation\TimeBounds;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Serializer;
 use DateTimeImmutable;
@@ -128,6 +131,16 @@ final class LogoutFixtures
     public static function clock(int $seconds = 0): FrozenClock
     {
         return new FrozenClock(new DateTimeImmutable(self::NOW))->movedBy($seconds);
+    }
+
+    public static function requestValidator(int $seconds = 0): LogoutRequestValidator
+    {
+        return new LogoutRequestValidator(SamlLoader::create(), self::clock($seconds), new TimeBounds());
+    }
+
+    public static function responseValidator(int $seconds = 0): LogoutResponseValidator
+    {
+        return new LogoutResponseValidator(SamlLoader::create(), self::clock($seconds), new TimeBounds());
     }
 
     /**
