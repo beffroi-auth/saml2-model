@@ -1,0 +1,187 @@
+# PHPStan at level max, with no baseline, ever: every finding is fixed in the code or refused in the review.
+#
+# The extensions come from the phpqa image (/tools/.composer/vendor-bin/phpstan), which is where %rootDir% points;
+# PHPUnit's classes are scanned from the image's PHPUnit install. Section 8 of the specification is enforced here:
+# ekino/phpstan-banned-code for the statements it knows (echo, eval, exit, print, backticks) and the defaults of
+# its function list, the three rules of tests/PhpStan for the rest, since that tool bans function names as they are
+# written and whole node types, not classes, methods, prefixes or constants. The model confines no call to a file:
+# what xml-security allows in one class of Core or Dsig is banned everywhere here, the tests included.
+parameters:
+	level: max
+	scanDirectories:
+		- %rootDir%/../../../../phpunit/vendor
+	paths:
+		- %currentWorkingDirectory%/src
+		- %currentWorkingDirectory%/tests
+	# the fixtures are data, and the interoperability projects of section 9.5 are throwaway Composer projects run in
+	# their own containers against libraries that are not dependencies of this package
+	excludePaths:
+		- %currentWorkingDirectory%/tests/Fixture/*
+		- %currentWorkingDirectory%/tests/Interop/*
+	checkUninitializedProperties: true
+	treatPhpDocTypesAsCertain: false
+	banned_code:
+		non_ignorable: true
+		use_from_tests: true
+		nodes:
+			-
+				type: Stmt_Echo
+				functions: null
+			-
+				type: Expr_Eval
+				functions: null
+			-
+				type: Expr_Exit
+				functions: null
+			-
+				type: Expr_Print
+				functions: null
+			-
+				type: Expr_ShellExec
+				functions: null
+			-
+				type: Expr_FuncCall
+				functions:
+					# the defaults of the extension
+					- dd
+					- debug_backtrace
+					- dump
+					- exec
+					- passthru
+					- phpinfo
+					- print_r
+					- proc_open
+					- shell_exec
+					- system
+					- var_dump
+	# The classes and constants of section 8 (core.md section 8 for the DOM, spec/model.md section 8 for the rest),
+	# for BannedNamesRule. \DateTime and \DateTimeImmutable are not here: the types stay, their construction without
+	# an explicit time is BannedConstructsRule's.
+	bannedNames:
+		- DOMDocument
+		- DOMXPath
+		- DOMImplementation
+		- Dom\XPath
+		- SimpleXMLElement
+		- XMLReader
+		- XMLWriter
+		- LIBXML_NOENT
+		- LIBXML_DTDLOAD
+		- LIBXML_DTDATTR
+		- LIBXML_DTDVALID
+		- LIBXML_XINCLUDE
+		- LIBXML_PARSEHUGE
+		- LIBXML_NOBLANKS
+		- LIBXML_NOCDATA
+		- ReflectionClass
+		- ReflectionObject
+		- ReflectionMethod
+		- ReflectionProperty
+		- ReflectionFunction
+		- ReflectionNamedType
+		# a boolean of the message is one of its four lexical forms, compared as a string (M-6)
+		- FILTER_VALIDATE_BOOL
+		- FILTER_VALIDATE_BOOLEAN
+	# The methods and functions of section 8, for BannedCallsRule; a name ending with * bans the prefix.
+	bannedMethods:
+		# I-9, I-11: no ID lookup, no search of descendants (M-4)
+		- getElementById
+		- setIdAttribute
+		- setIdAttributeNS
+		- setIdAttributeNode
+		- getElementsByTagName
+		- getElementsByTagNameNS
+		- querySelector
+		- querySelectorAll
+		# I-4, I-13, I-15: Core loads, builds, canonicalizes and serializes, the model never does
+		- createFromString
+		- createFromFile
+		- createEmpty
+		- C14N
+		- C14NFile
+		- saveXml
+		- saveXmlFile
+		# core.md section 6.6, I-1, I-2, core.md section 11
+		- importNode
+		- adoptNode
+		- xinclude
+		- validate
+		- schemaValidate
+		- schemaValidateSource
+		- relaxNgValidate
+		- relaxNgValidateSource
+		- createEntityReference
+	bannedFunctions:
+		# core.md section 8: no entity loader, no second parser (I-2, I-4)
+		- libxml_set_external_entity_loader
+		- libxml_disable_entity_loader
+		- simplexml_*
+		- xml_parser_create
+		- xml_parser_create_ns
+		# the security stance: no silencing, no dynamic call
+		- error_reporting
+		- call_user_func
+		- call_user_func_array
+		# the model verifies and signs through Dsig, decrypts and encrypts through Enc (section 2)
+		- openssl_*
+		- hash_hmac
+		# the clock port is the time (M-7); the other names of the same clock are banned with it
+		- time
+		- microtime
+		- hrtime
+		- date
+		- gmdate
+		- idate
+		- getdate
+		- localtime
+		- gettimeofday
+		- mktime
+		- gmmktime
+		- strtotime
+		- date_create
+		- date_create_immutable
+		# random_bytes() is the randomness (M-15); the other generators of the Mersenne Twister are banned with them
+		- rand
+		- mt_rand
+		- srand
+		- mt_srand
+		- uniqid
+		- lcg_value
+		- shuffle
+		- str_shuffle
+		- array_rand
+		# a boolean is never cast (M-6)
+		- boolval
+		- settype
+
+parametersSchema:
+	bannedNames: listOf(string())
+	bannedMethods: listOf(string())
+	bannedFunctions: listOf(string())
+
+services:
+	-
+		class: Beffroi\Saml2\Model\Tests\PhpStan\BannedNamesRule
+		arguments:
+			names: %bannedNames%
+		tags:
+			- phpstan.rules.rule
+	-
+		class: Beffroi\Saml2\Model\Tests\PhpStan\BannedCallsRule
+		arguments:
+			methods: %bannedMethods%
+			functions: %bannedFunctions%
+		tags:
+			- phpstan.rules.rule
+	-
+		class: Beffroi\Saml2\Model\Tests\PhpStan\BannedConstructsRule
+		tags:
+			- phpstan.rules.rule
+
+includes:
+	- %rootDir%/conf/bleedingEdge.neon
+	- %rootDir%/../../ekino/phpstan-banned-code/extension.neon
+	- %rootDir%/../phpstan-deprecation-rules/rules.neon
+	- %rootDir%/../phpstan-phpunit/extension.neon
+	- %rootDir%/../phpstan-phpunit/rules.neon
+	- %rootDir%/../phpstan-strict-rules/rules.neon

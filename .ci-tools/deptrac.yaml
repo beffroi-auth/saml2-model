@@ -1,0 +1,97 @@
+# Section 10 of the specification: Value below Assertion, Protocol and Metadata, those below Validation and Writing;
+# Port beside, Exception and the two classes of the root (Saml, SamlLoader) under all of them; Internal, the strict
+# readers and the selection of the signed element, between the objects it builds and the validators that call it.
+# Outside the package, the public classes of Core and Dsig and psr/clock are allowed where the specification uses
+# them. A dependency on a class outside every layer (PHP itself, the Dom API) is not a violation: the calls section 8
+# bans are the business of the PHPStan rules. What is forbidden is therefore a layer no rule allows: the Internal
+# namespaces of xml-security, its Enc namespace until sub-spike 9e (section 6.7), and HTTP (decision 0013). The paths
+# are relative to this file.
+deptrac:
+  paths:
+    - ../src
+  layers:
+    - name: Root
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\[^\\]+$'
+    - name: Exception
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Exception\\'
+    - name: Value
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Value\\'
+    - name: Port
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Port\\'
+    - name: Assertion
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Assertion\\'
+    - name: Protocol
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Protocol\\'
+    - name: Metadata
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Metadata\\'
+    # TimeBounds is a value of Validation that MetadataReader takes too (section 5.6): a leaf of its own, so that
+    # Metadata uses it without depending on the validators.
+    - name: TimeBounds
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Validation\\TimeBounds$'
+    - name: Validation
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Validation\\(?!TimeBounds$)'
+    - name: Writing
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Writing\\'
+    - name: Internal
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Saml2\\Model\\Internal\\'
+    - name: XmlCore
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Xml\\Core\\(?!Internal\\)'
+    - name: XmlDsig
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Xml\\Dsig\\(?!Internal\\)'
+    - name: XmlEnc
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Xml\\Enc\\'
+    - name: XmlInternal
+      collectors:
+        - type: classLike
+          value: '^Beffroi\\Xml\\[^\\]+\\Internal\\'
+    - name: Clock
+      collectors:
+        - type: classLike
+          value: '^Psr\\Clock\\'
+    - name: Http
+      collectors:
+        - type: classLike
+          value: '^Symfony\\Component\\HttpFoundation\\'
+        - type: classLike
+          value: '^Psr\\Http\\'
+  ruleset:
+    Root: [XmlCore]
+    # UnsuccessfulResponse carries the Status of the response (section 5.8)
+    Exception: [XmlCore, Protocol]
+    Value: [Root, Exception, XmlCore]
+    Port: ~
+    TimeBounds: ~
+    Assertion: [Root, Exception, Value, XmlCore]
+    Protocol: [Root, Exception, Value, Assertion, Internal, XmlCore]
+    Metadata: [Root, Exception, Value, Assertion, Internal, TimeBounds, XmlCore, XmlDsig, Clock]
+    Internal: [Root, Exception, Value, Assertion, Protocol, Metadata, XmlCore, XmlDsig]
+    Validation: [Root, Exception, Value, Assertion, Protocol, Metadata, Port, TimeBounds, Internal, XmlCore, XmlDsig, Clock]
+    Writing: [Root, Exception, Value, Assertion, Protocol, Metadata, Internal, XmlCore, XmlDsig]
