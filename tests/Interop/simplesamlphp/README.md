@@ -11,10 +11,13 @@ decoded, disposable identities only.
 | `library/` | a throwaway Composer project running `simplesamlphp/saml2`, SimpleSAMLphp's SAML 2 library, in a container: `produce.php` writes the fixtures with the test keys, `verify.php` validates what a producer wrote |
 | `installation/` | SimpleSAMLphp installed as an identity provider and as a service provider in containers, and `capture.sh`, which plays a login and a logout with `curl` and keeps every SAML document |
 | `xmlsec1-verify.sh` | verifies every XML signature of a batch with xmlsec1, the implementation independent of both SimpleSAMLphp and the model |
+| `exchange.php` | the exchange of phase 2: the model and the installation, both ways, login and logout, and four probes; it writes the model's documents to `written/` and what SimpleSAMLphp sent to `received/` (both ignored), or to `tests/Fixture/real/` with `--keep` |
+| `timing.php` | the figure of section 9.6 of the specification, measured on SimpleSAMLphp's real responses |
+| `.castor/simplesamlphp.php`, at the root | `castor simplesamlphp`: every step above from one task |
 
 Phase 1 of story #11, on 30 September 2026, built what does not need the model's code: the test keys, the library
-half, the installation half and the captures. Phase 2 posts the model's own documents into SimpleSAMLphp once the
-writers exist (stories #9 and #10).
+half, the installation half and the captures (sections 1 to 5). Phase 2, the same day, played the exchange with the
+model's writers and validators, both ways, on the running installation (section 6).
 
 ## Versions
 
@@ -27,6 +30,9 @@ writers exist (stories #9 and #10).
 | PHP and Apache of the installation | PHP 8.4.26, Apache 2.4.68, Debian 13.7 | `php:8.4.26-apache@sha256:75325cceea4f9a8200f4e9e146e8155ec1b6466b2957b87accf0286b94547cbd` | 30 September 2026 |
 | Docker, Compose, curl of the capture | Docker 29.8.1, Compose 5.5.1, curl 8.7.1 (macOS) | the machine that ran it | 30 September 2026 |
 | xmlsec1 | 1.3.7 (OpenSSL) | `apk add xmlsec` in `alpine:3.22` (3.22.6) | 30 September 2026 |
+| The model in the exchange | this repository, `src/` as of `e11e945`, on `beffroi-php/xml-security` `dev-main` at `d7990c060cd0` | the branch `story/11-simplesamlphp` and `composer.lock` | 30 September 2026 |
+| PHP of the exchange | 8.5.10 and 8.4.25, curl 8.14.1 | `ghcr.io/spomky-labs/phpqa:8.5` and `:8.4`, `PHP_VERSION` of castor | 30 September 2026 |
+| Castor | 1.7.0 | the machine that ran it | 30 September 2026 |
 
 ## 1. The library
 
@@ -338,7 +344,7 @@ Against the provisional bounds of section 7, on these documents: one `AudienceRe
 8 and 16), two attributes of at most two values (256 and 256), one `SessionIndex` (16), per metadata role one signing
 and one encryption certificate (16 and 16), at most two endpoints of one kind (64), at most one `NameIDFormat` (16);
 a bearer window of 300 s (`maxBearerWindow` 3 600 s); entity IDs of 61 and 71 characters (1 024). The performance
-figure of section 9.6 needs the model's code and is not measured here.
+figure of section 9.6 needs the model's code: phase 2 measures it (section 6).
 
 ## 5. Findings
 
@@ -416,3 +422,280 @@ directory runs in its own containers and uses what section 8 bans in the package
 `.ci-tools/phpstan.neon` and `withSkip()` of `.ci-tools/rector.php` on `tests/*/Fixture/*`, `excludes` of
 `mago.toml`), and `library/composer.json` is a Composer project of its own, which a dependency update tool would
 otherwise pick up.
+
+## 6. Phase 2: the exchange with the model
+
+On 30 September 2026, `exchange.php` played both directions against the installation of section 2 with the package
+of this repository, the test keys of `tests/Fixture/keys/` and the live clock: the model as identity provider behind
+SimpleSAMLphp's service provider, the model as service provider in front of SimpleSAMLphp's identity provider, login
+and logout both ways. Every step was green on PHP 8.5.10 and on PHP 8.4.25; four probes showed that SimpleSAMLphp
+refuses the model's documents once changed after signing, so that its acceptance of the genuine ones proves a
+signature it verified; `verify.php` and xmlsec1 verified every document the model wrote. What SimpleSAMLphp sent is
+committed under `tests/Fixture/real/` and accepted by `tests/Unit/Interop/SimpleSamlPhpDocumentsTest.php`. The phase
+took under an hour of the four hours it was given.
+
+### Commands
+
+```
+# The whole exchange from a clean checkout: the package's dependencies and the library half installed when they are
+# missing, the installation up in the configuration of the exchange, the exchange, verify.php and xmlsec1 on every
+# document the model wrote, the installation down. PHP 8.5 by default, PHP_VERSION=8.4 for the other.
+castor simplesamlphp
+
+# The same, and what SimpleSAMLphp sent kept in tests/Fixture/real/, dated, instead of received/
+castor simplesamlphp --keep
+
+# Each step alone
+castor simplesamlphp --up                 # the installation in the configuration of the exchange, SSP_EXCHANGE=true
+castor simplesamlphp --exchange [--keep]  # the exchange, the installation up
+castor simplesamlphp --verify             # verify.php and xmlsec1 on written/, the model's documents of the last run
+castor simplesamlphp --verify --in=tests/Fixture/real --glob='simplesamlphp-saml2-4.20.3-*.xml'   # section 1's batch
+castor simplesamlphp --produce            # the library writes its fixtures (section 1)
+castor simplesamlphp --capture            # capture.sh (section 2)
+castor simplesamlphp --down
+
+# What --exchange runs, from the root of the repository
+docker run --rm --network saml2-model-simplesamlphp_default --user "$(id -u):$(id -g)" \
+    -e EXCHANGE_CONNECT_TO=localhost:8081:idp:80,localhost:8082:sp:80 -v "$PWD:/project" -w /project \
+    ghcr.io/spomky-labs/phpqa:8.5 php tests/Interop/simplesamlphp/exchange.php [--keep]
+
+# The figure of section 9.6, on each PHP of the CI
+docker run --rm -v "$PWD:/project:ro" -w /project ghcr.io/spomky-labs/phpqa:8.5 php tests/Interop/simplesamlphp/timing.php
+```
+
+The exchange runs in the phpqa image on the network of the installation: `EXCHANGE_CONNECT_TO` pins `localhost:8081`
+and `localhost:8082` to the two containers at the connection, so that the `Host` header, every entity ID, every
+`Destination` and every cookie stay those a browser on the machine sees.
+
+### The model's side
+
+The script is the model's side of the wire, and stands in for `saml2-bindings` (section 6.8 of the specification),
+which does not exist yet: a browser with one cookie jar per login, which never follows a redirect by itself; for what
+HTTP-Redirect carries to the model, the signature over the query string, the octets of `SAMLRequest`, `RelayState`
+and `SigAlg` in that order and as they appear in the URL, verified with `Verifier::verifyDetached()` under the keys of
+the sender's metadata, then the message base64-decoded and raw-inflated; for what the model sends, the form encoding
+of HTTP-POST, the message base64-encoded in a form field and the `RelayState` sent back as received. The model's two
+roles answer at `http://localhost:8083/model/`, where nothing listens: the script intercepts every message addressed
+there.
+
+| Role | Entity ID | Endpoints | Flags | Signing key |
+|---|---|---|---|---|
+| identity provider | `http://localhost:8083/model/idp` | `SingleSignOnService` `.../idp/sso` and `SingleLogoutService` `.../idp/slo`, HTTP-Redirect | `WantAuthnRequestsSigned="true"`, `NameIDFormat` transient | `idp-signing-key.pem` |
+| service provider | `http://localhost:8083/model/sp` | `AssertionConsumerService` `.../sp/acs`, HTTP-POST, index 0, default; `SingleLogoutService` `.../sp/slo`, HTTP-POST | `AuthnRequestsSigned="true"`, `WantAssertionsSigned="true"`, `NameIDFormat` transient | `sp-signing-key.pem` |
+
+`MetadataWriter` writes both metadata, signed with the key of their role, into `written/`, before the first request:
+SimpleSAMLphp parses its metadata at every request. Every writer signs without `KeyInfo` (`Signing::$certificatePem`
+left `null`). The validators read the clock of the machine; the replay store is `InMemoryReplayGuard` of
+`tests/Support/`.
+
+### Configuration added
+
+Everything of section 2 stands; the exchange adds the settings below. None changes what `capture.sh` plays: the
+third configuration is off unless `SSP_EXCHANGE=true`, the model's entries exist only once `written/` holds its
+metadata, and `default-sp` is left as it was.
+
+| Where | Setting | Value | Why |
+|---|---|---|---|
+| `compose.yaml` | a volume on both parties | `../written` at `/var/simplesamlphp/model`, read-only | the metadata the model wrote |
+| `compose.yaml`, `saml20-idp-hosted.php` | with `SSP_EXCHANGE=true`, the third configuration: `SingleSignOnServiceBinding`, `SingleLogoutServiceBinding` | HTTP-Redirect and HTTP-POST, at the same locations | the model posts its signed `AuthnRequest` and `LogoutRequest` over HTTP-POST; SimpleSAMLphp publishes HTTP-Redirect alone by default (`getGenerated()` of `src/SimpleSAML/Metadata/MetaDataStorageHandler.php`) (F-10) |
+| `saml20-sp-remote.php` | the model's service provider | read from `model-sp-metadata.xml` by `SAMLParser::parseDescriptorsString()` and `getMetadata20SP()` | SimpleSAMLphp reads what the model writes, with the parser of its XML metadata sources and of metarefresh; `AuthnRequestsSigned="true"` becomes `validate.authnrequest`, `WantAssertionsSigned="true"` `saml20.sign.assertion` |
+| `saml20-sp-remote.php`, the model's entry only | `sign.logout` | `true` | F-1: the identity provider signs its logout messages to the model, which refuses an unsigned one (M-2) |
+| `saml20-sp-remote.php`, the model's entry only | `validate.logout` | `true` | F-9: without it, a logout message whose signature fails is accepted as an unsigned one |
+| `saml20-idp-remote.php` | the model's identity provider | read from `model-idp-metadata.xml` by `getMetadata20IdP()`, nothing added | the same parser; `WantAuthnRequestsSigned="true"` becomes `sign.authnrequest` |
+| service provider `authsources.php` | `for-model`, a second `saml:SP` | its entity ID `http://localhost:8082/simplesaml/module.php/saml/sp/metadata/for-model`, `idp` the model's, `sp.pem` and `sp.crt`, `sign.authnrequest` and `sign.logout` `true` | a service provider that logs in at the model's identity provider, `default-sp` left as phase 1 captured it |
+| `for-model` | `SingleLogoutServiceBinding` | HTTP-Redirect and HTTP-POST | a service provider publishes HTTP-Redirect, and SOAP with an SQL store, by default (`getSLOEndpoints()` of `modules/saml/src/Auth/Source/SP.php`); the model answers over HTTP-POST (F-10) |
+| `for-model` | `validate.logout` | `true` | F-9 |
+| `sp/session.php`, mounted into `public/` | a page | the session of `for-model` as JSON: its identity provider, `NameID`, `SessionIndex` and attributes, or `401` | the proof that the service provider opened its session with what the model sent |
+
+### Results
+
+The run kept, `castor simplesamlphp --keep` on PHP 8.5.10 at 13:07 UTC, its documents issued between 13:07:34 and
+13:07:35; `PHP_VERSION=8.4 castor simplesamlphp` at 13:13 UTC gave the same outcome on PHP 8.4.25, every step green.
+
+**The model as identity provider, SimpleSAMLphp's service provider `for-model` in front.**
+
+1. `GET` `for-model`'s login URL, `ReturnTo` its `session.php`: a redirect to `http://localhost:8083/model/idp/sso`
+   carrying `SAMLRequest`, `RelayState`, `SigAlg` (rsa-sha256) and `Signature`. The script read `for-model`'s
+   metadata from its URL with `MetadataReader::readTrusted()`, verified the query string under its key, and
+   `AuthnRequestValidator::validateAuthenticatedByBinding()` accepted the request (`_ef4cb04a...` in the run kept),
+   `Authentication::Binding`, its assertion consumer service resolved to the HTTP-POST one of `for-model`'s metadata,
+   index 0.
+2. `ResponseWriter` answered with the identity provider's test key, a transient `NameID` whose `SPNameQualifier` is
+   `for-model`, `uid` = `model-student` and `eduPersonAffiliation` = `member`, `student` under the `basic` name
+   format, without `xsi:type` (section 6.6), SimpleSAMLphp's own windows (`NotBefore` 30 s back, 300 s ahead, a
+   session of 8 h): once with the assertion signed (`SignedParts::Assertion`), once with the response signed over it
+   (`SignedParts::AssertionAndResponse`), each after a login of its own. Posted with the `RelayState` to the
+   assertion consumer service, each was answered with a redirect to `session.php`, which showed the session open with
+   the model's identity provider, the `NameID` and the `SessionIndex` the model issued, and exactly the attributes it
+   sent.
+3. `GET` `for-model`'s logout URL: a redirect to `http://localhost:8083/model/idp/slo`, its query string signed;
+   verified the same way, `LogoutRequestValidator::validateAuthenticatedByBinding()` accepted the `LogoutRequest`
+   (`_b00d8f15...`), whose `NameID` and `SessionIndex` are those the model issued. `LogoutResponseWriter` answered,
+   signed, to `for-model`'s HTTP-POST single logout service, the `RelayState` sent back: a redirect to `session.php`,
+   which then answered `401`, the session closed.
+
+**The model as service provider, SimpleSAMLphp's identity provider in front.**
+
+1. The identity provider's metadata read live from its URL with `readTrusted()`. `AuthnRequestWriter` wrote the
+   request (`_627d4a4e...`), signed with the service provider's test key, its `Destination` the HTTP-POST single
+   sign-on service of that metadata, an `AssertionConsumerServiceURL`, `ProtocolBinding` HTTP-POST and a
+   `NameIDPolicy` transient with `AllowCreate`; posted with the `RelayState` `model-login`. The identity provider took
+   it to its login form, the test user logged in, and the page that followed held the HTTP-POST form of its response,
+   addressed to `http://localhost:8083/model/sp/acs` with the `RelayState` `model-login`.
+2. `ResponseValidator` accepted the response (`_117a92c3...`) under that metadata, with
+   `ExpectedResponse::toRequest()` naming the request: `SignatureCoverage::AssertionAndResponse`, a transient `NameID`
+   whose `SPNameQualifier` is the model's service provider, `uid` = `test` and `eduPersonAffiliation` = `member`,
+   `student`.
+3. `LogoutRequestWriter` wrote the logout (`_4155d5bb...`), signed, naming that `NameID` and that `SessionIndex`,
+   posted to the HTTP-POST single logout service. The identity provider answered with the HTTP-POST form of its
+   `LogoutResponse` (`_8496a6eb...`) to `http://localhost:8083/model/sp/slo`, signed in the XML since the model's
+   entry sets `sign.logout`: `LogoutResponseValidator::validate()` accepted it, `Authentication::XmlSignature`, status
+   `Success`.
+
+### Probes
+
+Each probe posts a document of the model changed after signing where its genuine twin was accepted, and must be
+refused; none is written to `written/`. SimpleSAMLphp's error page names the exception (`showerrors` is `true` by
+default), which the script prints.
+
+| Probe | Posted to | SimpleSAMLphp's answer |
+|---|---|---|
+| a response with its signed assertion, `model-student` changed to `model-teacher` in it | `for-model`'s assertion consumer service | HTTP 500, `Exception: Reference validation failed` |
+| a `LogoutResponse`, its `IssueInstant` one second later | `for-model`'s single logout service, its logout pending | HTTP 500, `SimpleSAML\Error\Exception: Validation of received messages enabled, but no signature found on message.` |
+| a `LogoutRequest`, its `IssueInstant` one second later | the identity provider's single logout service, logged in | the same |
+| an `AuthnRequest`, its `IssueInstant` one second later | the identity provider's single sign-on service | the same |
+
+"No signature found" is how SimpleSAMLphp reports a signature that failed: the constructor of `SAML2\Message`
+swallows it (F-3), and `validate.logout` or `validate.authnrequest` then asks for one. With `validate.logout` removed
+from both sides, and nothing else changed, on the same day, the two logout probes were accepted: `for-model` answered
+with a redirect to `session.php`, the identity provider with a redirect to its `logout-resume` (F-9).
+
+### The model's documents, verified
+
+`castor simplesamlphp` hands `written/` to the library half and to xmlsec1 once the exchange is over: the seven
+documents the model wrote in the run, both metadata signed, the response with its signed assertion, the response
+signed over it, the `LogoutResponse`, the `AuthnRequest` and the `LogoutRequest`. On each of the two runs above:
+
+```
+OK   model-idp-logoutresponse.xml: LogoutResponse from http://localhost:8083/model/idp, LogoutResponse signature valid under idp-signing-certificate.pem
+OK   model-idp-metadata.xml: metadata of http://localhost:8083/model/idp, certificates idp-signing-certificate.pem, signature valid under idp-signing-certificate.pem
+OK   model-idp-response-signed-assertion.xml: Response from http://localhost:8083/model/idp, assertion signature valid under idp-signing-certificate.pem
+OK   model-idp-response-signed-both.xml: Response from http://localhost:8083/model/idp, Response signature valid under idp-signing-certificate.pem, assertion signature valid under idp-signing-certificate.pem
+OK   model-sp-authnrequest.xml: AuthnRequest from http://localhost:8083/model/sp, AuthnRequest signature valid under sp-signing-certificate.pem
+OK   model-sp-logoutrequest.xml: LogoutRequest from http://localhost:8083/model/sp, LogoutRequest signature valid under sp-signing-certificate.pem
+OK   model-sp-metadata.xml: metadata of http://localhost:8083/model/sp, certificates sp-signing-certificate.pem, signature valid under sp-signing-certificate.pem
+7 documents, 0 failed
+...
+8 signatures verified by xmlsec1 1.3.7 (openssl), 0 failed
+```
+
+The documents themselves are not committed: a run writes new IDs and times, and the round trips of section 9.1 of the
+specification already commit what the writers produce.
+
+### Captures
+
+What SimpleSAMLphp sent the model in the run kept, bytes as received (HTTP-POST base64-decoded, HTTP-Redirect
+URL-decoded, base64-decoded and raw-inflated, as in section 2), and the two query strings as they appeared in the URL.
+
+| File under `tests/Fixture/real/` | What | Carried by | Signed |
+|---|---|---|---|
+| `simplesamlphp-2.5.3.1-idp-metadata-exchange-2026-09-30.xml` | the identity provider's metadata in the third configuration, as served | its URL | no |
+| `simplesamlphp-2.5.3.1-sp-metadata-for-model-2026-09-30.xml` | `for-model`'s metadata, as served | its URL | no |
+| `simplesamlphp-2.5.3.1-sp-authnrequest-to-model-2026-09-30.xml`, `...-query-...txt` | `for-model`'s `AuthnRequest` to the model, and its query string | HTTP-Redirect | over the query string, rsa-sha256 |
+| `simplesamlphp-2.5.3.1-sp-logoutrequest-to-model-2026-09-30.xml`, `...-query-...txt` | `for-model`'s `LogoutRequest` to the model, and its query string | HTTP-Redirect | over the query string, rsa-sha256 |
+| `simplesamlphp-2.5.3.1-idp-response-to-model-2026-09-30.xml` | the identity provider's response to the model's `AuthnRequest` | HTTP-POST | the assertion, then the response over it |
+| `simplesamlphp-2.5.3.1-idp-logoutresponse-to-model-2026-09-30.xml` | the identity provider's `LogoutResponse` to the model's `LogoutRequest` | HTTP-POST | the `LogoutResponse`, `sign.logout` |
+
+`tests/Unit/Interop/SimpleSamlPhpDocumentsTest.php` accepts them with a clock frozen at their `IssueInstant`: the
+response and the `LogoutResponse` through `validate()`, under the identity provider's metadata; the two requests
+through `validateAuthenticatedByBinding()`, after verifying again the signature of their query string with
+`Verifier::verifyDetached()` under `for-model`'s metadata and checking that the XML kept is what that query string
+carried. xmlsec1 verifies the three signatures of the two HTTP-POST documents under the identity provider's metadata:
+
+```
+docker run --rm -v "$PWD:/project:ro" -w /project alpine:3.22 sh -c 'apk add -q xmlsec libxml2-utils \
+    && sh tests/Interop/simplesamlphp/xmlsec1-verify.sh tests/Fixture/real "simplesamlphp-2.5.3.1-*.xml"'
+```
+
+On 30 September 2026: six signatures verified, the three of section 3 and these three, exit status 0.
+
+### Measurements
+
+`measure.php` on the captures of the exchange (section 4 has its command):
+
+| Document | Bytes | Root | XML signatures | Signature, digest, canonicalization | PrefixList | Times, fractional digits | ID | Destination | Issuer Format | Other |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `simplesamlphp-2.5.3.1-idp-logoutresponse-to-model-2026-09-30.xml` | 2 886 | LogoutResponse | LogoutResponse | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | `_` and 42 hexadecimal digits | present | omitted | status Success |
+| `simplesamlphp-2.5.3.1-idp-response-to-model-2026-09-30.xml` | 7 046 | Response | Response, Assertion | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | `_` and 42 hexadecimal digits | present | omitted | status Success |
+| `simplesamlphp-2.5.3.1-sp-authnrequest-to-model-2026-09-30.xml` | 560 | AuthnRequest | none |  |  | 0 | `_` and 42 hexadecimal digits | present | omitted | AssertionConsumerServiceURL="http://localhost:8082/simplesaml/module.php/saml/sp/saml2-acs.php/for-model", ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" |
+| `simplesamlphp-2.5.3.1-sp-logoutrequest-to-model-2026-09-30.xml` | 691 | LogoutRequest | none |  |  | 0 | `_` and 42 hexadecimal digits | present | omitted | NameID (SPNameQualifier Format), SessionIndex |
+
+| Response | NameID | Conditions NotBefore, NotOnOrAfter | Bearer NotOnOrAfter | SessionNotOnOrAfter | AudienceRestriction (Audience) | SessionIndex | Attributes, most values | NameFormat | xsi:type on values | AuthnContextClassRef |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `simplesamlphp-2.5.3.1-idp-response-to-model-2026-09-30.xml` | transient, 43 characters, SPNameQualifier | -30 s, +300 s | +300 s | +28800 s (AuthnInstant +0 s) | 1 (1) | 43 characters | 2, 2 | uri | xs:string | Password |
+
+| Metadata | Bytes | entityID length | Role, flags | KeyDescriptor | Endpoints | NameIDFormat | Other |
+|---|---|---|---|---|---|---|---|
+| `simplesamlphp-2.5.3.1-idp-metadata-exchange-2026-09-30.xml` | 4 148 | 61 | IDPSSODescriptor | signing (1 certificate), encryption (1 certificate) | SingleLogoutService HTTP-Redirect, SingleLogoutService HTTP-POST, SingleSignOnService HTTP-Redirect, SingleSignOnService HTTP-POST | transient | IDPSSODescriptor@errorURL |
+| `simplesamlphp-2.5.3.1-sp-metadata-for-model-2026-09-30.xml` | 4 384 | 70 | SPSSODescriptor AuthnRequestsSigned="true" | signing (1 certificate), encryption (1 certificate) | SingleLogoutService HTTP-Redirect, SingleLogoutService HTTP-POST, AssertionConsumerService HTTP-POST index 0, AssertionConsumerService HTTP-Artifact index 1 |  | SPSSODescriptor/Extensions |
+
+Against the provisional bounds of section 7 of the specification, nothing beyond section 4: one audience, two
+attributes of at most two values, one `SessionIndex`, one signing and one encryption certificate per role, at most
+two endpoints of one kind, a bearer window of 300 s, no fractional second. The response SimpleSAMLphp writes for a
+service provider it reads from the model's metadata has the shape of its response to its own (section 4): the same
+windows, formats and signatures.
+
+`timing.php`, the figure of section 9.6 (from `UnverifiedResponse::of()` on the loaded bytes to `AcceptedAssertion`,
+a new replay store each time, 20 runs to warm up, then 500), on an Apple M4 under Docker Desktop, 30 September 2026:
+
+| PHP, OpenSSL | The assertion signed: median, 95th percentile | The response and the assertion signed: median, 95th percentile |
+|---|---|---|
+| 8.5.10, OpenSSL 3.5.7 | 0.28 ms, 0.48 ms | 0.50 ms, 0.52 ms |
+| 8.4.25, OpenSSL 3.5.7 | 0.27 ms, 0.28 ms | 0.50 ms, 0.78 ms |
+
+Thirty times under the provisional 15 ms of section 9.6; the second signature nearly doubles the time, the RSA
+verifications weighing most.
+
+### Findings
+
+No document of SimpleSAMLphp in the exchange was refused by the model, and SimpleSAMLphp refused none of the model's:
+no rule of the specification had to change for the exchange.
+
+- **F-9. SimpleSAMLphp accepts a logout message whose signature fails, unless `validate.logout` is set.** F-3 holds
+  for the logout messages, on both roles: the constructor of `SAML2\Message` swallows a signature that fails its
+  digest, the message then reads as unsigned, and `Message::validateMessage()` checks a signature only when
+  `validate.logout` is set, when the query string carries one, or when the message kept one it could read. Measured
+  with the probes of this section: without `validate.logout`, `for-model` closed its session on a `LogoutResponse`
+  whose signature failed, and the identity provider started its logout on such a `LogoutRequest`. The model refuses
+  both (M-2, section 6.4 by way of 6.3). The `AuthnRequest` is protected the same way by `validate.authnrequest`,
+  which SimpleSAMLphp draws from the `AuthnRequestsSigned="true"` of the service provider's metadata. For
+  `heidi/saml` (section 6.9): the service providers it serves may be SimpleSAMLphp installations that verify nothing
+  of its logout messages unless configured to.
+- **F-10. SimpleSAMLphp publishes HTTP-Redirect alone where the model posts.** Its identity provider publishes its
+  single sign-on and single logout services on HTTP-Redirect only, and its service provider its single logout service
+  on HTTP-Redirect (and SOAP with an SQL store); the model's writers sign in the XML, for HTTP-POST, and leave the
+  signature over a query string to `saml2-bindings` (section 6.8). The exchange therefore publishes HTTP-POST too, in
+  the third configuration and on `for-model`, each accepting what it received there over HTTP-POST. Not a rule of the
+  model: the judge of `saml2-bindings` plays the default configuration over HTTP-Redirect. The model's identity
+  provider publishes HTTP-Redirect alone, where SimpleSAMLphp's service provider sends first anyway
+  (`getEndpointPrioritizedByBinding()` with HTTP-Redirect before HTTP-POST, `modules/saml/src/Auth/Source/SP.php`),
+  so that its requests reach the model with a signature over their query string, the path of
+  `validateAuthenticatedByBinding()`.
+- **F-11. SimpleSAMLphp verifies the model's signatures without `KeyInfo`.** The model's writers wrote no `KeyInfo`
+  (`Signing::$certificatePem` was `null`); both parties verified every signature under the key of the model's
+  metadata (`Message::checkSign()`, `getPublicKeys('signing')`), as `verify.php` and xmlsec1 did. The hint of D-17 is
+  not needed by SimpleSAMLphp.
+- **F-12. SimpleSAMLphp reads the model's metadata as it is written.** Signed, the `ds:Signature` the first child of
+  the `md:EntityDescriptor`, one prefix per namespace, `WantAuthnRequestsSigned`, `AuthnRequestsSigned` and
+  `WantAssertionsSigned` written as `true` or `false`: `SAMLParser` read both, mapped the three flags to its own
+  settings, and neither verified nor refused the signature, no certificate being configured for it: SimpleSAMLphp
+  trusts a metadata file by its channel, as `readTrusted()` does.
+- **F-13. SimpleSAMLphp's service provider takes the model's attribute values without `xsi:type`.** Section 12 of the
+  specification omits `xsi:type` on written values until a service provider of the judges refuses their absence:
+  `for-model` held `uid` and `eduPersonAffiliation` in its session as the model sent them, under the `basic` name
+  format and without an attribute map. SimpleSAMLphp's service provider does not require it.
+- **F-14. The transient `NameID` round trip.** SimpleSAMLphp's identity provider honoured the model's `NameIDPolicy`
+  (transient, `AllowCreate`), and its `NameID` carries the model's service provider as `SPNameQualifier`, which M-12
+  accepts on a transient identifier; `for-model` sent back, in its `LogoutRequest`, the `NameID` the model issued with
+  its `SPNameQualifier` and its `Format`, and the `SessionIndex`, which the script compared with what the model
+  issued, the check `heidi/saml` owns (section 6.9).

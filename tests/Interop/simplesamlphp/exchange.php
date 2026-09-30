@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * The exchange of phase 2 of story #11 (README.md of this directory, section 4): the model and the SimpleSAMLphp
+ * The exchange of phase 2 of story #11 (README.md of this directory, section 6): the model and the SimpleSAMLphp
  * installation of installation/, both ways, as an identity provider and as a service provider, login and logout, on
  * the running installation, with the package of the repository (its vendor/autoload.php), the test keys of
  * tests/Fixture/keys/ and the live clock.
