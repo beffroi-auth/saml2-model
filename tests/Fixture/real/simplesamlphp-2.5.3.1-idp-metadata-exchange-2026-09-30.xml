@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" entityID="http://localhost:8081/simplesaml/module.php/saml/idp/metadata">
+  <md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol" errorURL="http://localhost:8081/simplesaml/module.php/core/error/ERRORURL_CODE?ts=ERRORURL_TS&amp;rp=ERRORURL_RP&amp;tid=ERRORURL_TID&amp;ctx=ERRORURL_CTX">
+    <md:KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIIDczCCAlugAwIBAgIUa0/lzw/yMB2BS9F+QjgKXq3Wqt8wDQYJKoZIhvcNAQELBQAwSTFHMEUGA1UEAww+c2FtbDItbW9kZWwgU2ltcGxlU0FNTHBocCB0ZXN0IGlkZW50aXR5IHByb3ZpZGVyLCBub3QgYSBzZWNyZXQwHhcNMjYwOTMwMTAyNDE4WhcNMzYwOTI3MTAyNDE4WjBJMUcwRQYDVQQDDD5zYW1sMi1tb2RlbCBTaW1wbGVTQU1McGhwIHRlc3QgaWRlbnRpdHkgcHJvdmlkZXIsIG5vdCBhIHNlY3JldDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMdC9WgKDGnBTt4MBDgHcfCFb8JBXdr1z38dSk8pimor+Re98peJqvmXUH7ockOxu7naPwVDFj8auJ4jfIOhulJUVAjxyoE6MhNBEGVtISIHuwhatamHhNkAdQrzQKcQQrxsJWNGKEeo8BWjyrzt/nA0m5P6GNOy5ve32H0qMMF6A5Qpps1l7CMxkY0NrBKRuMlSDIEjMDwM6gqYp5JHy2cEX2c1oF+cXu2NWk+1v0yfB8nfPW/flHn1Z0aLfOX9LG0XVaJIjmTNUMXfhs8G3PTzjKvjsILii8HlpqU4A/2M7NjofEdbaJhhr+Y4+OkH9P9LCVzrxOjUh+Fc9mL3CvcCAwEAAaNTMFEwHQYDVR0OBBYEFE5mn3HXvd4FgqFwBQMB6DUI6uJ/MB8GA1UdIwQYMBaAFE5mn3HXvd4FgqFwBQMB6DUI6uJ/MA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAHmOqnjLjSh23OHQogvcxm0xp34tB3pXuQbmpSVrDUJK552pycY1xIK69p5TGa7Uwxobi+JlJKLzMQ/OhC+NvgmtuEIgQeif7Uc/1BYkg5P0ToFR6oGAq415hVCZO7bHBTxK6Ps0SkmVOSW9JKWBTUs/yRWExICN1Y9XmXIkxCqAE8Puvhz56WUM4SBwf4/RCIQ15H5lC4Q+JFNk5/Bg1RDOF86ZGvMGkYPx/18ixh0h5UdQAFsBgFCvys8hwoOmVloKPk/ytfBTMm3AkuAykP4w0RzOHeHq4jD+MjoAcVx8AVHf9puos+m5clsVoEue/+zEbKbDyPDdGe4xdriejR4=</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:KeyDescriptor use="encryption">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIIDczCCAlugAwIBAgIUa0/lzw/yMB2BS9F+QjgKXq3Wqt8wDQYJKoZIhvcNAQELBQAwSTFHMEUGA1UEAww+c2FtbDItbW9kZWwgU2ltcGxlU0FNTHBocCB0ZXN0IGlkZW50aXR5IHByb3ZpZGVyLCBub3QgYSBzZWNyZXQwHhcNMjYwOTMwMTAyNDE4WhcNMzYwOTI3MTAyNDE4WjBJMUcwRQYDVQQDDD5zYW1sMi1tb2RlbCBTaW1wbGVTQU1McGhwIHRlc3QgaWRlbnRpdHkgcHJvdmlkZXIsIG5vdCBhIHNlY3JldDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMdC9WgKDGnBTt4MBDgHcfCFb8JBXdr1z38dSk8pimor+Re98peJqvmXUH7ockOxu7naPwVDFj8auJ4jfIOhulJUVAjxyoE6MhNBEGVtISIHuwhatamHhNkAdQrzQKcQQrxsJWNGKEeo8BWjyrzt/nA0m5P6GNOy5ve32H0qMMF6A5Qpps1l7CMxkY0NrBKRuMlSDIEjMDwM6gqYp5JHy2cEX2c1oF+cXu2NWk+1v0yfB8nfPW/flHn1Z0aLfOX9LG0XVaJIjmTNUMXfhs8G3PTzjKvjsILii8HlpqU4A/2M7NjofEdbaJhhr+Y4+OkH9P9LCVzrxOjUh+Fc9mL3CvcCAwEAAaNTMFEwHQYDVR0OBBYEFE5mn3HXvd4FgqFwBQMB6DUI6uJ/MB8GA1UdIwQYMBaAFE5mn3HXvd4FgqFwBQMB6DUI6uJ/MA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAHmOqnjLjSh23OHQogvcxm0xp34tB3pXuQbmpSVrDUJK552pycY1xIK69p5TGa7Uwxobi+JlJKLzMQ/OhC+NvgmtuEIgQeif7Uc/1BYkg5P0ToFR6oGAq415hVCZO7bHBTxK6Ps0SkmVOSW9JKWBTUs/yRWExICN1Y9XmXIkxCqAE8Puvhz56WUM4SBwf4/RCIQ15H5lC4Q+JFNk5/Bg1RDOF86ZGvMGkYPx/18ixh0h5UdQAFsBgFCvys8hwoOmVloKPk/ytfBTMm3AkuAykP4w0RzOHeHq4jD+MjoAcVx8AVHf9puos+m5clsVoEue/+zEbKbDyPDdGe4xdriejR4=</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://localhost:8081/simplesaml/module.php/saml/idp/singleLogout"/>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://localhost:8081/simplesaml/module.php/saml/idp/singleLogout"/>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat>
+    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="http://localhost:8081/simplesaml/module.php/saml/idp/singleSignOnService"/>
+    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="http://localhost:8081/simplesaml/module.php/saml/idp/singleSignOnService"/>
+  </md:IDPSSODescriptor>
+</md:EntityDescriptor>
