@@ -15,7 +15,6 @@ use Beffroi\Xml\Core\Exception\RefusedXml;
 use Beffroi\Xml\Core\Loader;
 use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
-use function sprintf;
 
 /**
  * An AuthnRequest, identity provider side, in the order of section 6.2 (section 5.6): the structure of the request
@@ -104,8 +103,8 @@ final readonly class AuthnRequestValidator
         [$request, $assertionConsumerService] = AuthnRequestReader::read(
             $authentication->document->root(),
             new AuthnRequestContext(
-                $now->modify(sprintf('+%d seconds', $this->bounds->clockSkew)),
-                $now->modify(sprintf('-%d seconds', $this->bounds->maxMessageAge)),
+                $now,
+                $this->bounds,
                 $sp,
                 $self,
                 $receivedAt,

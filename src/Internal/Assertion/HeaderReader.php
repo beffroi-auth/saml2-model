@@ -38,7 +38,7 @@ final readonly class HeaderReader
         Version::read(Schema::attribute($assertion, 'saml:Assertion', 'Version'));
         $id = Schema::attribute($assertion, 'saml:Assertion', 'ID');
         $issueInstant = Time::read(Schema::attribute($assertion, 'saml:Assertion', 'IssueInstant'));
-        if ($issueInstant > $context->latest()) {
+        if ($issueInstant > $context->window->latest()) {
             throw new OutsideValidityWindow('The IssueInstant of the assertion is later than now plus the clock skew (M-7).');
         }
         $issuer = IssuerReader::read(Children::one($assertion, Schema::saml('Issuer')), $context->identityProvider);

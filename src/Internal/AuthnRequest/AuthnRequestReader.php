@@ -126,10 +126,10 @@ final readonly class AuthnRequestReader
         // it again for whoever builds one
         $id = Schema::attribute($request, 'samlp:AuthnRequest', 'ID');
         $issueInstant = Time::read(Schema::attribute($request, 'samlp:AuthnRequest', 'IssueInstant'));
-        if ($issueInstant > $context->latest) {
+        if ($issueInstant > $context->window->latest()) {
             throw new OutsideValidityWindow('The IssueInstant of the request is later than now plus the clock skew (M-7).');
         }
-        if ($issueInstant < $context->oldest) {
+        if ($issueInstant < $context->window->oldest()) {
             throw new OutsideValidityWindow('The IssueInstant of the request is older than maxMessageAge (M-7).');
         }
         $destination = Attributes::optional($request, new Name(null, 'Destination'));

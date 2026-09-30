@@ -106,10 +106,10 @@ final readonly class Envelope
         Version::read(Schema::attribute($root, $element, 'Version'));
         $id = Schema::attribute($root, $element, 'ID');
         $issueInstant = Time::read(Schema::attribute($root, $element, 'IssueInstant'));
-        if ($issueInstant > $context->latest) {
+        if ($issueInstant > $context->window->latest()) {
             throw new OutsideValidityWindow('The IssueInstant of the message is later than now plus the clock skew (M-7).');
         }
-        if ($issueInstant < $context->oldest) {
+        if ($issueInstant < $context->window->oldest()) {
             throw new OutsideValidityWindow('The IssueInstant of the message is older than maxMessageAge (M-7).');
         }
         $destination = Attributes::optional($root, new Name(null, 'Destination'));

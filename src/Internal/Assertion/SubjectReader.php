@@ -106,10 +106,10 @@ final readonly class SubjectReader
         if ($read->recipient !== $context->recipient) {
             throw new RecipientMismatch('The Recipient of the bearer confirmation is not the URL at which the response arrived (M-8).');
         }
-        if ($read->notOnOrAfter <= $context->earliest()) {
+        if ($read->notOnOrAfter <= $context->window->earliest()) {
             throw new OutsideValidityWindow('The NotOnOrAfter of the bearer confirmation is at or before now minus the clock skew (M-7).');
         }
-        if ($read->notOnOrAfter > $context->bearerLimit()) {
+        if ($read->notOnOrAfter > $context->window->bearerLimit()) {
             throw new OutsideValidityWindow('The NotOnOrAfter of the bearer confirmation is later than now plus maxBearerWindow (M-7).');
         }
         if ($read->inResponseTo !== $context->inResponseTo) {

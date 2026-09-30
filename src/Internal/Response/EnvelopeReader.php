@@ -22,7 +22,6 @@ use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Verified;
 use Dom\Element;
-use function sprintf;
 
 /**
  * The envelope of a response, section 6.1 step 6, read from the verified response when it was signed and from the
@@ -55,10 +54,10 @@ final readonly class EnvelopeReader
         Version::read(Schema::attribute($root, 'samlp:Response', 'Version'));
         $id = Schema::attribute($root, 'samlp:Response', 'ID');
         $issueInstant = Time::read(Schema::attribute($root, 'samlp:Response', 'IssueInstant'));
-        if ($issueInstant > $context->latest()) {
+        if ($issueInstant > $context->window->latest()) {
             throw new OutsideValidityWindow('The IssueInstant of the response is later than now plus the clock skew (M-7).');
         }
-        if ($issueInstant < $context->now->modify(sprintf('-%d seconds', $context->bounds->maxMessageAge))) {
+        if ($issueInstant < $context->window->oldest()) {
             throw new OutsideValidityWindow('The IssueInstant of the response is older than maxMessageAge (M-7).');
         }
         $destination = Attributes::optional($root, new Name(null, 'Destination'));
