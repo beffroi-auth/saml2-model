@@ -5,15 +5,12 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Protocol;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
 use Beffroi\Saml2\Model\Saml;
-use Beffroi\Saml2\Model\Value\Uri;
-use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\ForeignNode;
 use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
-use Beffroi\Xml\Core\Text;
-use function count;
 
 /**
  * An AuthnRequest as it arrived, before anything is verified (section 5.4, M-1): the root checked to be
@@ -41,11 +38,6 @@ final readonly class UnverifiedAuthnRequest
         if (! new Name(Saml::PROTOCOL, 'AuthnRequest')->matches($root)) {
             throw new MalformedMessage('The root of the document is not a samlp:AuthnRequest (section 6.2).');
         }
-        $issuers = Children::named($root, new Name(Saml::ASSERTION, 'Issuer'));
-        if (count($issuers) > 1) {
-            throw new MalformedMessage('The samlp:AuthnRequest holds more than one saml:Issuer (M-4).');
-        }
-
-        return new self($document, $issuers === [] ? null : Uri::read(Text::of($issuers[0])));
+        return new self($document, IssuerReader::unverified($root, 'samlp:AuthnRequest'));
     }
 }

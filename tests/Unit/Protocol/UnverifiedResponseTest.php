@@ -129,7 +129,7 @@ final class UnverifiedResponseTest extends TestCase
         ];
         yield 'two saml:Issuer' => [
             'hostile/response-two-issuers-refused.xml',
-            'The response or its assertion holds more than one saml:Issuer (M-4).',
+            'The samlp:Response holds more than one saml:Issuer (M-4).',
         ];
         yield 'an InResponseTo that is not an NCName' => [
             'hostile/response-in-response-to-not-an-ncname-refused.xml',

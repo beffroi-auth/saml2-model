@@ -80,7 +80,7 @@ final class UnverifiedLogoutRequestTest extends TestCase
     }
 
     /**
-     * Section 5.4, M-5: two Issuers leave the consumer two peers to choose from.
+     * Section 5.4, M-4: two Issuers leave the consumer two peers to choose from.
      */
     #[Test]
     public function itRefusesTwoIssuers(): void
@@ -90,7 +90,7 @@ final class UnverifiedLogoutRequestTest extends TestCase
 
         // Then
         $this->expectException(MalformedMessage::class);
-        $this->expectExceptionMessageIs('The message holds more than one saml:Issuer (M-5).');
+        $this->expectExceptionMessageIs('The samlp:LogoutRequest holds more than one saml:Issuer (M-4).');
 
         // When
         UnverifiedLogoutRequest::of($document);
