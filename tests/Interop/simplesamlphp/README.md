@@ -278,3 +278,141 @@ response of the second configuration and both of the doubly signed response, exi
 the three documents HTTP-Redirect carried skipped, having no XML signature. The signatures of the `AuthnRequest` and
 of the `LogoutRequest` are over the query string, not over XML: xmlsec1 has nothing to verify there, and
 `capture.sh` verified them with OpenSSL (`openssl_verify()`) under the service provider's metadata, as step 2 says.
+
+## 4. Measurements
+
+`measure.php` reads the documents with plain DOM, by direct children, nothing of SimpleSAMLphp, and prints the
+tables below; the windows are in seconds from the assertion's `IssueInstant`, `SessionNotOnOrAfter` with the
+`AuthnInstant` beside it. On 30 September 2026:
+
+```
+docker run --rm -v "$PWD:/project:ro" -w /project ghcr.io/spomky-labs/phpqa:8.4 \
+    php tests/Interop/simplesamlphp/measure.php tests/Fixture/real 'simplesamlphp-*.xml'
+```
+
+| Document | Bytes | Root | XML signatures | Signature, digest, canonicalization | PrefixList | Times, fractional digits | ID | Destination | Issuer Format | Other |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `simplesamlphp-2.5.3.1-idp-logoutresponse-2026-09-30.xml` | 586 | LogoutResponse | none |  |  | 0 | `_` and 42 hexadecimal digits | present | omitted | status Success |
+| `simplesamlphp-2.5.3.1-idp-response-signed-assertion-2026-09-30.xml` | 4 869 | Response | Assertion | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | `_` and 42 hexadecimal digits | present | omitted | status Success |
+| `simplesamlphp-2.5.3.1-idp-response-signed-both-2026-09-30.xml` | 7 216 | Response | Response, Assertion | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | `_` and 42 hexadecimal digits | present | omitted | status Success |
+| `simplesamlphp-2.5.3.1-sp-authnrequest-2026-09-30.xml` | 599 | AuthnRequest | none |  |  | 0 | `_` and 42 hexadecimal digits | present | omitted | AssertionConsumerServiceURL="http://localhost:8082/simplesaml/module.php/saml/sp/saml2-acs.php/default-sp", ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" |
+| `simplesamlphp-2.5.3.1-sp-logoutrequest-2026-09-30.xml` | 727 | LogoutRequest | none |  |  | 0 | `_` and 42 hexadecimal digits | present | omitted | NameID (SPNameQualifier Format), SessionIndex |
+| `simplesamlphp-saml2-4.20.3-authnrequest-signed-2026-09-30.xml` | 2 881 | AuthnRequest | AuthnRequest | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | 26 characters | present | omitted | AssertionConsumerServiceURL="https://sp.example.org/acs", ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST", NameIDPolicy (Format AllowCreate) |
+| `simplesamlphp-saml2-4.20.3-logoutrequest-signed-2026-09-30.xml` | 2 876 | LogoutRequest | LogoutRequest | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | 27 characters | present | omitted | NameID (SPNameQualifier Format), SessionIndex |
+| `simplesamlphp-saml2-4.20.3-logoutresponse-signed-2026-09-30.xml` | 2 808 | LogoutResponse | LogoutResponse | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | 28 characters | present | omitted | status Success |
+| `simplesamlphp-saml2-4.20.3-response-signed-assertion-2026-09-30.xml` | 4 477 | Response | Assertion | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | 22 characters | present | omitted | status Success |
+| `simplesamlphp-saml2-4.20.3-response-signed-both-2026-09-30.xml` | 6 775 | Response | Response, Assertion | rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n) | none | 0 | 22 characters | present | omitted | status Success |
+
+| Response | NameID | Conditions NotBefore, NotOnOrAfter | Bearer NotOnOrAfter | SessionNotOnOrAfter | AudienceRestriction (Audience) | SessionIndex | Attributes, most values | NameFormat | xsi:type on values | AuthnContextClassRef |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `simplesamlphp-2.5.3.1-idp-response-signed-assertion-2026-09-30.xml` | transient, 43 characters, SPNameQualifier | -30 s, +300 s | +300 s | +28800 s (AuthnInstant +0 s) | 1 (1) | 43 characters | 2, 2 | uri | xs:string | Password |
+| `simplesamlphp-2.5.3.1-idp-response-signed-both-2026-09-30.xml` | transient, 43 characters, SPNameQualifier | -30 s, +300 s | +300 s | +28800 s (AuthnInstant +0 s) | 1 (1) | 43 characters | 2, 2 | uri | xs:string | Password |
+| `simplesamlphp-saml2-4.20.3-response-signed-assertion-2026-09-30.xml` | transient, 23 characters, SPNameQualifier | -30 s, +300 s | +300 s | +28790 s (AuthnInstant -10 s) | 1 (1) | 21 characters | 2, 2 | basic | xs:string | Password |
+| `simplesamlphp-saml2-4.20.3-response-signed-both-2026-09-30.xml` | transient, 23 characters, SPNameQualifier | -30 s, +300 s | +300 s | +28790 s (AuthnInstant -10 s) | 1 (1) | 21 characters | 2, 2 | basic | xs:string | Password |
+
+| Metadata | Bytes | entityID length | Role, flags | KeyDescriptor | Endpoints | NameIDFormat | Other |
+|---|---|---|---|---|---|---|---|
+| `simplesamlphp-2.5.3.1-idp-metadata-2026-09-30.xml` | 3 813 | 61 | IDPSSODescriptor | signing (1 certificate), encryption (1 certificate) | SingleLogoutService HTTP-Redirect, SingleSignOnService HTTP-Redirect | transient | IDPSSODescriptor@errorURL |
+| `simplesamlphp-2.5.3.1-sp-metadata-2026-09-30.xml` | 4 212 | 71 | SPSSODescriptor AuthnRequestsSigned="true" | signing (1 certificate), encryption (1 certificate) | SingleLogoutService HTTP-Redirect, AssertionConsumerService HTTP-POST index 0, AssertionConsumerService HTTP-Artifact index 1 |  | SPSSODescriptor/Extensions |
+| `simplesamlphp-saml2-4.20.3-idp-metadata-2026-09-30.xml` | 1 989 | 23 | IDPSSODescriptor | signing (1 certificate) | SingleLogoutService HTTP-Redirect, SingleSignOnService HTTP-Redirect | transient | ID |
+| `simplesamlphp-saml2-4.20.3-idp-metadata-signed-2026-09-30.xml` | 4 291 | 23 | IDPSSODescriptor | signing (1 certificate) | SingleLogoutService HTTP-Redirect, SingleSignOnService HTTP-Redirect | transient | ID, Signature first child: rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n), PrefixList none |
+| `simplesamlphp-saml2-4.20.3-sp-metadata-2026-09-30.xml` | 2 049 | 22 | SPSSODescriptor AuthnRequestsSigned="true" WantAssertionsSigned="true" | signing (1 certificate) | SingleLogoutService HTTP-Redirect, AssertionConsumerService HTTP-POST index 0 | transient | ID |
+| `simplesamlphp-saml2-4.20.3-sp-metadata-signed-2026-09-30.xml` | 4 350 | 22 | SPSSODescriptor AuthnRequestsSigned="true" WantAssertionsSigned="true" | signing (1 certificate) | SingleLogoutService HTTP-Redirect, AssertionConsumerService HTTP-POST index 0 | transient | ID, Signature first child: rsa-sha256, sha256, xml-exc-c14n (transforms enveloped-signature xml-exc-c14n), PrefixList none |
+
+What the tables cannot show, from `capture.sh` and the sources of SimpleSAMLphp 2.5.3.1:
+
+- The `AuthnRequest` and the `LogoutRequest` of the installation carried an rsa-sha256 signature over the query
+  string, valid under the service provider's metadata; its `LogoutResponse` carried none (F-1).
+- SimpleSAMLphp writes every time to the second, in UTC with `Z`: no fractional digit anywhere, the library's
+  documents included.
+- The windows of the installation are its defaults: `NotBefore` 30 s before the issue instant, `NotOnOrAfter` and the
+  bearer `NotOnOrAfter` 300 s after (`assertion.lifetime`), `SessionNotOnOrAfter` 8 h after the `AuthnInstant`
+  (`session.duration`); the `AuthnInstant` fell in the same second as the issue instant. The messages of one login
+  were issued within 3 s of each other.
+- Its service provider accepts a clock skew of `assertion.allowed_clock_skew`, 180 s by default, clamped to 180 to
+  300 s (`modules/saml/src/Message.php`): the default and the ceiling of `TimeBounds::$clockSkew` (section 7).
+- IDs are `_` and 42 hexadecimal digits, 168 bits, for the messages, the assertion, the `SessionIndex` and the
+  transient `NameID` alike (43 characters, under the 128 bytes of `maxIdLength` and the 256 characters of M-12).
+
+Against the provisional bounds of section 7, on these documents: one `AudienceRestriction` of one `Audience` (bounds
+8 and 16), two attributes of at most two values (256 and 256), one `SessionIndex` (16), per metadata role one signing
+and one encryption certificate (16 and 16), at most two endpoints of one kind (64), at most one `NameIDFormat` (16);
+a bearer window of 300 s (`maxBearerWindow` 3 600 s); entity IDs of 61 and 71 characters (1 024). The performance
+figure of section 9.6 needs the model's code and is not measured here.
+
+## 5. Findings
+
+Each document of section 4 read against sections 4, 6, 7 and 8 of `spec/model.md`, with a clock frozen at its
+issue instant and the metadata of its batch. None of the library's nine documents would be refused: every
+signature the profile requires is there, `Destination` and `Recipient` name the assertion consumer service of
+the service provider's metadata, the `Audience` its entity ID, the `InResponseTo` the request, the windows are
+bounded, the formats are of Core §8.2 and §8.3. The installation's documents give the following.
+
+- **F-1. The identity provider's `LogoutResponse` is not signed, and the model refuses it.** SimpleSAMLphp 2.5.3.1
+  signs a logout message only when `sign.logout` or `redirect.sign` is set (`addRedirectSign()` of
+  `modules/saml/src/Message.php`, `false` by default), and its identity provider sets neither by default: the
+  `LogoutResponse` travels over HTTP-Redirect with no `Signature` parameter and no XML signature. The model refuses
+  it with `SignatureRequired`: `LogoutResponseValidator::validate()` requires a `ds:Signature` (M-2, section 6.4 by
+  way of 6.3, Profiles §4.4.4.2), and `validateAuthenticatedByBinding()` does not apply, since the binding carried no
+  signature for `saml2-bindings` to verify (section 6.8). The producer is wrong and the rule stands (section 9.4):
+  the fix is SimpleSAMLphp's `sign.logout => true`, in `saml20-idp-hosted.php` or in the `saml20-sp-remote.php` entry
+  of the peer. Phase 2 needs it on the installation's identity provider for the model's service provider to accept
+  its logout answer, a non-default setting to add then with this reason; the same holds for the `LogoutRequest` that
+  identity provider would send in a logout it starts. SimpleSAMLphp's own service provider accepted the unsigned
+  answer (`redirect.validate` is `false` by default).
+- **F-2. SimpleSAMLphp signs the response by default.** `saml20.sign.response` defaults to `true` (section 2), so
+  the default capture is the doubly signed response and the configured one is the response whose assertion alone is
+  signed. Section 9.4 of the specification says the reverse ("a response signed over it where the installation is
+  configured to"): its wording, not a rule, is what the capture contradicts. The branch of M-2 that SimpleSAMLphp's
+  defaults leave aside is still the response signed alone, Keycloak's (section 9.5).
+- **F-3. SimpleSAMLphp's service provider accepts a response whose own signature fails, when its assertion's holds.**
+  The probe of `capture.sh` (step 7) moved the response's `IssueInstant` by one second: xmlsec1 then fails the
+  response's signature (`Failure reason: REFERENCE`) and verifies the assertion's, and the service provider accepted
+  the response and returned to its `ReturnTo`. The constructor of `SAML2\Message` swallows a signature that fails
+  its digest, `validate()` then answers `false` as for an unsigned message, and `processResponse()` asks for one
+  valid signature among the response's and the assertion's. The model refuses the same document (M-2: every
+  signature present verifies; section 6.1 step 3, `Dsig`'s `DigestMismatch`), which the hostile corpus of section 9.2
+  already asserts for the reverse case. Nothing changes in the model, but SimpleSAMLphp's acceptance is no proof that
+  every signature of a document holds: phase 2 runs `verify.php` and `xmlsec1-verify.sh` on what the writers produce,
+  both of which fail a document with one failing signature, as well as posting it (decision 0013: a target, not an
+  oracle). The same constructor makes a posted `AuthnRequest` or `LogoutRequest` whose XML signature fails read as
+  unsigned, processed when the configuration does not require a signature.
+- **F-4. What HTTP-Redirect carried has no XML signature, by construction.** The `AuthnRequest` and the
+  `LogoutRequest` of the installation are signed over the query string (SAML Bindings section 3.4.4.1), which
+  `capture.sh` verified: the model reads them through `validateAuthenticatedByBinding()` (sections 6.2 step 2 and
+  6.3), and `validate()` refuses them with `SignatureRequired`, the `AuthnRequest` because the service provider's
+  metadata says `AuthnRequestsSigned="true"`. The raw query strings are not kept; the judge of `saml2-bindings` will
+  want them, which a later capture can keep next to the XML.
+- **F-5. Attribute names under the `uri` format are not URIs.** The identity provider's default `attributes.NameFormat`
+  is `urn:oasis:names:tc:SAML:2.0:attrname-format:uri` (`getAttributeNameFormat()` of
+  `modules/saml/src/IdP/SAML2.php`), while the names of the test user are bare `uid` and `eduPersonAffiliation`: the
+  distributed example of `saml20-idp-hosted.php` maps them to OIDs with `core:AttributeMap` `name2oid`, which this
+  installation leaves out. The model accepts it, since section 6.1 step 11 checks that the `NameFormat` is one of
+  Core §8.2 and says nothing of the form of the `Name`; a later rule that read the `Name` under `uri` as an absolute
+  URI (M-6) would refuse SimpleSAMLphp's default document.
+- **F-6. `xsi:type="xs:string"` on every value.** Both the library and the installation write it on each
+  `AttributeValue`, with `xmlns:xs` and `xmlns:xsi` declared on the `saml:Assertion`, the case of dsig.md §6.3 and of
+  the behaviour row of section 9.3.
+- **F-7. The metadata as SimpleSAMLphp publishes it.** Unsigned (`metadata.sign.enable` is `false`): the model reads
+  it with `readTrusted()` only, and `readSigned()` is exercised on the library's signed metadata. The service
+  provider's carries `md:Extensions` (an `idpdisc:DiscoveryResponse`), accepted and not read (M-5), and an HTTP-Artifact
+  assertion consumer service at index 1, dropped next to the HTTP-POST one at index 0 (section 6.5 step 6); the
+  identity provider's carries `errorURL` on its `IDPSSODescriptor`, not read. Both publish their one certificate as
+  a signing and as an encryption `KeyDescriptor`. Both are indented, with whitespace-only text nodes between the
+  elements, which `Core` keeps (I-15) and the strict readers of the model have to pass over.
+- **F-8. The library the installation runs.** SimpleSAMLphp 2.5.3.1 processes every message with
+  `saml2-legacy` 4.20.3, on `xmlseclibs` 3.1.5; `simplesamlphp/saml2` 6.2.4, on `simplesamlphp/xml-security`, is
+  imported for its constants only (section 1). The library half follows the installation; a release of SimpleSAMLphp
+  that moves its messages to the 6.x library would need both halves run again, which section 12 already asks at
+  every change of SimpleSAMLphp's version.
+
+For the repository, outside this directory: nothing marks the fixtures of `tests/Fixture/` as binary, while
+`xml-security` carries `/tests/Core/Fixture/** -text` in its `.gitattributes` (story #3 owns that file; the files
+here were committed without conversion, `core.autocrlf` unset); and `tests/Fixture/real/README.md`, which section 10
+asks for, is not written here, its owner can point to this file for the SimpleSAMLphp documents. The PHP of this
+directory runs in its own containers and uses what section 8 bans in the package (`DOMDocument`, `loadXML()`,
+`saveXML()`, `getElementsByTagNameNS()`, `textContent`, `DOMXPath`, `echo`): the toolchain of story #3 has to leave
+`tests/Interop/` out, as `xml-security` leaves its interoperability project out (`excludePaths` of
+`.ci-tools/phpstan.neon` and `withSkip()` of `.ci-tools/rector.php` on `tests/*/Fixture/*`, `excludes` of
+`mago.toml`), and `library/composer.json` is a Composer project of its own, which a dependency update tool would
+otherwise pick up.
