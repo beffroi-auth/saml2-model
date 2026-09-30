@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Internal\Logout;
 
 use function array_map;
-use Beffroi\Saml2\Model\Assertion\NameId;
-use Beffroi\Saml2\Model\Assertion\NameIdFormat;
 use Beffroi\Saml2\Model\Exception\DestinationMismatch;
 use Beffroi\Saml2\Model\Exception\InvalidNameId;
 use Beffroi\Saml2\Model\Exception\IssuerMismatch;
@@ -14,6 +12,7 @@ use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Assertion\NameIdReader;
 use Beffroi\Saml2\Model\Internal\Particle;
 use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\LogoutRequest;
@@ -85,7 +84,7 @@ final readonly class LogoutRequestReader
     public static function read(Element $root, LogoutContext $context): LogoutRequest
     {
         [$id, $issueInstant, $issuer, $destination] = Envelope::header($root, self::ELEMENT, $context);
-        $nameId = self::nameId(Children::one($root, Schema::saml('NameID')));
+        $nameId = NameIdReader::read(Children::one($root, Schema::saml('NameID')));
         $sessionIndexes = array_map(Text::of(...), Children::named($root, Schema::samlp('SessionIndex')));
         $notOnOrAfter = Attributes::optional($root, new Name(null, 'NotOnOrAfter'));
         $notOnOrAfter = $notOnOrAfter === null ? null : Time::read($notOnOrAfter);
@@ -106,21 +105,6 @@ final readonly class LogoutRequestReader
             $nameId,
             $sessionIndexes,
             Attributes::optional($root, new Name(null, 'Reason')),
-        );
-    }
-
-    /**
-     * @throws InvalidNameId
-     * @throws MixedContent
-     */
-    private static function nameId(Element $nameId): NameId
-    {
-        return new NameId(
-            Text::of($nameId),
-            NameIdFormat::fromUri(Attributes::optional($nameId, new Name(null, 'Format'))),
-            Attributes::optional($nameId, new Name(null, 'NameQualifier')),
-            Attributes::optional($nameId, new Name(null, 'SPNameQualifier')),
-            Attributes::optional($nameId, new Name(null, 'SPProvidedID')),
         );
     }
 }

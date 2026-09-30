@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Internal\Assertion;
 
 use Beffroi\Saml2\Model\Assertion\NameId;
-use Beffroi\Saml2\Model\Assertion\NameIdFormat;
 use Beffroi\Saml2\Model\Assertion\SubjectConfirmation;
 use Beffroi\Saml2\Model\Exception\InResponseToMismatch;
 use Beffroi\Saml2\Model\Exception\InvalidNameId;
@@ -19,7 +18,6 @@ use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Name;
-use Beffroi\Xml\Core\Text;
 use Dom\Element;
 
 /**
@@ -63,20 +61,9 @@ final readonly class SubjectReader
         ]);
 
         return [
-            self::nameId(Children::one($subject, Schema::saml('NameID'))),
+            NameIdReader::read(Children::one($subject, Schema::saml('NameID'))),
             self::confirmation(Children::one($subject, Schema::saml('SubjectConfirmation')), $context),
         ];
-    }
-
-    private static function nameId(Element $nameId): NameId
-    {
-        return new NameId(
-            Text::of($nameId),
-            NameIdFormat::fromUri(Attributes::optional($nameId, new Name(null, 'Format'))),
-            Attributes::optional($nameId, new Name(null, 'NameQualifier')),
-            Attributes::optional($nameId, new Name(null, 'SPNameQualifier')),
-            Attributes::optional($nameId, new Name(null, 'SPProvidedID')),
-        );
     }
 
     private static function confirmation(Element $confirmation, AssertionContext $context): SubjectConfirmation
