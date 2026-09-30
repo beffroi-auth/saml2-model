@@ -202,7 +202,7 @@ final class LogoutRequestValidatorTest extends TestCase
 
         // Then
         $this->expectException(IssuerMismatch::class);
-        $this->expectExceptionMessageIs('The Issuer of the message is not the entity ID of the peer (M-8).');
+        $this->expectExceptionMessageIs('The Issuer is not the entity ID of the peer (M-8).');
 
         // When
         LogoutFixtures::requestValidator()->validate(
@@ -372,12 +372,28 @@ final class LogoutRequestValidatorTest extends TestCase
                         . '</saml:Issuer>',
             ],
             IssuerMismatch::class,
-            'The Issuer of the message has a Format other than entity (M-8).',
+            'The Issuer has a Format other than entity (M-8).',
         ];
+        foreach (['NameQualifier', 'SPNameQualifier', 'SPProvidedID'] as $qualifier) {
+            yield 'an Issuer with an ' . $qualifier . ' (section 9.8)' => [
+                [
+                    $issuer =>
+                        '<saml:Issuer '
+                            . $qualifier
+                            . '="'
+                            . LogoutFixtures::IDP
+                            . '">'
+                            . LogoutFixtures::IDP
+                            . '</saml:Issuer>',
+                ],
+                IssuerMismatch::class,
+                'The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).',
+            ];
+        }
         yield 'an Issuer with another case' => [
             [$issuer => '<saml:Issuer>https://IDP.example.com/saml</saml:Issuer>'],
             IssuerMismatch::class,
-            'The Issuer of the message is not the entity ID of the peer (M-8).',
+            'The Issuer is not the entity ID of the peer (M-8).',
         ];
         yield 'Version 2.1' => [
             ['Version="2.0"' => 'Version="2.1"'],
@@ -499,6 +515,24 @@ final class LogoutRequestValidatorTest extends TestCase
         yield 'exactly maxMessageAge old' => [300, '2026-09-30T12:10:00Z'];
         yield 'a NotOnOrAfter one second after now minus the skew' => [200, '2026-09-30T12:00:21Z'];
         yield 'a NotOnOrAfter one second after the IssueInstant' => [0, '2026-09-30T12:00:01Z'];
+    }
+
+    /**
+     * M-8, section 9.8: the adversarial pass found a request whose Issuer carries an SPNameQualifier accepted; the one
+     * reader of an Issuer refuses it.
+     */
+    #[Test]
+    public function itRefusesTheIssuerQualifierTheAdversarialPassFound(): void
+    {
+        // Given
+        $document = MetadataFixtures::load('hostile/adversarial-logout-request-issuer-sp-name-qualifier-refused.xml');
+
+        // Then
+        $this->expectException(IssuerMismatch::class);
+        $this->expectExceptionMessageIs('The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).');
+
+        // When
+        $this->byBinding($document);
     }
 
     /**

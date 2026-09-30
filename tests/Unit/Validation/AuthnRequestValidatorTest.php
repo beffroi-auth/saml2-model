@@ -32,6 +32,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use function sprintf;
 
 /**
  * Sections 5.6 and 6.2: an AuthnRequest validated by the identity provider, in order; the request rows of sections
@@ -614,12 +615,50 @@ final class AuthnRequestValidatorTest extends TestCase
     {
         yield 'another entity' => [
             'hostile/authn-request-issuer-another-entity-refused.xml',
-            'The Issuer of the request is not the entity ID of the service provider (M-8).',
+            'The Issuer is not the entity ID of the peer (M-8).',
         ];
         yield 'with Format unspecified' => [
             'hostile/authn-request-issuer-format-unspecified-refused.xml',
-            'The Issuer of the request has a Format other than entity (M-8).',
+            'The Issuer has a Format other than entity (M-8).',
         ];
+        yield 'with a NameQualifier, which the adversarial pass found accepted (section 9.8)' => [
+            'hostile/adversarial-authn-request-issuer-name-qualifier-refused.xml',
+            'The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).',
+        ];
+    }
+
+    /**
+     * M-8, §9.2 row "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6: the
+     * Issuer of a request carries none of the three qualifiers an entity identifier omits.
+     */
+    #[Test]
+    #[DataProvider('provideIssuerQualifiers')]
+    public function itRefusesAnIssuerWithAQualifier(string $qualifier): void
+    {
+        // Given
+        $request = AuthnRequestFixtures::request(children: sprintf(
+            '<saml:Issuer %s="%s">%s</saml:Issuer>',
+            $qualifier,
+            AuthnRequestFixtures::SERVICE_PROVIDER,
+            AuthnRequestFixtures::SERVICE_PROVIDER,
+        ));
+
+        // Then
+        $this->expectException(IssuerMismatch::class);
+        $this->expectExceptionMessageIs('The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).');
+
+        // When
+        $this->validate($request);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideIssuerQualifiers(): iterable
+    {
+        yield 'NameQualifier' => ['NameQualifier'];
+        yield 'SPNameQualifier' => ['SPNameQualifier'];
+        yield 'SPProvidedID' => ['SPProvidedID'];
     }
 
     /**
@@ -1036,7 +1075,7 @@ final class AuthnRequestValidatorTest extends TestCase
             ['AssertionConsumerServiceURL' => 'https://attacker.example.com/acs'],
             $another,
             IssuerMismatch::class,
-            'The Issuer of the request is not the entity ID of the service provider (M-8).',
+            'The Issuer is not the entity ID of the peer (M-8).',
         ];
         yield 'the index next to a URL before the URL is looked for' => [
             [
