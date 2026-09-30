@@ -13,6 +13,8 @@ use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\RecipientMismatch;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
@@ -45,28 +47,24 @@ final readonly class SubjectReader
      */
     public static function read(Element $subject, AssertionContext $context): array
     {
-        Structure::unsupported(
+        Schema::unsupported(
             $subject,
-            [Structure::saml('BaseID')],
+            [Schema::saml('BaseID')],
             'The subject is a saml:BaseID, which the package does not support (section 8).',
         );
-        Structure::unsupported(
+        Schema::unsupported(
             $subject,
-            [Structure::saml('EncryptedID')],
+            [Schema::saml('EncryptedID')],
             'The subject is a saml:EncryptedID, which the package does not support until sub-spike 9e (section 6.7).',
         );
-        Structure::sequence(
-            $subject,
-            [
-                Particle::one(Structure::saml('NameID'), 'saml:NameID'),
-                Particle::one(Structure::saml('SubjectConfirmation'), 'saml:SubjectConfirmation'),
-            ],
-            'saml:Subject',
-        );
+        Schema::children($subject, 'saml:Subject', [
+            Particle::of(Schema::saml('NameID'), 1, 1),
+            Particle::of(Schema::saml('SubjectConfirmation'), 1, 1),
+        ]);
 
         return [
-            self::nameId(Children::one($subject, Structure::saml('NameID'))),
-            self::confirmation(Children::one($subject, Structure::saml('SubjectConfirmation')), $context),
+            self::nameId(Children::one($subject, Schema::saml('NameID'))),
+            self::confirmation(Children::one($subject, Schema::saml('SubjectConfirmation')), $context),
         ];
     }
 
@@ -83,21 +81,21 @@ final readonly class SubjectReader
 
     private static function confirmation(Element $confirmation, AssertionContext $context): SubjectConfirmation
     {
-        $method = Structure::attribute($confirmation, 'Method', 'The saml:SubjectConfirmation has no Method (M-5).');
+        $method = Schema::attribute($confirmation, 'saml:SubjectConfirmation', 'Method');
         if ($method !== self::BEARER) {
             throw new Unsupported('The confirmation method is not bearer, the one the package supports (section 8).');
         }
-        Structure::unsupported(
+        Schema::unsupported(
             $confirmation,
-            [Structure::saml('NameID'), Structure::saml('BaseID'), Structure::saml('EncryptedID')],
+            [Schema::saml('NameID'), Schema::saml('BaseID'), Schema::saml('EncryptedID')],
             'The bearer confirmation holds an identifier of its own, which the package does not support (section 8).',
         );
-        Structure::sequence(
-            $confirmation,
-            [Particle::one(Structure::saml('SubjectConfirmationData'), 'saml:SubjectConfirmationData')],
-            'saml:SubjectConfirmation',
-        );
-        $data = Children::one($confirmation, Structure::saml('SubjectConfirmationData'));
+        Schema::children($confirmation, 'saml:SubjectConfirmation', [Particle::of(
+            Schema::saml('SubjectConfirmationData'),
+            1,
+            1,
+        )]);
+        $data = Children::one($confirmation, Schema::saml('SubjectConfirmationData'));
         if (Children::all($data) !== []) {
             throw new Unsupported('The SubjectConfirmationData of the bearer confirmation holds an element, which the package does not support (section 8).');
         }
@@ -105,12 +103,16 @@ final readonly class SubjectReader
             throw new MalformedMessage('The bearer confirmation has a NotBefore (section 6.1).');
         }
         $read = new SubjectConfirmation(
-            Structure::attribute($data, 'Recipient', 'The bearer confirmation has no Recipient (M-8).'),
-            Time::read(Structure::attribute(
+            Attributes::optional(
                 $data,
-                'NotOnOrAfter',
-                'The bearer confirmation has no NotOnOrAfter (section 6.1).',
-            )),
+                new Name(null, 'Recipient'),
+            ) ?? throw new MalformedMessage('The bearer confirmation has no Recipient (M-8).'),
+            Time::read(
+                Attributes::optional(
+                    $data,
+                    new Name(null, 'NotOnOrAfter'),
+                ) ?? throw new MalformedMessage('The bearer confirmation has no NotOnOrAfter (section 6.1).'),
+            ),
             Attributes::optional($data, new Name(null, 'InResponseTo')),
             Attributes::optional($data, new Name(null, 'Address')),
         );

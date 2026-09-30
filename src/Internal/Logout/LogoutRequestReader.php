@@ -14,8 +14,8 @@ use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
-use Beffroi\Saml2\Model\Internal\Metadata\Particle;
-use Beffroi\Saml2\Model\Internal\Metadata\Schema;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\LogoutRequest;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Attributes;
@@ -56,7 +56,7 @@ final readonly class LogoutRequestReader
                 1,
                 1,
             ),
-            new Particle('samlp:SessionIndex', [Envelope::samlp('SessionIndex')], 0, Particle::UNBOUNDED),
+            new Particle('samlp:SessionIndex', [Schema::samlp('SessionIndex')], 0, Particle::UNBOUNDED),
         ]);
         if (Schema::saml('BaseID')->matches($identifier[0])) {
             throw new Unsupported('The LogoutRequest names its principal with a saml:BaseID, which the package does not support (section 8).');
@@ -86,7 +86,7 @@ final readonly class LogoutRequestReader
     {
         [$id, $issueInstant, $issuer, $destination] = Envelope::header($root, self::ELEMENT, $context);
         $nameId = self::nameId(Children::one($root, Schema::saml('NameID')));
-        $sessionIndexes = array_map(Text::of(...), Children::named($root, Envelope::samlp('SessionIndex')));
+        $sessionIndexes = array_map(Text::of(...), Children::named($root, Schema::samlp('SessionIndex')));
         $notOnOrAfter = Attributes::optional($root, new Name(null, 'NotOnOrAfter'));
         $notOnOrAfter = $notOnOrAfter === null ? null : Time::read($notOnOrAfter);
         if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $context->expired) {

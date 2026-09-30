@@ -9,6 +9,8 @@ use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Metadata\IdentityProvider;
 use Beffroi\Saml2\Model\Metadata\ServiceProvider;
 use Beffroi\Saml2\Model\Saml;

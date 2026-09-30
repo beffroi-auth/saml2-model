@@ -6,11 +6,11 @@ namespace Beffroi\Saml2\Model\Internal\Response;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\SignatureRequired;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Metadata\IdentityProvider;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Exception\RefusedXml;
 use Beffroi\Xml\Core\Loader;
-use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Exception\SignatureRefused;
 use Beffroi\Xml\Dsig\Verified;
 use function count;
@@ -54,7 +54,7 @@ final readonly class SignedAssertion
      */
     public static function of(Element $received, SignedResponse $response, IdentityProvider $idp, Loader $loader): self
     {
-        $signatures = Children::named($received, new Name(SignedResponse::DSIG, 'Signature'));
+        $signatures = Children::named($received, Schema::ds('Signature'));
         if (count($signatures) > 1) {
             throw new MalformedMessage('The saml:Assertion holds more than one ds:Signature (M-4).');
         }

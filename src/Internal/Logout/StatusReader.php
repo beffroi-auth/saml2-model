@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Internal\Logout;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
-use Beffroi\Saml2\Model\Internal\Metadata\Particle;
-use Beffroi\Saml2\Model\Internal\Metadata\Schema;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\SecondLevelStatusCode;
 use Beffroi\Saml2\Model\Protocol\Status;
 use Beffroi\Saml2\Model\Protocol\StatusCode;
@@ -34,10 +34,10 @@ final readonly class StatusReader
     {
         Schema::children($status, 'samlp:Status', [
             self::code(1),
-            new Particle('samlp:StatusMessage', [Envelope::samlp('StatusMessage')], 0, 1),
-            new Particle('samlp:StatusDetail', [Envelope::samlp('StatusDetail')], 0, 1),
+            new Particle('samlp:StatusMessage', [Schema::samlp('StatusMessage')], 0, 1),
+            new Particle('samlp:StatusDetail', [Schema::samlp('StatusDetail')], 0, 1),
         ]);
-        $secondLevel = Schema::children(Children::one($status, Envelope::samlp('StatusCode')), self::CODE, [
+        $secondLevel = Schema::children(Children::one($status, Schema::samlp('StatusCode')), self::CODE, [
             self::code(0),
         ])[0];
         foreach ($secondLevel as $code) {
@@ -52,8 +52,8 @@ final readonly class StatusReader
      */
     public static function read(Element $status): Status
     {
-        $code = Children::one($status, Envelope::samlp('StatusCode'));
-        $secondLevel = Children::optional($code, Envelope::samlp('StatusCode'));
+        $code = Children::one($status, Schema::samlp('StatusCode'));
+        $secondLevel = Children::optional($code, Schema::samlp('StatusCode'));
 
         return new Status(
             StatusCode::fromUri(Schema::attribute($code, self::CODE, 'Value')),
@@ -68,6 +68,6 @@ final readonly class StatusReader
      */
     private static function code(int $min): Particle
     {
-        return new Particle(self::CODE, [Envelope::samlp('StatusCode')], $min, 1);
+        return new Particle(self::CODE, [Schema::samlp('StatusCode')], $min, 1);
     }
 }

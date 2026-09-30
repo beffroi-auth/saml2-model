@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Internal\Response;
 
 use Beffroi\Saml2\Model\Exception\SignatureRequired;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Metadata\IdentityProvider;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Exception\RefusedXml;
 use Beffroi\Xml\Core\Loader;
-use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Exception\SignatureRefused;
 use Beffroi\Xml\Dsig\Verified;
 use Beffroi\Xml\Dsig\Verifier;
@@ -25,8 +25,6 @@ use Dom\Element;
  */
 final readonly class SignedResponse
 {
-    public const string DSIG = 'http://www.w3.org/2000/09/xmldsig#';
-
     /**
      * @param Element $root the root of Verified::$document, or the received root when the response is not signed
      * @param ?Verified $verification the verification of the response's signature, null when it carries none
@@ -47,7 +45,7 @@ final readonly class SignedResponse
      */
     public static function of(Element $received, IdentityProvider $idp, Loader $loader): self
     {
-        if (Children::named($received, new Name(self::DSIG, 'Signature')) === []) {
+        if (Children::named($received, Schema::ds('Signature')) === []) {
             return new self($received, null);
         }
         $verification = self::verify($received, $idp, $loader);
