@@ -68,8 +68,9 @@ const INFECTION_STRICT_FILES = [
     'src/Internal/Metadata/KeyDescriptorReader.php',
     'src/Internal/Metadata/RoleReader.php',
     'src/Internal/Metadata/RoleRules.php',
-    // Section 9: the rule of M-2 for a received protocol message.
+    // Section 9: the rule of M-2 for a received protocol message, and the one reader of a samlp:Status (M-5, M-13).
     'src/Internal/Protocol/MessageAuthentication.php',
+    'src/Internal/Protocol/StatusReader.php',
     // Section 9: the strict readers of the assertion and their rules, sections 6.1 steps 7 to 11.
     'src/Internal/Assertion/AssertionContext.php',
     'src/Internal/Assertion/IssuerReader.php',
@@ -82,7 +83,6 @@ const INFECTION_STRICT_FILES = [
     // Section 9: the envelope of a response, its status, and the selection of the signed element, section 6.1 steps 2
     // to 6.
     'src/Internal/Response/Envelope.php',
-    'src/Internal/Response/StatusReader.php',
     'src/Internal/Response/SignedResponse.php',
     'src/Internal/Response/SignedAssertion.php',
     'src/Internal/Response/EnvelopeReader.php',
@@ -117,7 +117,6 @@ const INFECTION_STRICT_FILES = [
     'src/Internal/Logout/LogoutContext.php',
     'src/Internal/Logout/LogoutRequestReader.php',
     'src/Internal/Logout/LogoutResponseReader.php',
-    'src/Internal/Logout/StatusReader.php',
     // Section 9: the logout validators and what they return (section 5.6).
     'src/Validation/LogoutRequestValidator.php',
     'src/Validation/LogoutResponseValidator.php',
