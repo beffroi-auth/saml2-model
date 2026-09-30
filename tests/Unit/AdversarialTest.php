@@ -81,6 +81,16 @@ final class AdversarialTest extends TestCase
     private const string NOW = '2026-09-30T12:00:00Z';
 
     /**
+     * The attempts written by hand with the fix of the bypass they found (tests/Fixture/hostile/adversarial-README.md),
+     * asserted here as the builder's are.
+     */
+    private const array WRITTEN_BY_HAND = [
+        'hostile/adversarial-authn-request-issuer-name-qualifier-refused.xml',
+        'hostile/adversarial-logout-request-issuer-sp-name-qualifier-refused.xml',
+        'hostile/adversarial-logout-response-issuer-sp-provided-id-refused.xml',
+    ];
+
+    /**
      * Section 9.8, section 9.7: every adversarial fixture on disk is what the builder writes, byte for byte, so that
      * the command of tests/Fixture/hostile/adversarial-README.md writes them again.
      */
@@ -97,7 +107,8 @@ final class AdversarialTest extends TestCase
     }
 
     /**
-     * Section 9.8: every attempt the builder writes is asserted by one case of this class, none left unread.
+     * Section 9.8: every attempt, the builder's and those written by hand, is asserted by one case of this class, none
+     * left unread.
      */
     #[Test]
     public function itAssertsEveryAttempt(): void
@@ -129,11 +140,14 @@ final class AdversarialTest extends TestCase
         ksort($asserted);
 
         // When
-        $built = array_map(static fn (): bool => true, AdversarialFixtureBuilder::fixtures());
-        ksort($built);
+        $written = array_map(static fn (): bool => true, AdversarialFixtureBuilder::fixtures());
+        foreach (self::WRITTEN_BY_HAND as $path) {
+            $written[$path] = true;
+        }
+        ksort($written);
 
         // Then
-        static::assertSame($built, $asserted);
+        static::assertSame($written, $asserted);
     }
 
     /**
@@ -740,17 +754,18 @@ final class AdversarialTest extends TestCase
         string $attempt,
         string $exception,
         string $message,
+        string $now = self::NOW,
     ): void {
         // Then
         $this->expectException($exception);
         $this->expectExceptionMessageIs($message);
 
         // When
-        $this->validateAuthnRequest($this->refused($attempt));
+        $this->validateAuthnRequest($this->refused($attempt), $now);
     }
 
     /**
-     * @return iterable<string, array{string, class-string<RefusedXml>, string}>
+     * @return iterable<string, array{0: string, 1: class-string<RefusedXml>, 2: string, 3?: string}>
      */
     public static function provideRefusedAuthnRequests(): iterable
     {
@@ -934,6 +949,12 @@ final class AdversarialTest extends TestCase
             DestinationMismatch::class,
             'The Destination of the request is not the URL at which it arrived (M-8).',
         ];
+        yield 'issuer with a name qualifier, the bypass the pass found (M-8), issued when its original was' => [
+            'authn-request-issuer-name-qualifier',
+            IssuerMismatch::class,
+            'The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).',
+            AuthnRequestFixtures::NOW,
+        ];
         yield 'issuer with a trailing slash' => [
             'authn-request-issuer-with-a-trailing-slash',
             IssuerMismatch::class,
@@ -1020,6 +1041,11 @@ final class AdversarialTest extends TestCase
      */
     public static function provideRefusedLogoutRequests(): iterable
     {
+        yield 'issuer with an sp name qualifier, the bypass the pass found (M-8)' => [
+            'logout-request-issuer-sp-name-qualifier',
+            IssuerMismatch::class,
+            'The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).',
+        ];
         yield 'destination with a trailing slash' => [
             'logout-request-destination-with-a-trailing-slash',
             DestinationMismatch::class,
@@ -1089,6 +1115,11 @@ final class AdversarialTest extends TestCase
      */
     public static function provideRefusedLogoutResponses(): iterable
     {
+        yield 'issuer with an sp provided id, the bypass the pass found (M-8)' => [
+            'logout-response-issuer-sp-provided-id',
+            IssuerMismatch::class,
+            'The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).',
+        ];
         yield 'in response to in another case' => [
             'logout-response-in-response-to-in-another-case',
             InResponseToMismatch::class,
@@ -1305,12 +1336,12 @@ final class AdversarialTest extends TestCase
     }
 
     /**
-     * The AuthnRequest of $path, validated by the identity provider at its single sign-on service, neither party
-     * asking for signed requests: a signature present is verified all the same (M-2).
+     * The AuthnRequest of $path, validated by the identity provider at its single sign-on service at $now, neither
+     * party asking for signed requests: a signature present is verified all the same (M-2).
      */
-    private function validateAuthnRequest(string $path): AcceptedAuthnRequest
+    private function validateAuthnRequest(string $path, string $now = self::NOW): AcceptedAuthnRequest
     {
-        return new AuthnRequestValidator(SamlLoader::create(), $this->clock())->validate(
+        return new AuthnRequestValidator(SamlLoader::create(), new FrozenClock(new DateTimeImmutable($now)))->validate(
             UnverifiedAuthnRequest::of($this->load($path)),
             AuthnRequestFixtures::serviceProvider(),
             AuthnRequestFixtures::identityProvider(),

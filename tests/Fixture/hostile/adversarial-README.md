@@ -43,13 +43,14 @@ declaration in front.
 | **Written by the builder** | **190** | **131** | **59** |
 
 Seven more are written by hand with the fixes they pin, each a valid document of `../behaviour/` with one change, and
-asserted by the test of the class the fix touched:
+asserted by the test of the class the fix touched; the three that found the bypass of the Issuer qualifiers are attempts
+of the pass, and the adversarial test asserts them too:
 
 | File | Made from | Asserted by |
 |---|---|---|
 | `adversarial-metadata-identity-provider-valid-until-passed-refused.xml`, `../behaviour/adversarial-metadata-role-valid-until-accepted.xml` | `metadata-identity-provider.xml`, a `validUntil` on its role | `tests/Unit/Metadata/MetadataReaderTest.php`, section 6.5 step 4 |
 | `adversarial-metadata-service-provider-valid-until-passed-refused.xml` | `metadata-service-provider.xml`, a `validUntil` on its role | the same |
 | `../behaviour/adversarial-metadata-ignored-roles-valid-until-passed-accepted.xml` | `metadata-identity-provider.xml`, a SAML 1.1 role and an attribute authority past their `validUntil` | the same |
-| `adversarial-authn-request-issuer-name-qualifier-refused.xml` | `authn-request-unsigned.xml`, a `NameQualifier` on its Issuer | `tests/Unit/Validation/AuthnRequestValidatorTest.php`, M-8 |
-| `adversarial-logout-request-issuer-sp-name-qualifier-refused.xml` | `logout-request-written-for-http-redirect.xml`, an `SPNameQualifier` on its Issuer | `tests/Unit/Validation/LogoutRequestValidatorTest.php`, M-8 |
-| `adversarial-logout-response-issuer-sp-provided-id-refused.xml` | `logout-response-written-for-http-redirect.xml`, an `SPProvidedID` on its Issuer | `tests/Unit/Validation/LogoutResponseValidatorTest.php`, M-8 |
+| `adversarial-authn-request-issuer-name-qualifier-refused.xml` | `authn-request-unsigned.xml`, a `NameQualifier` on its Issuer | `tests/Unit/Validation/AuthnRequestValidatorTest.php` and `tests/Unit/AdversarialTest.php`, M-8 |
+| `adversarial-logout-request-issuer-sp-name-qualifier-refused.xml` | `logout-request-written-for-http-redirect.xml`, an `SPNameQualifier` on its Issuer | `tests/Unit/Validation/LogoutRequestValidatorTest.php` and `tests/Unit/AdversarialTest.php`, M-8 |
+| `adversarial-logout-response-issuer-sp-provided-id-refused.xml` | `logout-response-written-for-http-redirect.xml`, an `SPProvidedID` on its Issuer | `tests/Unit/Validation/LogoutResponseValidatorTest.php` and `tests/Unit/AdversarialTest.php`, M-8 |
