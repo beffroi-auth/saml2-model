@@ -14,15 +14,12 @@ use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
 use Beffroi\Saml2\Model\Internal\Particle;
 use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Value\Time;
-use Beffroi\Saml2\Model\Value\Uri;
 use Beffroi\Saml2\Model\Value\Version;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
-use Beffroi\Xml\Core\Text;
-use function count;
 use DateTimeImmutable;
 use Dom\Element;
 use function in_array;
@@ -52,23 +49,6 @@ final readonly class Envelope
         }
 
         return $root;
-    }
-
-    /**
-     * Section 5.4, M-1: the Issuer of a received message, read before any verification to choose the peer, a URI of
-     * M-6, or null when the message has none.
-     *
-     * @throws MalformedMessage when the root holds more than one saml:Issuer (M-5), or the Issuer is not a URI (M-6)
-     * @throws MixedContent when the Issuer holds an element
-     */
-    public static function unverifiedIssuer(Element $root): ?string
-    {
-        $issuers = Children::named($root, Schema::saml('Issuer'));
-        if (count($issuers) > 1) {
-            throw new MalformedMessage('The message holds more than one saml:Issuer (M-5).');
-        }
-
-        return $issuers === [] ? null : Uri::read(Text::of($issuers[0]));
     }
 
     /**

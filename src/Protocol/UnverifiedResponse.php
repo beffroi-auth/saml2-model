@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Protocol;
 
-use Beffroi\Saml2\Model\Assertion\Issuer;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\Value\SamlId;
 use Beffroi\Xml\Core\Attributes;
@@ -13,7 +13,6 @@ use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
-use Beffroi\Xml\Core\Text;
 use function count;
 use Dom\Element;
 
@@ -58,16 +57,12 @@ final readonly class UnverifiedResponse
      */
     private static function issuer(Element $response): ?string
     {
-        $name = new Name(Saml::ASSERTION, 'Issuer');
-        $issuers = Children::named($response, $name);
-        if ($issuers === []) {
-            $assertions = Children::named($response, new Name(Saml::ASSERTION, 'Assertion'));
-            $issuers = count($assertions) === 1 ? Children::named($assertions[0], $name) : [];
+        $issuer = IssuerReader::unverified($response, 'samlp:Response');
+        if ($issuer !== null) {
+            return $issuer;
         }
-        if (count($issuers) > 1) {
-            throw new MalformedMessage('The response or its assertion holds more than one saml:Issuer (M-4).');
-        }
+        $assertions = Children::named($response, new Name(Saml::ASSERTION, 'Assertion'));
 
-        return $issuers === [] ? null : new Issuer(Text::of($issuers[0]))->entityId;
+        return count($assertions) === 1 ? IssuerReader::unverified($assertions[0], 'saml:Assertion') : null;
     }
 }

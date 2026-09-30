@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Protocol;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
 use Beffroi\Saml2\Model\Internal\Logout\Envelope;
 use Beffroi\Saml2\Model\Value\SamlId;
 use Beffroi\Xml\Core\Attributes;
@@ -39,7 +40,7 @@ final readonly class UnverifiedLogoutResponse
 
         return new self(
             $document,
-            Envelope::unverifiedIssuer($root),
+            IssuerReader::unverified($root, 'samlp:LogoutResponse'),
             $inResponseTo === null ? null : SamlId::read($inResponseTo),
         );
     }
