@@ -9,6 +9,7 @@ use Beffroi\Saml2\Model\Exception\UnsuccessfulResponse;
 use Beffroi\Saml2\Model\Protocol\Response;
 use Beffroi\Saml2\Model\Protocol\SecondLevelStatusCode;
 use Beffroi\Saml2\Model\Protocol\StatusCode;
+use Beffroi\Saml2\Model\Protocol\UnverifiedResponse;
 use Beffroi\Saml2\Model\Tests\Unit\Metadata\MetadataFixtures;
 use Beffroi\Saml2\Model\Tests\Unit\Writing\ResponseWriterFixtures as Fixtures;
 use Beffroi\Saml2\Model\Validation\SignatureCoverage;
@@ -398,6 +399,73 @@ final class ResponseWriterTest extends TestCase
             Fixtures::failure(destination: null),
             'The response holds no Destination, which the writer always writes and the service provider requires of a signed response (section 6.6).',
         ];
+    }
+
+    /**
+     * Section 9.1: the responses the writer signed with the identity provider's test key, committed as
+     * behaviour/response-written-*.xml and verified by xmlsec1 (tests/Fixture/oracle/README.md), are accepted by the
+     * validator with its clock frozen at their IssueInstant, under the coverage they were written with.
+     */
+    #[Test]
+    #[DataProvider('provideResponsesXmlsec1Verified')]
+    public function itWroteTheResponsesXmlsec1Verified(string $fixture, SignatureCoverage $coverage): void
+    {
+        // Given
+        $response = UnverifiedResponse::of(MetadataFixtures::load($fixture));
+        $written = Fixtures::everything();
+
+        // When
+        $accepted = Fixtures::validator()->validate($response, Fixtures::identityProvider(), Fixtures::expected());
+
+        // Then
+        static::assertEquals(
+            [$coverage, $written->nameId, $written->conditions, $written->attributes],
+            [
+                $accepted->coverage,
+                $accepted->assertion->nameId,
+                $accepted->assertion->conditions,
+                $accepted->assertion->attributes,
+            ],
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, SignatureCoverage}>
+     */
+    public static function provideResponsesXmlsec1Verified(): iterable
+    {
+        yield 'the assertion signed' => [
+            'behaviour/response-written-signed-assertion.xml',
+            SignatureCoverage::Assertion,
+        ];
+        yield 'the response signed too' => [
+            'behaviour/response-written-signed-assertion-and-response.xml',
+            SignatureCoverage::AssertionAndResponse,
+        ];
+    }
+
+    /**
+     * Section 9.1, M-13: the failure the writer signed, committed as
+     * behaviour/response-written-failure-signed-refused.xml and verified by xmlsec1, is reported by the validator as
+     * UnsuccessfulResponse with both its codes.
+     */
+    #[Test]
+    public function itWroteTheFailureXmlsec1Verified(): void
+    {
+        // Given
+        $response = UnverifiedResponse::of(MetadataFixtures::load('behaviour/response-written-failure-signed-refused.xml'));
+
+        // When
+        try {
+            Fixtures::validator()->validate($response, Fixtures::identityProvider(), Fixtures::expected());
+            static::fail('The failure is not reported.');
+        } catch (UnsuccessfulResponse $failure) {
+            // Then
+            static::assertSame(
+                [StatusCode::Responder, SecondLevelStatusCode::AuthnFailed],
+                [$failure->status->code, $failure->status->secondLevel],
+            );
+        }
     }
 
     /**
