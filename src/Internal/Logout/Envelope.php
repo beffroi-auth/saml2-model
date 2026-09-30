@@ -6,11 +6,11 @@ namespace Beffroi\Saml2\Model\Internal\Logout;
 
 use function array_slice;
 use Beffroi\Saml2\Model\Assertion\Issuer;
-use Beffroi\Saml2\Model\Assertion\NameIdFormat;
 use Beffroi\Saml2\Model\Exception\DestinationMismatch;
 use Beffroi\Saml2\Model\Exception\IssuerMismatch;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
+use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
 use Beffroi\Saml2\Model\Internal\Metadata\Particle;
 use Beffroi\Saml2\Model\Internal\Metadata\Schema;
 use Beffroi\Saml2\Model\Saml;
@@ -114,14 +114,14 @@ final readonly class Envelope
 
     /**
      * Sections 6.3 and 6.4, on the document the signature or the binding authenticated (M-1): the Issuer of the peer,
-     * its Format omitted or entity (M-8); Version 2.0 and an ID (M-6); an IssueInstant not later than now plus the skew
+     * read by the one reader of an Issuer, its Format omitted or entity and no qualifier (M-8); Version 2.0 and an ID (M-6); an IssueInstant not later than now plus the skew
      * and not older than maxMessageAge (M-7); a Destination, which a signed message carries, XML or binding, equal to
      * the URL at which it arrived, one of our single logout services (M-8, section 6.2 step 3).
      *
      * @param string $element the name of the root in the schema, for the refusals
      *
-     * @throws IssuerMismatch when the Issuer is not the peer's, or its Format is not entity (M-8)
-     * @throws MalformedMessage when an attribute is absent or not of its lexical form (M-5, M-6)
+     * @throws IssuerMismatch when the Issuer is not the peer's, its Format is not entity, or it carries a qualifier (M-8)
+     * @throws MalformedMessage when an attribute is absent or not of its lexical form, the Issuer's included (M-5, M-6)
      * @throws OutsideValidityWindow when the IssueInstant is outside its window (M-7)
      * @throws DestinationMismatch when the Destination is absent or not the URL of arrival, or that URL is not one of
      *                             our single logout services (M-8)
@@ -131,7 +131,7 @@ final readonly class Envelope
      */
     public static function header(Element $root, string $element, LogoutContext $context): array
     {
-        $issuer = self::issuer(Children::one($root, Schema::saml('Issuer')), $context->peer);
+        $issuer = IssuerReader::read(Children::one($root, Schema::saml('Issuer')), $context->peer);
         Version::read(Schema::attribute($root, $element, 'Version'));
         $id = Schema::attribute($root, $element, 'ID');
         $issueInstant = Time::read(Schema::attribute($root, $element, 'IssueInstant'));
@@ -153,23 +153,5 @@ final readonly class Envelope
         }
 
         return [$id, $issueInstant, $issuer, $destination];
-    }
-
-    /**
-     * @throws IssuerMismatch
-     * @throws MixedContent
-     */
-    private static function issuer(Element $issuer, string $peer): Issuer
-    {
-        $format = Attributes::optional($issuer, new Name(null, 'Format'));
-        if ($format !== null && $format !== NameIdFormat::Entity->value) {
-            throw new IssuerMismatch('The Issuer of the message has a Format other than entity (M-8).');
-        }
-        $entityId = Text::of($issuer);
-        if ($entityId !== $peer) {
-            throw new IssuerMismatch('The Issuer of the message is not the entity ID of the peer (M-8).');
-        }
-
-        return new Issuer($entityId);
     }
 }
