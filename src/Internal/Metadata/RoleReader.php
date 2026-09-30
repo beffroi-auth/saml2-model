@@ -7,17 +7,20 @@ namespace Beffroi\Saml2\Model\Internal\Metadata;
 use Beffroi\Saml2\Model\Assertion\NameIdFormat;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Metadata\IdentityProvider;
 use Beffroi\Saml2\Model\Metadata\ServiceProvider;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\Value\Boolean;
+use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Core\Text;
 use Beffroi\Xml\Dsig\Exception\InvalidKey;
 use function count;
+use DateTimeImmutable;
 use Dom\Element;
 use function in_array;
 use function preg_split;
@@ -25,8 +28,8 @@ use const PREG_SPLIT_NO_EMPTY;
 
 /**
  * The md:IDPSSODescriptor and md:SPSSODescriptor of an entity (section 6.5 steps 4 to 7), each read in the order and
- * with the cardinality of the schema (M-5): the keys, the endpoints, the NameID formats of SAML Core §8.3 and the
- * flags. The children the schema allows and the package does not use are skipped in their place: md:Extensions,
+ * with the cardinality of the schema (M-5): its own validUntil under M-7, the keys, the endpoints, the NameID formats
+ * of SAML Core §8.3 and the flags. The children the schema allows and the package does not use are skipped in their place: md:Extensions,
  * md:Organization, md:ContactPerson, md:ArtifactResolutionService, md:ManageNameIDService, md:NameIDMappingService,
  * md:AssertionIDRequestService, md:AttributeProfile, saml:Attribute and md:AttributeConsumingService, and a role's own
  * ds:Signature, which the entity's covers when readSigned() verified it.
@@ -57,15 +60,21 @@ final readonly class RoleReader
     }
 
     /**
+     * @param DateTimeImmutable $expired now minus the clock skew: a validUntil at or before it is past (M-7)
+     *
      * @throws MalformedMessage when the structure or a value is not the schema's, or no single sign-on service is on
      *                          HTTP-Redirect or HTTP-POST
+     * @throws OutsideValidityWindow when the role is past its validUntil (M-7)
      * @throws LimitExceeded when a count is over its bound of section 7 (M-17)
      * @throws Unsupported when a key is a ds:KeyValue alone (section 8)
      * @throws InvalidKey when a certificate is not the base64 of an RSA key of at least 2048 bits (D-16)
      * @throws MixedContent when an md:NameIDFormat holds an element (I-12)
      */
-    public static function identityProvider(Element $role, string $entityId): IdentityProvider
-    {
+    public static function identityProvider(
+        Element $role,
+        string $entityId,
+        DateTimeImmutable $expired,
+    ): IdentityProvider {
         $children = Schema::children($role, 'md:IDPSSODescriptor', [
             ...self::ssoDescriptor(),
             Particle::of(Schema::md('SingleSignOnService'), 1, Particle::UNBOUNDED),
@@ -74,6 +83,7 @@ final readonly class RoleReader
             Particle::of(Schema::md('AttributeProfile'), 0, Particle::UNBOUNDED),
             Particle::of(Schema::saml('Attribute'), 0, Particle::UNBOUNDED),
         ]);
+        self::validUntil($role, $expired);
         EndpointReader::bound($children[9], 'md:SingleSignOnService');
         EndpointReader::bound($children[6], 'md:SingleLogoutService');
         self::boundFormats($children[8]);
@@ -96,20 +106,27 @@ final readonly class RoleReader
     }
 
     /**
+     * @param DateTimeImmutable $expired now minus the clock skew: a validUntil at or before it is past (M-7)
+     *
      * @throws MalformedMessage when the structure or a value is not the schema's, or no assertion consumer service is
      *                          on HTTP-POST
+     * @throws OutsideValidityWindow when the role is past its validUntil (M-7)
      * @throws LimitExceeded when a count is over its bound of section 7 (M-17)
      * @throws Unsupported when a key is a ds:KeyValue alone (section 8)
      * @throws InvalidKey when a certificate is not the base64 of an RSA key of at least 2048 bits (D-16)
      * @throws MixedContent when an md:NameIDFormat holds an element (I-12)
      */
-    public static function serviceProvider(Element $role, string $entityId): ServiceProvider
-    {
+    public static function serviceProvider(
+        Element $role,
+        string $entityId,
+        DateTimeImmutable $expired,
+    ): ServiceProvider {
         $children = Schema::children($role, 'md:SPSSODescriptor', [
             ...self::ssoDescriptor(),
             Particle::of(Schema::md('AssertionConsumerService'), 1, Particle::UNBOUNDED),
             Particle::of(Schema::md('AttributeConsumingService'), 0, Particle::UNBOUNDED),
         ]);
+        self::validUntil($role, $expired);
         EndpointReader::bound($children[9], 'md:AssertionConsumerService');
         EndpointReader::bound($children[6], 'md:SingleLogoutService');
         self::boundFormats($children[8]);
@@ -151,6 +168,21 @@ final readonly class RoleReader
             Particle::of(Schema::md('ManageNameIDService'), 0, Particle::UNBOUNDED),
             Particle::of(Schema::md('NameIDFormat'), 0, Particle::UNBOUNDED),
         ];
+    }
+
+    /**
+     * The role's own validUntil, which RoleDescriptorType allows, read as the entity's is (section 6.5 step 4): one at
+     * or before now minus the skew refuses the metadata rather than dropping the role.
+     *
+     * @throws MalformedMessage when it is not a time of M-6
+     * @throws OutsideValidityWindow when it is past (M-7)
+     */
+    private static function validUntil(Element $role, DateTimeImmutable $expired): void
+    {
+        $validUntil = Attributes::optional($role, new Name(null, 'validUntil'));
+        if ($validUntil !== null && Time::read($validUntil) <= $expired) {
+            throw new OutsideValidityWindow('A role of the metadata is past its validUntil (M-7).');
+        }
     }
 
     /**

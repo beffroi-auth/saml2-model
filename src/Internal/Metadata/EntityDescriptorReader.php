@@ -48,7 +48,7 @@ final readonly class EntityDescriptorReader
      * @throws Unsupported when the root is md:EntitiesDescriptor, or a key is a ds:KeyValue alone (section 8)
      * @throws MalformedMessage when the structure or a value is not the schema's, or the roles are not those of
      *                          section 6.5 step 4
-     * @throws OutsideValidityWindow when the validUntil is past (M-7)
+     * @throws OutsideValidityWindow when the validUntil of the entity or of a role it reads is past (M-7)
      * @throws LimitExceeded when a count is over its bound of section 7 (M-17)
      * @throws InvalidKey when a certificate is not the base64 of an RSA key of at least 2048 bits (D-16)
      * @throws MixedContent when an md:NameIDFormat holds an element (I-12)
@@ -93,8 +93,8 @@ final readonly class EntityDescriptorReader
         return new EntityDescriptor(
             $entityId,
             $validUntil,
-            $identityProviders === [] ? null : RoleReader::identityProvider($identityProviders[0], $entityId),
-            $serviceProviders === [] ? null : RoleReader::serviceProvider($serviceProviders[0], $entityId),
+            $identityProviders === [] ? null : RoleReader::identityProvider($identityProviders[0], $entityId, $expired),
+            $serviceProviders === [] ? null : RoleReader::serviceProvider($serviceProviders[0], $entityId, $expired),
         );
     }
 
