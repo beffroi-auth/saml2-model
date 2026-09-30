@@ -110,6 +110,31 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  oracle:
+    name: "4️⃣ Oracle (xmlsec1)"
+    needs: [quality]
+    # The writers against the implementation that is not this one (spec/model.md section 9.1): a response signed with
+    # every scheme of PHP 8.5, its assertion alone and the response over it, and a signed failure, written in the phpqa
+    # image; every signature of each, and of the responses the writer committed, verified by xmlsec1 in Alpine. Two
+    # images, hence Docker on the runner rather than a job container; castor xmlsec-oracle is the same on a workstation.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: "Write and sign the responses with every scheme of the build"
+        env:
+          # the credential for the private xml-security, pending the maintainer's decision (see the top of this file)
+          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
+        run: >-
+          docker run --rm -v "$PWD:/project" -w /project -e HOME=/tmp -e COMPOSER_AUTH -e XMLSEC_ORACLE=tmp-phpqa/oracle
+          ghcr.io/spomky-labs/phpqa:8.5 sh -c 'composer install --no-interaction --no-progress --quiet
+          && composer exec -- phpunit --configuration .ci-tools/phpunit.xml.dist --filter ResponseWriterOracleTest'
+      - name: "Verify every signature of each with xmlsec1"
+        run: >-
+          docker run --rm -v "$PWD:/project:ro" -w /project alpine:3.22
+          sh -c 'apk add -q xmlsec libxml2-utils && xmlsec1 --version
+          && sh tests/Fixture/oracle/verify-signatures.sh tests/Fixture/keys/idp-signing-certificate.pem
+          tmp-phpqa/oracle/*.xml tests/Fixture/behaviour/response-written-*.xml'
+
   infection:
     name: "3️⃣ Mutation Testing"
     needs: [tests]
