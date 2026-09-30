@@ -107,6 +107,9 @@ const INFECTION_STRICT_FILES = [
     'src/Internal/Writing/Tree.php',
     'src/Internal/Writing/AssertionBuilder.php',
     'src/Internal/Writing/ResponseBuilder.php',
+    // Section 6.6: the writer of a response, which checks what the validator would refuse and signs (M-15).
+    'src/Writing/SignedParts.php',
+    'src/Writing/ResponseWriter.php',
     // Section 9, each added by the story that writes it:
     // the other strict readers and the selection of the signed element, every other file of src/Internal/;
     // the validators, every other file of src/Validation/.
