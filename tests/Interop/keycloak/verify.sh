@@ -2,7 +2,9 @@
 # Verifies with xmlsec1, the implementation that is neither Keycloak nor this package (spec/model.md section 9.4,
 # xml-security's spec/dsig.md section 9.1), every signature of every Keycloak document captured into the directory
 # given, under the certificate of its producer's metadata captured with it: keycloak-<version>-<idp|sp>-<document>-<date>.xml
-# is verified with the signing certificate of keycloak-<version>-<idp|sp>-metadata-<date>.xml. The SAML ID attributes
+# is verified with the signing certificate of keycloak-<version>-<idp|sp>-metadata-<date>.xml, and the documents of the
+# exchange with the model, keycloak-<version>-exchange-<idp|broker>-<document>-<date>.xml, with the one of
+# keycloak-<version>-exchange-<idp|broker>-metadata-<date>.xml, captured by the same run. The SAML ID attributes
 # are declared to xmlsec1; each ds:Signature child of the root and of a direct saml:Assertion child is verified on its
 # own. Two controls per signature must fail: the same check under a throwaway key, which proves the key comes from the
 # metadata and not from the KeyInfo of the message, and the check of a copy whose signed IssueInstant (entityID for
@@ -33,7 +35,7 @@ failures=0
 for file in "$directory"/keycloak-*.xml; do
     [ -f "$file" ] || continue
     base=$(basename "$file" .xml)
-    metadata=$directory/$(printf '%s' "$base" | sed 's/^\(keycloak-[0-9.]*-[a-z]*\)-.*-\([0-9-]\{10\}\)$/\1-metadata-\2/').xml
+    metadata=$directory/$(printf '%s' "$base" | sed 's/^\(keycloak-[0-9.]*-\(exchange-\)\{0,1\}[a-z]*\)-.*-\([0-9-]\{10\}\)$/\1-metadata-\3/').xml
     found=0
     for xpath in '/*/*[local-name()="Signature"]' '/*/*[local-name()="Assertion"]/*[local-name()="Signature"]'; do
         [ "$(xmllint --xpath "count($xpath)" "$file")" = 1 ] || continue
