@@ -1,0 +1,147 @@
+{
+  "realm": "sp",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "capture",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["http://localhost:8180/capture"],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8180/capture"
+      }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "idp",
+      "providerId": "saml",
+      "enabled": true,
+      "firstBrokerLoginFlowAlias": "first broker login without review profile",
+      "config": {
+        "entityId": "http://localhost:8180/realms/sp",
+        "idpEntityId": "http://localhost:8180/realms/idp",
+        "singleSignOnServiceUrl": "http://localhost:8180/realms/idp/protocol/saml",
+        "singleLogoutServiceUrl": "http://localhost:8180/realms/idp/protocol/saml",
+        "sendIdTokenOnLogout": "true",
+        "nameIDPolicyFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+        "principalType": "SUBJECT",
+        "allowCreate": "true",
+        "postBindingResponse": "false",
+        "postBindingAuthnRequest": "false",
+        "postBindingLogout": "false",
+        "wantAuthnRequestsSigned": "false",
+        "wantAssertionsSigned": "false",
+        "wantAssertionsEncrypted": "false",
+        "validateSignature": "true",
+        "useMetadataDescriptorUrl": "true",
+        "metadataDescriptorUrl": "http://localhost:8180/realms/idp/protocol/saml/descriptor",
+        "allowedClockSkew": "0",
+        "attributeConsumingServiceIndex": "0"
+      }
+    }
+  ],
+  "requiredActions": [
+    { "alias": "TERMS_AND_CONDITIONS", "name": "Terms and Conditions", "providerId": "TERMS_AND_CONDITIONS", "enabled": false, "defaultAction": false, "priority": 20, "config": {} },
+    { "alias": "UPDATE_PROFILE", "name": "Update Profile", "providerId": "UPDATE_PROFILE", "enabled": true, "defaultAction": false, "priority": 40, "config": {} },
+    { "alias": "VERIFY_EMAIL", "name": "Verify Email", "providerId": "VERIFY_EMAIL", "enabled": true, "defaultAction": false, "priority": 50, "config": {} },
+    { "alias": "CONFIGURE_TOTP", "name": "Configure OTP", "providerId": "CONFIGURE_TOTP", "enabled": true, "defaultAction": false, "priority": 54, "config": {} },
+    { "alias": "UPDATE_PASSWORD", "name": "Update Password", "providerId": "UPDATE_PASSWORD", "enabled": true, "defaultAction": false, "priority": 57, "config": {} },
+    { "alias": "delete_account", "name": "Delete Account", "providerId": "delete_account", "enabled": false, "defaultAction": false, "priority": 60, "config": {} },
+    { "alias": "UPDATE_EMAIL", "name": "Update Email", "providerId": "UPDATE_EMAIL", "enabled": false, "defaultAction": false, "priority": 70, "config": {} },
+    { "alias": "webauthn-register", "name": "Webauthn Register", "providerId": "webauthn-register", "enabled": true, "defaultAction": false, "priority": 80, "config": {} },
+    { "alias": "webauthn-register-passwordless", "name": "Webauthn Register Passwordless", "providerId": "webauthn-register-passwordless", "enabled": true, "defaultAction": false, "priority": 90, "config": {} },
+    { "alias": "VERIFY_PROFILE", "name": "Verify Profile", "providerId": "VERIFY_PROFILE", "enabled": false, "defaultAction": false, "priority": 100, "config": {} },
+    { "alias": "delete_credential", "name": "Delete Credential", "providerId": "delete_credential", "enabled": true, "defaultAction": false, "priority": 110, "config": {} },
+    { "alias": "idp_link", "name": "Linking Identity Provider", "providerId": "idp_link", "enabled": true, "defaultAction": false, "priority": 120, "config": {} },
+    { "alias": "CONFIGURE_RECOVERY_AUTHN_CODES", "name": "Recovery Authentication Codes", "providerId": "CONFIGURE_RECOVERY_AUTHN_CODES", "enabled": true, "defaultAction": false, "priority": 130, "config": {} },
+    { "alias": "update_user_locale", "name": "Update User Locale", "providerId": "update_user_locale", "enabled": true, "defaultAction": false, "priority": 1000, "config": {} }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "first broker login without review profile create unique user config",
+      "config": { "require.password.update.after.registration": "false" }
+    },
+    {
+      "alias": "first broker login without review profile conditional credential",
+      "config": { "credentials": "webauthn-passwordless" }
+    }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "first broker login without review profile",
+      "description": "The first broker login flow of Keycloak without its Review Profile step",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticatorFlow": true, "requirement": "REQUIRED", "priority": 20, "flowAlias": "first broker login without review profile User creation or linking" },
+        { "authenticatorFlow": true, "requirement": "CONDITIONAL", "priority": 60, "flowAlias": "first broker login without review profile Conditional Organization" }
+      ]
+    },
+    {
+      "alias": "first broker login without review profile User creation or linking",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "idp-create-user-if-unique", "authenticatorConfig": "first broker login without review profile create unique user config", "authenticatorFlow": false, "requirement": "ALTERNATIVE", "priority": 10 },
+        { "authenticatorFlow": true, "requirement": "ALTERNATIVE", "priority": 20, "flowAlias": "first broker login without review profile Handle Existing Account" }
+      ]
+    },
+    {
+      "alias": "first broker login without review profile Handle Existing Account",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "idp-confirm-link", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 10 },
+        { "authenticatorFlow": true, "requirement": "REQUIRED", "priority": 20, "flowAlias": "first broker login without review profile Account verification options" }
+      ]
+    },
+    {
+      "alias": "first broker login without review profile Account verification options",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "idp-email-verification", "authenticatorFlow": false, "requirement": "ALTERNATIVE", "priority": 10 },
+        { "authenticatorFlow": true, "requirement": "ALTERNATIVE", "priority": 20, "flowAlias": "first broker login without review profile Verify Existing Account by Re-authentication" }
+      ]
+    },
+    {
+      "alias": "first broker login without review profile Verify Existing Account by Re-authentication",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "idp-username-password-form", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 10 },
+        { "authenticatorFlow": true, "requirement": "CONDITIONAL", "priority": 20, "flowAlias": "first broker login without review profile Conditional 2FA" }
+      ]
+    },
+    {
+      "alias": "first broker login without review profile Conditional 2FA",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "conditional-user-configured", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 10 },
+        { "authenticator": "conditional-credential", "authenticatorConfig": "first broker login without review profile conditional credential", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 20 },
+        { "authenticator": "auth-otp-form", "authenticatorFlow": false, "requirement": "ALTERNATIVE", "priority": 30 },
+        { "authenticator": "webauthn-authenticator", "authenticatorFlow": false, "requirement": "DISABLED", "priority": 40 },
+        { "authenticator": "auth-recovery-authn-code-form", "authenticatorFlow": false, "requirement": "DISABLED", "priority": 50 }
+      ]
+    },
+    {
+      "alias": "first broker login without review profile Conditional Organization",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "conditional-user-configured", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 10 },
+        { "authenticator": "idp-add-organization-member", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 20 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# Keycloak as an identity provider (realm idp) and as a service provider (realm sp), story #14; see README.md.
+#   docker compose -f tests/Interop/keycloak/compose.yaml up -d
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.4
+    command: ['start-dev', '--http-port=8180', '--import-realm']
+    environment:
+      # Disposable, for kcadm.sh and the admin console of this container only.
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports:
+      - '8180:8180'
+    volumes:
+      - ./realms:/opt/keycloak/data/import:ro
