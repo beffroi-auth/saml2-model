@@ -36,6 +36,14 @@ final readonly class Particle
         return new self([$name], $label, true, false);
     }
 
+    /**
+     * One element of that name or more.
+     */
+    public static function some(Name $name, string $label): self
+    {
+        return new self([$name], $label, true, true);
+    }
+
     public function matches(Element $child): bool
     {
         return array_any($this->names, static fn (Name $name): bool => $name->matches($child));
