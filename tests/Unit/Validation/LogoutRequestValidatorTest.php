@@ -166,7 +166,7 @@ final class LogoutRequestValidatorTest extends TestCase
 
     /**
      * §9.2 row 34, M-7, SAML Core §3.7.1: a signed request whose NotOnOrAfter is at now minus the clock skew has
-     * expired.
+     * expired, its IssueInstant earlier still and within maxMessageAge, so that the window alone refuses it.
      */
     #[Test]
     public function itRefusesARequestWhoseNotOnOrAfterHasPassed(): void
