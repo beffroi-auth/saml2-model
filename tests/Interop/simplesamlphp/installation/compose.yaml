@@ -1,0 +1,29 @@
+# SimpleSAMLphp as an identity provider on http://localhost:8081 and as a service provider on
+# http://localhost:8082, from one image (tests/Interop/simplesamlphp/README.md). Port 8180 is another story's.
+# SSP_SIGN_RESPONSE=false starts the second configuration: the identity provider signs the assertion only.
+name: saml2-model-simplesamlphp
+
+services:
+  idp:
+    build: .
+    image: saml2-model-simplesamlphp:2.5.3.1
+    ports:
+      - "127.0.0.1:8081:80"
+    environment:
+      SSP_SIGN_RESPONSE: ${SSP_SIGN_RESPONSE:-default}
+    volumes:
+      - ./idp/config:/var/simplesamlphp/config:ro
+      - ./idp/metadata:/var/simplesamlphp/metadata:ro
+      - ./cert:/var/simplesamlphp/cert:ro
+
+  sp:
+    build: .
+    image: saml2-model-simplesamlphp:2.5.3.1
+    depends_on:
+      - idp
+    ports:
+      - "127.0.0.1:8082:80"
+    volumes:
+      - ./sp/config:/var/simplesamlphp/config:ro
+      - ./sp/metadata:/var/simplesamlphp/metadata:ro
+      - ./cert:/var/simplesamlphp/cert:ro
