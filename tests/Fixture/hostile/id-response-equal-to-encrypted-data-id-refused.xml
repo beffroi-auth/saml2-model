@@ -1,0 +1,3 @@
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:xenc="http://www.w3.org/2001/04/xmlenc#" ID="_x">
+  <xenc:EncryptedData Id="_x"/>
+</samlp:Response>

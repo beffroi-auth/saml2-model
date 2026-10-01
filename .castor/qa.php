@@ -42,13 +42,21 @@ const INFECTION_STRICT_FILES = [
     'src/Protocol/StatusCode.php',
     'src/Protocol/SecondLevelStatusCode.php',
     'src/Protocol/Status.php',
+    // Section 9: the lexical forms of M-6 and SamlId, every file of src/Value/.
+    'src/Value/Time.php',
+    'src/Value/Boolean.php',
+    'src/Value/SamlId.php',
+    'src/Value/Uri.php',
+    'src/Value/Version.php',
+    // Section 9: NameId, the rule of each format (M-12).
+    'src/Assertion/NameId.php',
+    // Section 9: the bounds of time the validators and the metadata reader share (M-7).
+    'src/Validation/TimeBounds.php',
     // Section 9, each added by the story that writes it:
-    // the lexical forms of M-6 and SamlId, every file of src/Value/;
-    // src/Assertion/NameId.php;
     // src/Metadata/IndexedEndpoints.php;
     // src/Metadata/MetadataReader.php;
     // the strict readers and the selection of the signed element, every file of src/Internal/;
-    // the validators, every file of src/Validation/.
+    // the validators, every other file of src/Validation/.
 ];
 
 /**
