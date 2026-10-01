@@ -154,4 +154,29 @@ final class LogoutRequestTest extends TestCase
         // When
         LogoutFixtures::request(sessionIndexes: array_fill(0, 17, '_session'));
     }
+
+    /**
+     * M-15: a session index holding a NUL, which the DOM would cut the written value at, or another character XML does
+     * not carry, refused whoever builds the request.
+     */
+    #[Test]
+    #[DataProvider('provideSessionIndexesNotCarried')]
+    public function itRefusesASessionIndexXmlDoesNotCarry(string $sessionIndex): void
+    {
+        // Then
+        $this->expectException(MalformedMessage::class);
+        $this->expectExceptionMessageIs('A SessionIndex holds a character XML does not carry, a NUL among them (M-15).');
+
+        // When
+        LogoutFixtures::request(sessionIndexes: ['_session', $sessionIndex]);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideSessionIndexesNotCarried(): iterable
+    {
+        yield 'a NUL' => ["_session\u{0}.other"];
+        yield 'U+0001' => ["_session\u{1}"];
+    }
 }

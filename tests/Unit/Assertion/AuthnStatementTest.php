@@ -63,4 +63,24 @@ final class AuthnStatementTest extends TestCase
         // When
         new AuthnStatement(new DateTimeImmutable('2026-09-30T11:59:57Z'), null, null, 'Password');
     }
+
+    /**
+     * M-15: a session index holding a NUL, which the DOM would cut the written value at, refused whoever builds the
+     * statement.
+     */
+    #[Test]
+    public function itRefusesASessionIndexXmlDoesNotCarry(): void
+    {
+        // Then
+        $this->expectException(MalformedMessage::class);
+        $this->expectExceptionMessageIs('The SessionIndex holds a character XML does not carry, a NUL among them (M-15).');
+
+        // When
+        new AuthnStatement(
+            new DateTimeImmutable('2026-09-30T11:59:57Z'),
+            "_session\u{0}.other",
+            null,
+            'urn:oasis:names:tc:SAML:2.0:ac:classes:Password',
+        );
+    }
 }

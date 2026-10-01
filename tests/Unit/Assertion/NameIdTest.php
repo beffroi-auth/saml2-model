@@ -148,6 +148,39 @@ final class NameIdTest extends TestCase
     }
 
     /**
+     * M-15: a NUL in the value or a qualifier, which the DOM would cut the written identifier at, so that the identity
+     * provider signs another identifier than the one it was given, or another character XML does not carry; refused
+     * whoever builds the NameID.
+     */
+    #[Test]
+    #[DataProvider('provideTextsNotCarried')]
+    public function itRefusesACharacterXmlDoesNotCarry(
+        string $value,
+        ?string $nameQualifier,
+        ?string $spNameQualifier,
+        ?string $spProvidedId,
+    ): void {
+        // Then
+        $this->expectException(InvalidNameId::class);
+        $this->expectExceptionMessageIs('The NameID or a qualifier holds a character XML does not carry, a NUL among them (M-15).');
+
+        // When
+        new NameId($value, NameIdFormat::Persistent, $nameQualifier, $spNameQualifier, $spProvidedId);
+    }
+
+    /**
+     * @return iterable<string, array{string, ?string, ?string, ?string}>
+     */
+    public static function provideTextsNotCarried(): iterable
+    {
+        yield 'a NUL inside the value' => ["admin\u{0}.attacker", null, null, null];
+        yield 'U+FFFF inside the value' => ["admin\u{FFFF}", null, null, null];
+        yield 'a NUL in the NameQualifier' => ['admin', "https://idp.example.com\u{0}", null, null];
+        yield 'a NUL in the SPNameQualifier' => ['admin', null, "https://sp.example.com\u{0}", null];
+        yield 'a NUL in the SPProvidedID' => ['admin', null, null, "jdoe\u{0}"];
+    }
+
+    /**
      * §9.2 row 27, M-12, M-6: a Unicode format character anywhere in the value, invisible or reordering, so that the
      * identifier displayed is the one compared.
      */
