@@ -20,6 +20,7 @@ use Beffroi\Xml\Dsig\Exception\SigningFailed;
 use Beffroi\Xml\Dsig\Signer;
 use Dom\Element;
 use InvalidArgumentException;
+use SensitiveParameter;
 
 /**
  * A samlp:AuthnRequest written in the order of section 6.6 (section 5.7): checked against what the validator of the
@@ -40,8 +41,11 @@ final readonly class AuthnRequestWriter
      * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
      * @throws SigningFailed when the signing key fails
      */
-    public function write(AuthnRequest $request, ?Signing $signing): Document
-    {
+    public function write(
+        AuthnRequest $request,
+        #[SensitiveParameter]
+        ?Signing $signing,
+    ): Document {
         // Section 6.6 step 1: signed by XML or by the binding, which the writer cannot tell apart from an unsigned
         // HTTP-POST, a request without Destination is refused (M-8, SAML Bindings §3.4.5.2, §3.5.5.2)
         if ($request->destination === null) {

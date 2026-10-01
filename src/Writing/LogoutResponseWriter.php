@@ -16,6 +16,7 @@ use Beffroi\Xml\Core\Exception\RefusedXml;
 use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Exception\SigningFailed;
 use Beffroi\Xml\Dsig\Signer;
+use SensitiveParameter;
 
 /**
  * A samlp:LogoutResponse written in the order of section 6.6 (section 5.7): what its reader would refuse, its
@@ -33,8 +34,11 @@ final readonly class LogoutResponseWriter
      * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
      * @throws SigningFailed when the signing key fails
      */
-    public function write(LogoutResponse $response, ?Signing $signing): Document
-    {
+    public function write(
+        LogoutResponse $response,
+        #[SensitiveParameter]
+        ?Signing $signing,
+    ): Document {
         $document = new DocumentFactory()->create(new Name(Saml::PROTOCOL, 'LogoutResponse'), 'samlp');
         $tree = Tree::of($document);
         $root = $document->root();

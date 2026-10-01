@@ -19,6 +19,7 @@ use Beffroi\Xml\Dsig\Exception\SigningFailed;
 use Beffroi\Xml\Dsig\Signer;
 use DateTimeImmutable;
 use InvalidArgumentException;
+use SensitiveParameter;
 
 /**
  * A samlp:LogoutRequest written in the order of section 6.6 (section 5.7): what its reader would refuse, its
@@ -39,8 +40,11 @@ final readonly class LogoutRequestWriter
      * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
      * @throws SigningFailed when the signing key fails
      */
-    public function write(LogoutRequest $request, ?Signing $signing): Document
-    {
+    public function write(
+        LogoutRequest $request,
+        #[SensitiveParameter]
+        ?Signing $signing,
+    ): Document {
         if (
             $request->notOnOrAfter instanceof DateTimeImmutable
             && $this->written($request->notOnOrAfter) <= $this->written($request->issueInstant)
