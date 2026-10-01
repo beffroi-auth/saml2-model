@@ -185,7 +185,7 @@ The objects of the three vocabularies, with the fields the rules of section 6 re
 | | `AuthnRequest` | `id`, `issueInstant`, `issuer`, `destination`, `assertionConsumerServiceUrl`, `assertionConsumerServiceIndex`, `protocolBinding`, `nameIdPolicy`, `forceAuthn`, `isPassive`, `requestedAuthnContext` (a `RequestedAuthnContext`: a comparison and a list of class references); `protocolBinding` is the binding's URI, checked to be HTTP-POST's in one place, since `Protocol` does not depend on `Metadata`; `NameIdPolicy::format` is one of the eight URIs of `NameIdFormat` or the `encrypted` format, `allowCreate` absent read as `false` (Core §3.4.1.1) |
 | | `Response` | `id`, `issueInstant`, `issuer`, `destination`, `inResponseTo`, `status`, `assertion` (`null` on a failure) |
 | | `LogoutRequest` | `id`, `issueInstant`, `issuer`, `destination`, `notOnOrAfter`, `nameId`, `sessionIndexes`, `reason` |
-| | `LogoutResponse` | `id`, `issueInstant`, `issuer`, `destination`, `inResponseTo`, `status` |
+| | `LogoutResponse` | `id`, `issueInstant`, `issuer`, `destination`, `inResponseTo`, `status`; for both logout messages `destination` is required, since both paths are authenticated and 6.3 requires it when signed, and the response's `inResponseTo` is required (M-10) |
 | `Metadata` | `Binding` (enum) | `HttpRedirect`, `HttpPost` |
 | | `Endpoint` | `binding`, `location`, `responseLocation` |
 | | `IndexedEndpoint` | `binding`, `location`, `index`, `isDefault` |
@@ -322,7 +322,7 @@ final readonly class AcceptedAuthnRequest
 }
 ```
 
-`LogoutRequestValidator` and `LogoutResponseValidator` have the same two methods, with `IdentityProvider|ServiceProvider $peer` in place of `$sp`, our own entity ID, the URL of our `SingleLogoutService` at which the message arrived, and, for the response, the ID of the `LogoutRequest` it answers; `validate()` refuses a message without a `ds:Signature` (`SignatureRequired`, Profiles §4.4.4.1, §4.4.4.2), and they return `AcceptedLogoutRequest` and `AcceptedLogoutResponse`.
+`LogoutRequestValidator` and `LogoutResponseValidator` have the same two methods, with `IdentityProvider|ServiceProvider $peer` in place of `$sp`, `IdentityProvider|ServiceProvider $self` our own role, the URL of our `SingleLogoutService` at which the message arrived, and, for the response, the ID of the `LogoutRequest` it answers: `validate(UnverifiedLogoutRequest $request, IdentityProvider|ServiceProvider $peer, IdentityProvider|ServiceProvider $self, string $receivedAt)`, and `validate(UnverifiedLogoutResponse $response, IdentityProvider|ServiceProvider $peer, IdentityProvider|ServiceProvider $self, string $receivedAt, string $requestId)`. `$self` is the role that faces the peer's, our identity provider facing a service provider and our service provider facing an identity provider (`\InvalidArgumentException` otherwise); its entity ID is ours, and its single logout services are where a logout message may arrive: a request at the `Location` of one of them, a response at its `ResponseLocation`, or at its `Location` when it has none (Metadata §2.2.2). `validate()` refuses a message without a `ds:Signature` (`SignatureRequired`, Profiles §4.4.4.1, §4.4.4.2), and they return `AcceptedLogoutRequest` and `AcceptedLogoutResponse`, each carrying the message and its `Authentication`.
 
 ```php
 namespace Beffroi\Saml2\Model\Metadata;
@@ -438,7 +438,7 @@ A request refused by this method gets no SAML answer: its endpoint is not establ
 
 ### 6.3 A logout request, both sides, in order
 
-`samlp:LogoutRequest`: `saml:Issuer` required (Profiles §4.4.4.1), `ds:Signature`, `samlp:Extensions`, then one `saml:NameID` (M-12; `saml:BaseID` and, until 9e, `saml:EncryptedID` are `Unsupported`), then the `samlp:SessionIndex` elements, bounded (section 7). The signature rule of M-2: `validate()` requires a `ds:Signature` and verifies it, `validateAuthenticatedByBinding()` refuses one. `Version`, `ID`, `IssueInstant` and `Destination` as in 6.2 step 3, `Destination` against our `SingleLogoutService`; `NotOnOrAfter`, when present, under M-7; `Reason` a URI, returned. Whether the `NameID` and the session indexes name a session is `heidi/saml`'s (Core §3.7.3).
+`samlp:LogoutRequest`: `saml:Issuer` required (Profiles §4.4.4.1), `ds:Signature`, `samlp:Extensions`, then one `saml:NameID` (M-12; `saml:BaseID` and, until 9e, `saml:EncryptedID` are `Unsupported`), then the `samlp:SessionIndex` elements, bounded (section 7). The signature rule of M-2: `validate()` requires a `ds:Signature` and verifies it, `validateAuthenticatedByBinding()` refuses one. `Version`, `ID`, `IssueInstant` and `Destination` as in 6.2 step 3, `Destination` against our `SingleLogoutService`; `NotOnOrAfter`, when present, under M-7; `Reason` a URI, returned. Whether the `NameID` and the session indexes name a session is `heidi/saml`'s (Core §3.7.3). A `SessionIndex` is read as it is, without a lexical rule of its own. The URL of arrival is compared with the `Location` or `ResponseLocation` of any of our single logout services, whatever their binding: the path the consumer calls, `validate()` or `validateAuthenticatedByBinding()`, already says which binding carried the message.
 
 ### 6.4 A logout response, in order
 
