@@ -15,7 +15,7 @@ after). `castor keycloak` runs both.
 | Keycloak | `quay.io/keycloak/keycloak:26.7.4`, manifest `sha256:82a77884f3af238beab1e7afd63b5f530e1b5c0590bd7aa60b40a40463e29b2c`, published on 16 September 2026 |
 | How the tag was chosen | On 30 September 2026, the highest `x.y.z` tag of the registry, whose manifest is also the one of `latest` (`nightly` is not a release), over every page of the listing: `for page in 1 2 3; do curl -s "https://quay.io/api/v1/repository/keycloak/keycloak/tag/?limit=100&onlyActiveTags=true&page=$page"; done \| jq -r '.tags[] \| "\(.name) \(.manifest_digest) \(.last_modified)"' \| sort -V`, until a page answers `"has_additional": false` |
 | Mode | `start-dev`: HTTP, the H2 database inside the container, the realms imported at startup from `realms/` |
-| Port | 8180 on the host and in the container (8081 and 8082 are SimpleSAMLphp's, story #11) |
+| Port | 8180 on the host's loopback only, `127.0.0.1`, and in the container (8081 and 8082 are SimpleSAMLphp's, story #11); the image pinned by the manifest above |
 | Machine of the capture | macOS 26 (Darwin 25.6), Docker 29.8.1, Docker Compose 5.5.1, GNU bash 3.2.57, curl 8.7.1, perl 5.34.1 |
 | The exchange | `ghcr.io/spomky-labs/phpqa:8.5`, manifest `sha256:55fb69b22faad3c0e2ddcb4b76f66c1a5e664ea02acea1708a844e747a7c6dec` (PHP 8.5.10, libcurl 8.14.1), the package of this repository through its `vendor/autoload.php`; castor 1.7.0 on the host; xmlsec1 1.3.7 on Alpine 3.22 |
 

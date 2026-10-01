@@ -2,13 +2,15 @@
 #   docker compose -f tests/Interop/keycloak/compose.yaml up -d
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:26.7.4
+    # the manifest of README.md, section Versions: a tag the registry moves never runs here
+    image: quay.io/keycloak/keycloak:26.7.4@sha256:82a77884f3af238beab1e7afd63b5f530e1b5c0590bd7aa60b40a40463e29b2c
     command: ['start-dev', '--http-port=8180', '--import-realm']
     environment:
       # Disposable, for kcadm.sh and the admin console of this container only.
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    # the loopback only: an admin console with a known password is never offered to the network
     ports:
-      - '8180:8180'
+      - '127.0.0.1:8180:8180'
     volumes:
       - ./realms:/opt/keycloak/data/import:ro
