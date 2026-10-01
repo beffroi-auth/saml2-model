@@ -848,7 +848,7 @@ final class AuthnRequestValidatorTest extends TestCase
             [
                 true,
                 true,
-                new NameIdPolicy(NameIdFormat::Persistent->value, 'https://affiliation.example.com', true),
+                new NameIdPolicy(NameIdFormat::Persistent->value, AuthnRequestFixtures::SERVICE_PROVIDER, true),
                 new RequestedAuthnContext(AuthnContextComparison::Minimum, [
                     'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
                     'urn:oasis:names:tc:SAML:2.0:ac:classes:X509',
@@ -861,6 +861,30 @@ final class AuthnRequestValidatorTest extends TestCase
                 $accepted->request->requestedAuthnContext,
             ],
         );
+    }
+
+    /**
+     * Section 6.2 step 5, section 8, SAML Core §3.4.1.1: an SPNameQualifier naming another entity than the service
+     * provider is an affiliation, which the package does not read, and which an identity provider honouring it would
+     * answer with the identifier the user has at that other entity; the service provider's own is returned, as the
+     * test above shows.
+     */
+    #[Test]
+    public function itRefusesAnAffiliationTheNameIdPolicyNames(): void
+    {
+        // Given
+        $request = AuthnRequestFixtures::request(
+            [],
+            AuthnRequestFixtures::ISSUER
+            . '<samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent" SPNameQualifier="https://other-sp.example.com/saml" AllowCreate="true"/>',
+        );
+
+        // Then
+        $this->expectException(Unsupported::class);
+        $this->expectExceptionMessageIs('The SPNameQualifier of the samlp:NameIDPolicy names another entity than the service provider, an affiliation the package does not read (section 8).');
+
+        // When
+        $this->validate($request);
     }
 
     /**

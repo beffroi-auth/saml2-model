@@ -84,6 +84,16 @@ final readonly class AuthnRequestReader
         $forceAuthn = Attributes::optional($request, new Name(null, 'ForceAuthn'));
         $isPassive = Attributes::optional($request, new Name(null, 'IsPassive'));
         $policy = Children::optional($request, Schema::samlp('NameIDPolicy'));
+        $nameIdPolicy = $policy instanceof Element ? NameIdPolicyReader::read($policy) : null;
+        // another entity than the requester is an affiliation, whose members share the identifiers (SAML Core
+        // §3.4.1.1): honoured by an identity provider that does not read affiliations, it would hand the requester the
+        // identifier the user has at that other entity
+        if (
+            $nameIdPolicy?->spNameQualifier !== null
+            && $nameIdPolicy->spNameQualifier !== $context->serviceProvider->entityId
+        ) {
+            throw new Unsupported('The SPNameQualifier of the samlp:NameIDPolicy names another entity than the service provider, an affiliation the package does not read (section 8).');
+        }
         $requested = Children::optional($request, Schema::samlp('RequestedAuthnContext'));
 
         return [
@@ -95,7 +105,7 @@ final readonly class AuthnRequestReader
                 $url,
                 $index,
                 $binding,
-                $policy instanceof Element ? NameIdPolicyReader::read($policy) : null,
+                $nameIdPolicy,
                 $forceAuthn !== null && Boolean::read($forceAuthn),
                 $isPassive !== null && Boolean::read($isPassive),
                 $requested instanceof Element ? RequestedAuthnContextReader::read($requested) : null,
