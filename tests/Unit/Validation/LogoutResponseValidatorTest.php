@@ -8,6 +8,7 @@ use Beffroi\Saml2\Model\Exception\DestinationMismatch;
 use Beffroi\Saml2\Model\Exception\InResponseToMismatch;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\SignatureRequired;
+use Beffroi\Saml2\Model\Exception\IssuerMismatch;
 use Beffroi\Saml2\Model\Metadata\IdentityProvider;
 use Beffroi\Saml2\Model\Metadata\ServiceProvider;
 use Beffroi\Saml2\Model\Protocol\SecondLevelStatusCode;
@@ -413,6 +414,44 @@ final class LogoutResponseValidatorTest extends TestCase
             $accepted->response->issuer->entityId,
             $accepted->response->destination,
         ]);
+    }
+
+    /**
+     * M-8, §9.2 row "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6: the
+     * Issuer of a response carries none of the three qualifiers an entity identifier omits.
+     *
+     * @param array<string, string> $replacements
+     */
+    #[Test]
+    #[DataProvider('provideIssuerQualifiers')]
+    public function itRefusesAnIssuerWithAQualifier(string $path, array $replacements): void
+    {
+        // Given
+        $document = SamlLoader::create()->load(strtr(MetadataFixtures::bytes($path), $replacements));
+
+        // Then
+        $this->expectException(IssuerMismatch::class);
+        $this->expectExceptionMessageIs('The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).');
+
+        // When
+        $this->byBinding($document);
+    }
+
+    /**
+     * @return iterable<string, array{string, array<string, string>}>
+     */
+    public static function provideIssuerQualifiers(): iterable
+    {
+        yield 'an SPProvidedID, which the adversarial pass found accepted (section 9.8)' => [
+            'hostile/adversarial-logout-response-issuer-sp-provided-id-refused.xml',
+            [],
+        ];
+        foreach (['NameQualifier', 'SPNameQualifier', 'SPProvidedID'] as $qualifier) {
+            yield 'a ' . $qualifier => [
+                self::REDIRECT,
+                ['<saml:Issuer>' => '<saml:Issuer ' . $qualifier . '="' . LogoutFixtures::SP . '">'],
+            ];
+        }
     }
 
     /**

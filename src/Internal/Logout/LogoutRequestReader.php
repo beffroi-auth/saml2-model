@@ -72,10 +72,11 @@ final readonly class LogoutRequestReader
     /**
      * Section 6.3, on the root of what the signature or the binding authenticated, whose structure was checked: the
      * header of the envelope, the NameID under M-12, read with Text::of() (I-12), the session indexes as read, the
-     * NotOnOrAfter under M-7, the Reason a URI.
+     * NotOnOrAfter under M-7 then later than the IssueInstant, the Reason a URI.
      *
      * @throws IssuerMismatch when the Issuer is not the peer's (M-8)
-     * @throws MalformedMessage when an attribute is absent or not of its lexical form (M-5, M-6)
+     * @throws MalformedMessage when an attribute is absent or not of its lexical form (M-5, M-6), or the NotOnOrAfter
+     *                          is not later than the IssueInstant (section 6.3)
      * @throws OutsideValidityWindow when the IssueInstant or the NotOnOrAfter is outside its window (M-7)
      * @throws DestinationMismatch when the Destination is not the URL of arrival, one of ours (M-8)
      * @throws InvalidNameId when the NameID breaks the rule of its format (M-12)
@@ -90,6 +91,10 @@ final readonly class LogoutRequestReader
         $notOnOrAfter = $notOnOrAfter === null ? null : Time::read($notOnOrAfter);
         if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $context->expired) {
             throw new OutsideValidityWindow('The NotOnOrAfter of the LogoutRequest is at or before now minus the clock skew (M-7).');
+        }
+        // a request that expires when it is issued, or before, is no request (SAML Core §3.7.1)
+        if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $issueInstant) {
+            throw new MalformedMessage('The NotOnOrAfter of the LogoutRequest is not later than its IssueInstant (section 6.3).');
         }
 
         return new LogoutRequest(

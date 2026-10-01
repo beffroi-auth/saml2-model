@@ -202,7 +202,7 @@ final class LogoutRequestValidatorTest extends TestCase
 
         // Then
         $this->expectException(IssuerMismatch::class);
-        $this->expectExceptionMessageIs('The Issuer of the message is not the entity ID of the peer (M-8).');
+        $this->expectExceptionMessageIs('The Issuer is not the entity ID of the peer (M-8).');
 
         // When
         LogoutFixtures::requestValidator()->validate(
@@ -372,12 +372,28 @@ final class LogoutRequestValidatorTest extends TestCase
                         . '</saml:Issuer>',
             ],
             IssuerMismatch::class,
-            'The Issuer of the message has a Format other than entity (M-8).',
+            'The Issuer has a Format other than entity (M-8).',
         ];
+        foreach (['NameQualifier', 'SPNameQualifier', 'SPProvidedID'] as $qualifier) {
+            yield 'an Issuer with an ' . $qualifier . ' (section 9.8)' => [
+                [
+                    $issuer =>
+                        '<saml:Issuer '
+                            . $qualifier
+                            . '="'
+                            . LogoutFixtures::IDP
+                            . '">'
+                            . LogoutFixtures::IDP
+                            . '</saml:Issuer>',
+                ],
+                IssuerMismatch::class,
+                'The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).',
+            ];
+        }
         yield 'an Issuer with another case' => [
             [$issuer => '<saml:Issuer>https://IDP.example.com/saml</saml:Issuer>'],
             IssuerMismatch::class,
-            'The Issuer of the message is not the entity ID of the peer (M-8).',
+            'The Issuer is not the entity ID of the peer (M-8).',
         ];
         yield 'Version 2.1' => [
             ['Version="2.0"' => 'Version="2.1"'],
@@ -466,15 +482,15 @@ final class LogoutRequestValidatorTest extends TestCase
             'The IssueInstant of the message is older than maxMessageAge (M-7).',
         ];
         yield 'a NotOnOrAfter at now minus the skew' => [
-            0,
-            '2026-09-30T11:57:00Z',
+            200,
+            '2026-09-30T12:00:20Z',
             'The NotOnOrAfter of the LogoutRequest is at or before now minus the clock skew (M-7).',
         ];
     }
 
     /**
-     * M-7: the edges of the windows are accepted: an IssueInstant at now plus the skew, or exactly maxMessageAge old,
-     * a NotOnOrAfter one second after now minus the skew.
+     * M-7, section 6.3: the edges of the windows are accepted: an IssueInstant at now plus the skew, or exactly
+     * maxMessageAge old, a NotOnOrAfter one second after now minus the skew, or one second after the IssueInstant.
      */
     #[Test]
     #[DataProvider('provideInstantsAccepted')]
@@ -497,7 +513,54 @@ final class LogoutRequestValidatorTest extends TestCase
     {
         yield 'issued at now plus the skew' => [-180, '2026-09-30T12:05:00Z'];
         yield 'exactly maxMessageAge old' => [300, '2026-09-30T12:10:00Z'];
-        yield 'a NotOnOrAfter one second after now minus the skew' => [0, '2026-09-30T11:57:01Z'];
+        yield 'a NotOnOrAfter one second after now minus the skew' => [200, '2026-09-30T12:00:21Z'];
+        yield 'a NotOnOrAfter one second after the IssueInstant' => [0, '2026-09-30T12:00:01Z'];
+    }
+
+    /**
+     * M-8, section 9.8: the adversarial pass found a request whose Issuer carries an SPNameQualifier accepted; the one
+     * reader of an Issuer refuses it.
+     */
+    #[Test]
+    public function itRefusesTheIssuerQualifierTheAdversarialPassFound(): void
+    {
+        // Given
+        $document = MetadataFixtures::load('hostile/adversarial-logout-request-issuer-sp-name-qualifier-refused.xml');
+
+        // Then
+        $this->expectException(IssuerMismatch::class);
+        $this->expectExceptionMessageIs('The Issuer carries a NameQualifier, an SPNameQualifier or an SPProvidedID, which an entity identifier omits (M-8).');
+
+        // When
+        $this->byBinding($document);
+    }
+
+    /**
+     * §9.2 row 34, section 6.3, SAML Core §3.7.1: a request whose NotOnOrAfter is at or before its IssueInstant
+     * expires when it is issued, and is malformed, whatever the clock says.
+     */
+    #[Test]
+    #[DataProvider('provideNotOnOrAfterNotAfterTheIssueInstant')]
+    public function itRefusesANotOnOrAfterNotLaterThanTheIssueInstant(string $notOnOrAfter): void
+    {
+        // Given
+        $document = $this->variant(['NotOnOrAfter="2026-09-30T12:05:00Z"' => 'NotOnOrAfter="' . $notOnOrAfter . '"']);
+
+        // Then
+        $this->expectException(MalformedMessage::class);
+        $this->expectExceptionMessageIs('The NotOnOrAfter of the LogoutRequest is not later than its IssueInstant (section 6.3).');
+
+        // When
+        $this->byBinding($document);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function provideNotOnOrAfterNotAfterTheIssueInstant(): iterable
+    {
+        yield 'at the IssueInstant' => ['2026-09-30T12:00:00Z'];
+        yield 'a second before the IssueInstant' => ['2026-09-30T11:59:59Z'];
     }
 
     /**

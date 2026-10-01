@@ -382,6 +382,101 @@ final class MetadataReaderTest extends TestCase
     }
 
     /**
+     * M-7, section 6.5 step 4, section 9.2 row "validUntil passed": the validUntil of a role that is read, one second
+     * after now minus the skew, holds, as the entity's does.
+     */
+    #[Test]
+    #[DataProvider('provideClocksWithinValidUntil')]
+    public function itAcceptsARoleBeforeItsValidUntil(string $now, int $skew): void
+    {
+        // Given
+        $reader = new MetadataReader(
+            SamlLoader::create(),
+            new FrozenClock(new DateTimeImmutable($now)),
+            new TimeBounds(clockSkew: $skew),
+        );
+
+        // When
+        $descriptor = $reader->readTrusted(MetadataFixtures::load('behaviour/adversarial-metadata-role-valid-until-accepted.xml'));
+
+        // Then
+        static::assertSame('https://idp.example.com/saml', $descriptor->identityProvider?->entityId);
+    }
+
+    /**
+     * M-7, section 6.5 step 4, section 9.2 row "validUntil passed": a role that is read, at or before its own
+     * validUntil minus the skew, refuses the metadata rather than being dropped.
+     */
+    #[Test]
+    #[DataProvider('provideRolesPastValidUntil')]
+    public function itRefusesARolePastItsValidUntil(string $path, string $now, int $skew): void
+    {
+        // Given
+        $reader = new MetadataReader(
+            SamlLoader::create(),
+            new FrozenClock(new DateTimeImmutable($now)),
+            new TimeBounds(clockSkew: $skew),
+        );
+
+        // Then
+        $this->expectException(OutsideValidityWindow::class);
+        $this->expectExceptionMessageIs('A role of the metadata is past its validUntil (M-7).');
+
+        // When
+        $reader->readTrusted(MetadataFixtures::load($path));
+    }
+
+    /**
+     * @return iterable<string, array{string, string, int}>
+     */
+    public static function provideRolesPastValidUntil(): iterable
+    {
+        yield 'an identity provider passed a month ago' => [
+            'hostile/adversarial-metadata-identity-provider-valid-until-passed-refused.xml',
+            self::NOW,
+            180,
+        ];
+        yield 'a service provider passed a month ago' => [
+            'hostile/adversarial-metadata-service-provider-valid-until-passed-refused.xml',
+            self::NOW,
+            180,
+        ];
+        yield 'the default skew, at the edge' => [
+            'behaviour/adversarial-metadata-role-valid-until-accepted.xml',
+            '2026-10-01T00:03:00Z',
+            180,
+        ];
+        yield 'a skew of one second, at the edge' => [
+            'behaviour/adversarial-metadata-role-valid-until-accepted.xml',
+            '2026-10-01T00:00:01Z',
+            1,
+        ];
+    }
+
+    /**
+     * Section 6.5 step 4: a role that is ignored, for SAML 1.1, or skipped, an md:AttributeAuthorityDescriptor, is not
+     * read, its validUntil with it: the metadata is read with its one identity provider for SAML 2.0.
+     */
+    #[Test]
+    public function itDoesNotReadTheValidUntilOfARoleItDoesNotRead(): void
+    {
+        // Given
+        $document = MetadataFixtures::load('behaviour/adversarial-metadata-ignored-roles-valid-until-passed-accepted.xml');
+
+        // When
+        $descriptor = $this->reader()->readTrusted($document);
+
+        // Then
+        static::assertEquals(
+            [
+                new Endpoint(Binding::HttpRedirect, 'https://idp.example.com/saml/sso'),
+                new Endpoint(Binding::HttpPost, 'https://idp.example.com/saml/sso'),
+            ],
+            $descriptor->identityProvider?->singleSignOnServices,
+        );
+    }
+
+    /**
      * M-2, M-1, section 6.5 step 2: signed metadata verified with the pinned key is read from what the signature
      * covered, the same descriptor as the document read without verification.
      */
@@ -801,6 +896,13 @@ final class MetadataReaderTest extends TestCase
             'identity-provider',
             $entityId,
             $entityId . ' validUntil="2026-10-01T00:00:00"',
+            MalformedMessage::class,
+            'A time is not an xs:dateTime in UTC with the Z designator (M-6).',
+        ];
+        yield 'a validUntil of a role without Z (section 6.5 step 4)' => [
+            'identity-provider',
+            'protocolSupportEnumeration=',
+            'validUntil="2026-10-01T00:00:00" protocolSupportEnumeration=',
             MalformedMessage::class,
             'A time is not an xs:dateTime in UTC with the Z designator (M-6).',
         ];

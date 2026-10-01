@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?><!--c-->
+<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_authn-request" Version="2.0" IssueInstant="2026-09-30T11:59:59Z" Destination="https://idp.example.com/saml/sso" AssertionConsumerServiceURL="https://sp.example.com/saml/acs" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"><!--c-->
+  <saml:Issuer><!--c-->h<!--c-->ttps://sp.example.com/saml<!--c--></saml:Issuer><!--c--><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><!--c--><ds:SignedInfo><!--c--><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><!--c--><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><!--c--><ds:Reference URI="#_authn-request"><!--c--><ds:Transforms><!--c--><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><!--c--><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><!--c--></ds:Transforms><!--c--><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><!--c--><ds:DigestValue><!--c-->3<!--c-->EKNmqTAvHPu2BEraIlFGgvmI+3F3YuTtnMNbw9vJhQ=<!--c--></ds:DigestValue><!--c--></ds:Reference><!--c--></ds:SignedInfo><!--c--><ds:SignatureValue><!--c-->B<!--c-->Cjz5jiaH1z39ie3zd9dDUOy2PkTAdbSiJ9O1YFDihpGtqoblpgTSK0Bn+jvTy+jjbWlTIyHtFdm
+8AIdcuA7mR9kSVjhITLiyYCrDp0m2Jl9CmvN3Zhl1SrXHV8TVPqKib+H6tZlerG5hq5iLqLKwT0J
+td/0Ymyo11LitzHHBPjxdojwbvy9/imUMjh2lsQ78+ny/ABFSMDD45jr+smfnphOgORIF8A5rOqV
+Ew2wWaBQtmKfGXMl8OAMbBJK1TqwX/qobLMPb7k4q3uPcmwBavWK6KWy/YeuzjvDDERFWh8qmJAA
+y+xsA9KvnabUvz3GxPKPqlJ9LJG2vjQUw+Z02A==<!--c--></ds:SignatureValue><!--c--></ds:Signature><!--c-->
+  <samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent" AllowCreate="true"/><!--c-->
+</samlp:AuthnRequest>

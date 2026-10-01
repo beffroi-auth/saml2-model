@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?><!--c-->
+<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_logout-request" Version="2.0" IssueInstant="2026-09-30T11:59:59Z" Destination="https://sp.example.com/saml/slo" NotOnOrAfter="2026-09-30T12:04:59Z" Reason="urn:oasis:names:tc:SAML:2.0:logout:user"><!--c-->
+  <saml:Issuer><!--c-->h<!--c-->ttps://idp.example.com/saml<!--c--></saml:Issuer><!--c--><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><!--c--><ds:SignedInfo><!--c--><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><!--c--><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><!--c--><ds:Reference URI="#_logout-request"><!--c--><ds:Transforms><!--c--><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><!--c--><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><!--c--></ds:Transforms><!--c--><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><!--c--><ds:DigestValue><!--c-->g<!--c-->2uHoHpJWFrv7KvwJ0EwOSF/r8wAOOMyZ/K8wR6bYNA=<!--c--></ds:DigestValue><!--c--></ds:Reference><!--c--></ds:SignedInfo><!--c--><ds:SignatureValue><!--c-->M<!--c-->CM0B6BiGj5X2aIP5FrvBQF3c0pIU4o4B4cGlbvINKCp1Y33gfoZNZKlp00D/0FCQon41U8x8CCa
+muOt5as63JDZSoDocgOgbzBSwrZEdK0kZoK3okO+xjRfFaQHEMqv5fUIUzqUyDkpioLTK5ZxzqOA
+Kzzj70QwQ7PL5CKLzco5wOqLU6jGW8CnoX/MzN7uS4e5/ow5tzgwBmz/8vzbWGPZt1JryC7ouYUA
+/T3SUQ/Rq6TxF5UsMDmDmgYmANiCtLfYwZlfrjIikm53KQVLHVe1y+s1kNQPCLABfkPhXmsgY0cb
+GPGBPPq9FFgVJLQDClRif4JHV6VO3rGJCQLgcw==<!--c--></ds:SignatureValue><!--c--></ds:Signature><!--c-->
+  <saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"><!--c-->_<!--c-->7a2f4c1d9e<!--c--></saml:NameID><!--c-->
+  <samlp:SessionIndex><!--c-->_<!--c-->session<!--c--></samlp:SessionIndex><!--c-->
+</samlp:LogoutRequest>

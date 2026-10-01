@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<samlp:LogoutResponse xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xml:base="https://attacker.example.com/" xml:lang="fr" ID="_logout-response" Version="2.0" IssueInstant="2026-09-30T11:59:59Z" Destination="https://idp.example.com/saml/slo" InResponseTo="_logout-request">
+  <saml:Issuer xml:base="https://attacker.example.com/" xml:lang="fr">https://sp.example.com/saml</saml:Issuer>
+  <samlp:Status xml:base="https://attacker.example.com/" xml:lang="fr">
+    <samlp:StatusCode xml:base="https://attacker.example.com/" xml:lang="fr" Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+  </samlp:Status>
+</samlp:LogoutResponse>

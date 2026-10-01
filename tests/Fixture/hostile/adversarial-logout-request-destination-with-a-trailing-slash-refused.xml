@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_logout-request" Version="2.0" IssueInstant="2026-09-30T11:59:59Z" Destination="https://sp.example.com/saml/slo/" NotOnOrAfter="2026-09-30T12:04:59Z" Reason="urn:oasis:names:tc:SAML:2.0:logout:user">
+  <saml:Issuer>https://idp.example.com/saml</saml:Issuer>
+  <saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">_7a2f4c1d9e</saml:NameID>
+  <samlp:SessionIndex>_session</samlp:SessionIndex>
+</samlp:LogoutRequest>

@@ -7,13 +7,13 @@ namespace Beffroi\Saml2\Model\Internal\AuthnRequest;
 use function array_any;
 use function array_keys;
 use Beffroi\Saml2\Model\Assertion\Issuer;
-use Beffroi\Saml2\Model\Assertion\NameIdFormat;
 use Beffroi\Saml2\Model\Exception\DestinationMismatch;
 use Beffroi\Saml2\Model\Exception\IssuerMismatch;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\MessageRefused;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
 use Beffroi\Saml2\Model\Metadata\Endpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoint;
 use Beffroi\Saml2\Model\Protocol\AuthnRequest;
@@ -27,7 +27,6 @@ use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
-use Beffroi\Xml\Core\Text;
 use DateTimeImmutable;
 use Dom\Element;
 use function sprintf;
@@ -135,7 +134,8 @@ final readonly class AuthnRequestReader
      * Section 6.2 step 3: Version 2.0, the ID present, the IssueInstant not later than now plus the skew and
      * not older than maxMessageAge (M-7); the Destination required when the request carries a signature, its own or
      * the binding's, equal to the URL at which it arrived whenever present, that URL one of our single sign-on
-     * services (M-8); the Issuer the service provider's entity ID, its Format omitted or entity (M-8).
+     * services (M-8); the Issuer the service provider's entity ID, read by the one reader of an Issuer, its Format
+     * omitted or entity and no qualifier (M-8).
      *
      * @return array{string, DateTimeImmutable, ?string, Issuer}
      *
@@ -173,27 +173,15 @@ final readonly class AuthnRequestReader
             throw new DestinationMismatch('The URL at which the request arrived is not a single sign-on service of the identity provider (M-8).');
         }
 
-        return [$id, $issueInstant, $destination, self::issuer($request, $context)];
-    }
-
-    /**
-     * @throws IssuerMismatch when the Format is not entity, or the value is not the service provider's entity ID (M-8)
-     * @throws MalformedMessage when the value is not a URI of M-6
-     * @throws MixedContent when the element holds an element
-     */
-    private static function issuer(Element $request, AuthnRequestContext $context): Issuer
-    {
-        $element = Children::one($request, new Name(Saml::ASSERTION, 'Issuer'));
-        $format = Attributes::optional($element, new Name(null, 'Format'));
-        if ($format !== null && $format !== NameIdFormat::Entity->value) {
-            throw new IssuerMismatch('The Issuer of the request has a Format other than entity (M-8).');
-        }
-        $issuer = new Issuer(Text::of($element));
-        if ($issuer->entityId !== $context->serviceProvider->entityId) {
-            throw new IssuerMismatch('The Issuer of the request is not the entity ID of the service provider (M-8).');
-        }
-
-        return $issuer;
+        return [
+            $id,
+            $issueInstant,
+            $destination,
+            IssuerReader::read(
+                Children::one($request, new Name(Saml::ASSERTION, 'Issuer')),
+                $context->serviceProvider->entityId,
+            ),
+        ];
     }
 
     /**
