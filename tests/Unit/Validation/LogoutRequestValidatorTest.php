@@ -80,6 +80,21 @@ final class LogoutRequestValidatorTest extends TestCase
     }
 
     /**
+     * Section 6.8, M-3: the binding verified the query string with the keys of the peer's metadata; a peer whose
+     * metadata holds no signing key cannot have been verified so, and is refused as validate() refuses it.
+     */
+    #[Test]
+    public function itRefusesTheBindingPathForAPeerWithoutKey(): void
+    {
+        // Then
+        $this->expectException(SignatureRequired::class);
+        $this->expectExceptionMessageIs('The metadata of the peer holds no signing key to verify the message with (M-3).');
+
+        // When
+        $this->byBinding(MetadataFixtures::load(self::REDIRECT), 0, LogoutFixtures::identityProvider(''));
+    }
+
+    /**
      * §9.2 row 34, M-2, SAML Profiles §4.4.4.1: an unsigned LogoutRequest given to validate(), the path of HTTP-POST
      * and of an HTTP-Redirect without signature, is refused; the same document is accepted by the binding path.
      */
@@ -166,7 +181,7 @@ final class LogoutRequestValidatorTest extends TestCase
 
     /**
      * §9.2 row 34, M-7, SAML Core §3.7.1: a signed request whose NotOnOrAfter is at now minus the clock skew has
-     * expired.
+     * expired, its IssueInstant earlier still and within maxMessageAge, so that the window alone refuses it.
      */
     #[Test]
     public function itRefusesARequestWhoseNotOnOrAfterHasPassed(): void
@@ -292,7 +307,7 @@ final class LogoutRequestValidatorTest extends TestCase
      */
     public static function provideStructuresRefused(): iterable
     {
-        $outOfOrder = 'An samlp:LogoutRequest holds a child the schema does not allow there, or out of its order (M-5).';
+        $outOfOrder = 'The samlp:LogoutRequest holds a child out of the order of the schema, or one it does not allow there (M-5).';
         yield 'no saml:Issuer' => [
             'hostile/logout-request-without-issuer-refused.xml',
             MalformedMessage::class,
@@ -316,12 +331,12 @@ final class LogoutRequestValidatorTest extends TestCase
         yield 'no saml:NameID' => [
             'hostile/logout-request-without-name-id-refused.xml',
             MalformedMessage::class,
-            'An samlp:LogoutRequest holds no identifier (M-5).',
+            'The samlp:LogoutRequest holds no identifier (M-4).',
         ];
         yield 'two saml:NameID' => [
             'hostile/logout-request-two-name-ids-refused.xml',
             MalformedMessage::class,
-            'An samlp:LogoutRequest holds more than one identifier (M-5).',
+            'The samlp:LogoutRequest holds more than one identifier (M-4).',
         ];
         yield 'a saml:BaseID' => [
             'hostile/logout-request-base-id-refused.xml',
@@ -336,8 +351,8 @@ final class LogoutRequestValidatorTest extends TestCase
     }
 
     /**
-     * §9.2 rows 16, 26 and 27, M-6, M-8, M-12: a value of the request that is not of its lexical form or not the
-     * peer's; the message carries nothing of it (M-16).
+     * §9.2 rows 16, 25, 26 and 27, M-5, M-6, M-8, M-12: a value of the request that is not of its lexical form or not
+     * the peer's; the message carries nothing of it (M-16).
      *
      * @param array<string, string> $replacements
      * @param class-string<MessageRefused> $exception
@@ -403,17 +418,17 @@ final class LogoutRequestValidatorTest extends TestCase
         yield 'no Version' => [
             ['Version="2.0"' => ''],
             MalformedMessage::class,
-            'An samlp:LogoutRequest has no Version (M-5).',
+            'The samlp:LogoutRequest has no Version (M-5).',
         ];
         yield 'no ID' => [
             ['ID="' . LogoutFixtures::REQUEST_ID . '"' => ''],
             MalformedMessage::class,
-            'An samlp:LogoutRequest has no ID (M-5).',
+            'The samlp:LogoutRequest has no ID (M-5).',
         ];
         yield 'no IssueInstant' => [
             ['IssueInstant="2026-09-30T12:00:00Z"' => ''],
             MalformedMessage::class,
-            'An samlp:LogoutRequest has no IssueInstant (M-5).',
+            'The samlp:LogoutRequest has no IssueInstant (M-5).',
         ];
         yield 'an IssueInstant with +00:00' => [
             ['IssueInstant="2026-09-30T12:00:00Z"' => 'IssueInstant="2026-09-30T12:00:00+00:00"'],

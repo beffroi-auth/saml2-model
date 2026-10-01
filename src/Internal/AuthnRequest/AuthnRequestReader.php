@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Internal\AuthnRequest;
 
 use function array_any;
-use function array_keys;
 use Beffroi\Saml2\Model\Assertion\Issuer;
 use Beffroi\Saml2\Model\Exception\DestinationMismatch;
 use Beffroi\Saml2\Model\Exception\IssuerMismatch;
@@ -14,10 +13,11 @@ use Beffroi\Saml2\Model\Exception\MessageRefused;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Metadata\Endpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoint;
 use Beffroi\Saml2\Model\Protocol\AuthnRequest;
-use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\Validation\Authentication;
 use Beffroi\Saml2\Model\Value\Boolean;
 use Beffroi\Saml2\Model\Value\Time;
@@ -29,7 +29,6 @@ use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
 use DateTimeImmutable;
 use Dom\Element;
-use function sprintf;
 
 /**
  * The strict reader of a samlp:AuthnRequest, section 6.2 in order: structure() is step 1, over the request as it
@@ -41,8 +40,6 @@ use function sprintf;
  */
 final readonly class AuthnRequestReader
 {
-    private const string DSIG = 'http://www.w3.org/2000/09/xmldsig#';
-
     /**
      * Section 6.2 step 1: the children in the order and with the cardinality of the schema (SAML Core §3.2.1,
      * §3.4.1), the saml:Issuer required (Profiles §4.1.4.1), found as direct children only (M-4, I-11); saml:Subject,
@@ -54,41 +51,18 @@ final readonly class AuthnRequestReader
      */
     public static function structure(Element $request): void
     {
-        $unsupported = [
-            new Name(Saml::ASSERTION, 'Subject'),
-            new Name(Saml::ASSERTION, 'Conditions'),
-            new Name(Saml::PROTOCOL, 'Scoping'),
-        ];
-        foreach (Children::all($request) as $child) {
-            if (array_any($unsupported, static fn (Name $name): bool => $name->matches($child))) {
-                throw new Unsupported('The samlp:AuthnRequest holds a saml:Subject, a saml:Conditions or a samlp:Scoping, which the package does not support (section 8).');
-            }
-        }
-        $sequence = [
-            'saml:Issuer' => new Name(Saml::ASSERTION, 'Issuer'),
-            'ds:Signature' => new Name(self::DSIG, 'Signature'),
-            'samlp:Extensions' => new Name(Saml::PROTOCOL, 'Extensions'),
-            'samlp:NameIDPolicy' => new Name(Saml::PROTOCOL, 'NameIDPolicy'),
-            'samlp:RequestedAuthnContext' => new Name(Saml::PROTOCOL, 'RequestedAuthnContext'),
-        ];
-        $labels = array_keys($sequence);
-        $previous = -1;
-        foreach (Children::all($request) as $child) {
-            $place = self::place($sequence, $child);
-            if ($place === null || $place < $previous) {
-                throw new MalformedMessage('The samlp:AuthnRequest holds a child the schema does not allow there, or out of its order (M-5).');
-            }
-            if ($place === $previous) {
-                throw new MalformedMessage(sprintf(
-                    'The samlp:AuthnRequest holds more than one %s (M-4).',
-                    $labels[$place],
-                ));
-            }
-            $previous = $place;
-        }
-        if (Children::named($request, $sequence['saml:Issuer']) === []) {
-            throw new MalformedMessage('The samlp:AuthnRequest holds no saml:Issuer (M-4).');
-        }
+        Schema::unsupported(
+            $request,
+            [Schema::saml('Subject'), Schema::saml('Conditions'), Schema::samlp('Scoping')],
+            'The samlp:AuthnRequest holds a saml:Subject, a saml:Conditions or a samlp:Scoping, which the package does not support (section 8).',
+        );
+        Schema::children($request, 'samlp:AuthnRequest', [
+            Particle::of(Schema::saml('Issuer'), 1, 1),
+            Particle::of(Schema::ds('Signature'), 0, 1),
+            Particle::of(Schema::samlp('Extensions'), 0, 1),
+            Particle::of(Schema::samlp('NameIDPolicy'), 0, 1),
+            Particle::of(Schema::samlp('RequestedAuthnContext'), 0, 1),
+        ]);
     }
 
     /**
@@ -109,8 +83,18 @@ final readonly class AuthnRequestReader
         );
         $forceAuthn = Attributes::optional($request, new Name(null, 'ForceAuthn'));
         $isPassive = Attributes::optional($request, new Name(null, 'IsPassive'));
-        $policy = Children::optional($request, new Name(Saml::PROTOCOL, 'NameIDPolicy'));
-        $requested = Children::optional($request, new Name(Saml::PROTOCOL, 'RequestedAuthnContext'));
+        $policy = Children::optional($request, Schema::samlp('NameIDPolicy'));
+        $nameIdPolicy = $policy instanceof Element ? NameIdPolicyReader::read($policy) : null;
+        // another entity than the requester is an affiliation, whose members share the identifiers (SAML Core
+        // §3.4.1.1): honoured by an identity provider that does not read affiliations, it would hand the requester the
+        // identifier the user has at that other entity
+        if (
+            $nameIdPolicy?->spNameQualifier !== null
+            && $nameIdPolicy->spNameQualifier !== $context->serviceProvider->entityId
+        ) {
+            throw new Unsupported('The SPNameQualifier of the samlp:NameIDPolicy names another entity than the service provider, an affiliation the package does not read (section 8).');
+        }
+        $requested = Children::optional($request, Schema::samlp('RequestedAuthnContext'));
 
         return [
             new AuthnRequest(
@@ -121,7 +105,7 @@ final readonly class AuthnRequestReader
                 $url,
                 $index,
                 $binding,
-                $policy instanceof Element ? NameIdPolicyReader::read($policy) : null,
+                $nameIdPolicy,
                 $forceAuthn !== null && Boolean::read($forceAuthn),
                 $isPassive !== null && Boolean::read($isPassive),
                 $requested instanceof Element ? RequestedAuthnContextReader::read($requested) : null,
@@ -147,15 +131,15 @@ final readonly class AuthnRequestReader
      */
     private static function header(Element $request, AuthnRequestContext $context): array
     {
-        Version::read(self::attribute($request, 'Version'));
+        Version::read(Schema::attribute($request, 'samlp:AuthnRequest', 'Version'));
         // an NCName of at most 128 bytes: the loader's ID attributes refused any other (M-14, I-8), AuthnRequest checks
         // it again for whoever builds one
-        $id = self::attribute($request, 'ID');
-        $issueInstant = Time::read(self::attribute($request, 'IssueInstant'));
-        if ($issueInstant > $context->latest) {
+        $id = Schema::attribute($request, 'samlp:AuthnRequest', 'ID');
+        $issueInstant = Time::read(Schema::attribute($request, 'samlp:AuthnRequest', 'IssueInstant'));
+        if ($issueInstant > $context->window->latest()) {
             throw new OutsideValidityWindow('The IssueInstant of the request is later than now plus the clock skew (M-7).');
         }
-        if ($issueInstant < $context->oldest) {
+        if ($issueInstant < $context->window->oldest()) {
             throw new OutsideValidityWindow('The IssueInstant of the request is older than maxMessageAge (M-7).');
         }
         $destination = Attributes::optional($request, new Name(null, 'Destination'));
@@ -178,40 +162,9 @@ final readonly class AuthnRequestReader
             $issueInstant,
             $destination,
             IssuerReader::read(
-                Children::one($request, new Name(Saml::ASSERTION, 'Issuer')),
+                Children::one($request, Schema::saml('Issuer')),
                 $context->serviceProvider->entityId,
             ),
         ];
-    }
-
-    /**
-     * @throws MalformedMessage when the attribute, which the schema requires, is absent (M-5)
-     */
-    private static function attribute(Element $request, string $attribute): string
-    {
-        return (
-            Attributes::optional($request, new Name(null, $attribute)) ?? throw new MalformedMessage(sprintf(
-                'The samlp:AuthnRequest has no %s (M-5).',
-                $attribute,
-            ))
-        );
-    }
-
-    /**
-     * The place of $child in the sequence, or null when no place accepts it.
-     *
-     * @param array<string, Name> $sequence
-     */
-    private static function place(array $sequence, Element $child): ?int
-    {
-        $place = 0;
-        foreach ($sequence as $name) {
-            if ($name->matches($child)) {
-                return $place;
-            }
-            $place++;
-        }
-
-        return null;
     }
 }

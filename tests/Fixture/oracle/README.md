@@ -8,8 +8,9 @@ given, and fails on a file that carries neither.
 `tests/Unit/Writing/ResponseWriterOracleTest.php` writes, into the directory `XMLSEC_ORACLE` names, a response signed
 with every scheme the build offers, its assertion alone and the response over it, and a signed failure. A PSS
 signature is random, so nothing here is pinned: the documents are written again on every run. The job Oracle of the CI
-signs in the phpqa image of PHP 8.5 and verifies in Alpine 3.22 (xmlsec1 1.3.7, OpenSSL), with the documents the
-writers committed under `tests/Fixture/behaviour/response-written-*.xml`. On the developer's machine:
+signs in the phpqa image of PHP 8.5 and verifies in Alpine 3.22 (xmlsec1 1.3.7, OpenSSL), and every signed document
+the writers committed under `tests/Fixture/behaviour/` (the responses, the `AuthnRequest`, the metadata, the logout
+messages), each under its signer's certificate. On the developer's machine:
 
 ```
 PHP_VERSION=8.5 castor xmlsec-oracle   # writes into tmp-phpqa/oracle, which git ignores, then verifies each

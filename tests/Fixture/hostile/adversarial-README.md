@@ -39,8 +39,14 @@ declaration in front.
 | URIs that differ by what a normaliser would erase: scheme and host case, a default or empty port, a trailing dot, dot segments, percent-encoding, user information, an empty query or fragment, a homograph host, a zero-width space | 30 | 30 | 0 |
 | Bounds of section 7 at and one over their value, in characters of one byte and of two | 27 | 8 | 19 |
 | Comments and processing instructions after and before signing, a CDATA section, a character reference | 13 | 5 | 8 |
-| The other rows: key substitution, a signature out of its place, replay in another response, a condition of another namespace, the vocabularies in another case | 17 | 14 | 3 |
-| **Written by the builder** | **190** | **131** | **59** |
+| The other rows: key substitution, a signature out of its place, replay in another response, a condition of another namespace, the vocabularies in another case | 17 | 16 | 1 |
+| **Written by the builder** | **190** | **133** | **57** |
+
+The pass accepted two attempts that story #13 refuses: the `NameID` holding a right-to-left override (M-6, M-12) and
+the assertion issued a year ago within its bearer window (M-7). The builder writes them here,
+`adversarial-response-name-id-with-a-right-to-left-override-refused.xml` and
+`adversarial-response-assertion-issued-a-year-ago-within-its-bearer-window-refused.xml`, the same bytes under the name
+of their outcome.
 
 Seven more are written by hand with the fixes they pin, each a valid document of `../behaviour/` with one change, and
 asserted by the test of the class the fix touched; the three that found the bypass of the Issuer qualifiers are attempts

@@ -226,8 +226,8 @@ final class ConditionsReaderTest extends TestCase
     }
 
     /**
-     * §9.2 row 26, M-5, M-6: an Audience relative/path next to ours; an AudienceRestriction without Audience, or
-     * holding another element; two OneTimeUse (SAML Core §2.5.1.5).
+     * §9.2 rows 25 and 26, M-5, M-6: an Audience relative/path next to ours; an AudienceRestriction without Audience,
+     * or holding another element; two OneTimeUse (SAML Core §2.5.1.5).
      */
     #[Test]
     #[DataProvider('provideMalformedConditions')]

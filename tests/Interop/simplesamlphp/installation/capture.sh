@@ -82,14 +82,16 @@ form_action() {
 }
 
 # keep_redirect <URL> <parameter> <fixture> <sender metadata>: the document an HTTP-Redirect URL carries, decoded
-# into the fixture, after its query string signature is verified under the sender's metadata.
+# into the work directory, then moved into the fixture once its query string signature is verified under the
+# sender's metadata, so that no fixture is ever left whose signature did not verify.
 keep_redirect() {
     local url=$1 parameter=$2 file=$3 metadata=$4
     query_parameter "$parameter" "$url" \
         | php '$xml = gzinflate(base64_decode(urldecode(stream_get_contents(STDIN)), true));
             if ($xml === false || $xml === "") { fwrite(STDERR, "not a DEFLATE-encoded message\n"); exit(1); }
-            echo $xml;' > "$file"
+            echo $xml;' > "$work/redirect.xml"
     verify_redirect "$url" "$parameter" < "$metadata"
+    mv "$work/redirect.xml" "$file"
     echo "kept $(basename "$file") ($(wc -c < "$file" | tr -d ' ') bytes), its query string signature valid"
 }
 

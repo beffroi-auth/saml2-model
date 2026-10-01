@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Internal\Assertion;
 
 use Beffroi\Saml2\Model\Assertion\Assertion;
-use Beffroi\Saml2\Model\Exception\MessageRefused;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
-use Beffroi\Saml2\Model\Saml;
+use Beffroi\Saml2\Model\Exception\MessageRefused;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\MixedContent;
-use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Verified;
 use function count;
 use Dom\Element;
@@ -30,8 +30,6 @@ use Dom\Element;
  */
 final readonly class AssertionReader
 {
-    private const string DSIG = 'http://www.w3.org/2000/09/xmldsig#';
-
     /**
      * @throws MessageRefused one of its subclasses, naming the rule (M-16)
      * @throws MixedContent when a value holds an element
@@ -39,7 +37,7 @@ final readonly class AssertionReader
     public static function read(Document $document, AssertionContext $context): Assertion
     {
         $assertion = $document->root();
-        if (! Structure::saml('Assertion')->matches($assertion)) {
+        if (! Schema::saml('Assertion')->matches($assertion)) {
             throw new MalformedMessage('The root of the document is not a saml:Assertion (M-4).');
         }
 
@@ -57,13 +55,13 @@ final readonly class AssertionReader
     public static function readVerified(Verified $verified, AssertionContext $context): Assertion
     {
         $root = $verified->document->root();
-        if (Structure::saml('Assertion')->matches($root)) {
+        if (Schema::saml('Assertion')->matches($root)) {
             return self::assertion($root, $context);
         }
-        if (! new Name(Saml::PROTOCOL, 'Response')->matches($root)) {
+        if (! Schema::samlp('Response')->matches($root)) {
             throw new MalformedMessage('The root of the verified document is neither a saml:Assertion nor a samlp:Response (M-1).');
         }
-        $assertions = Children::named($root, Structure::saml('Assertion'));
+        $assertions = Children::named($root, Schema::saml('Assertion'));
         if (count($assertions) !== 1) {
             throw new MalformedMessage('The verified samlp:Response does not hold exactly one saml:Assertion (M-4).');
         }
@@ -77,36 +75,37 @@ final readonly class AssertionReader
      */
     private static function assertion(Element $assertion, AssertionContext $context): Assertion
     {
-        Structure::unsupported(
+        Schema::unsupported(
             $assertion,
-            [Structure::saml('Statement'), Structure::saml('AuthzDecisionStatement')],
+            [Schema::saml('Statement'), Schema::saml('AuthzDecisionStatement')],
             'The assertion holds a statement other than AuthnStatement and AttributeStatement, which the package does not support (section 8).',
         );
-        Structure::sequence(
-            $assertion,
-            [
-                Particle::one(Structure::saml('Issuer'), 'saml:Issuer'),
-                Particle::optional(new Name(self::DSIG, 'Signature'), 'ds:Signature'),
-                Particle::one(Structure::saml('Subject'), 'saml:Subject'),
-                Particle::one(Structure::saml('Conditions'), 'saml:Conditions'),
-                Particle::optional(Structure::saml('Advice'), 'saml:Advice'),
-                Particle::any([Structure::saml('AuthnStatement'), Structure::saml('AttributeStatement')]),
-            ],
-            'saml:Assertion',
-        );
-        $authnStatements = Children::named($assertion, Structure::saml('AuthnStatement'));
+        Schema::children($assertion, 'saml:Assertion', [
+            Particle::of(Schema::saml('Issuer'), 1, 1),
+            Particle::of(Schema::ds('Signature'), 0, 1),
+            Particle::of(Schema::saml('Subject'), 1, 1),
+            Particle::of(Schema::saml('Conditions'), 1, 1),
+            Particle::of(Schema::saml('Advice'), 0, 1),
+            new Particle(
+                'statement',
+                [Schema::saml('AuthnStatement'), Schema::saml('AttributeStatement')],
+                0,
+                Particle::UNBOUNDED,
+            ),
+        ]);
+        $authnStatements = Children::named($assertion, Schema::saml('AuthnStatement'));
         if ($authnStatements === []) {
             throw new MalformedMessage('The saml:Assertion holds no saml:AuthnStatement (M-4).');
         }
         if (count($authnStatements) > 1) {
             throw new MalformedMessage('The saml:Assertion holds more than one saml:AuthnStatement (M-4).');
         }
-        $attributeStatements = Children::named($assertion, Structure::saml('AttributeStatement'));
+        $attributeStatements = Children::named($assertion, Schema::saml('AttributeStatement'));
         if (count($attributeStatements) > 1) {
             throw new MalformedMessage('The saml:Assertion holds more than one saml:AttributeStatement (M-4).');
         }
         [$id, $issueInstant, $issuer] = HeaderReader::read($assertion, $context);
-        [$nameId, $confirmation] = SubjectReader::read(Children::one($assertion, Structure::saml('Subject')), $context);
+        [$nameId, $confirmation] = SubjectReader::read(Children::one($assertion, Schema::saml('Subject')), $context);
 
         return new Assertion(
             $id,
@@ -114,7 +113,7 @@ final readonly class AssertionReader
             $issuer,
             $nameId,
             $confirmation,
-            ConditionsReader::read(Children::one($assertion, Structure::saml('Conditions')), $context),
+            ConditionsReader::read(Children::one($assertion, Schema::saml('Conditions')), $context),
             AuthnStatementReader::read($authnStatements[0], $context),
             $attributeStatements === [] ? [] : AttributeStatementReader::read($attributeStatements[0]),
         );

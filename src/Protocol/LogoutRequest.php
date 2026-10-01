@@ -8,6 +8,8 @@ use Beffroi\Saml2\Model\Assertion\Issuer;
 use Beffroi\Saml2\Model\Assertion\NameId;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Value\Characters;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\SamlId;
 use Beffroi\Saml2\Model\Value\Uri;
 use function count;
@@ -19,16 +21,15 @@ use DateTimeImmutable;
  * of the logout, a URI. The Destination is required: the profile authenticates every logout message, by its own
  * signature or by the binding's (SAML Profiles §4.4.4.1), and a signed message names where it goes (M-8, section 6.3).
  * Whoever builds it, the ID is an ID of M-6, the Destination and the Reason are URIs of M-6, and the session indexes
- * are within their bound of section 7.
+ * are within their bound of section 7 and hold only characters XML carries (M-15).
  */
 final readonly class LogoutRequest
 {
-    public const int MAX_SESSION_INDEXES = 16;
-
     /**
      * @param list<string> $sessionIndexes
      *
-     * @throws MalformedMessage when the ID, the Destination or the Reason is not of its lexical form (M-6)
+     * @throws MalformedMessage when the ID, the Destination or the Reason is not of its lexical form (M-6), or a session
+     *                          index holds a character XML does not carry (M-15)
      * @throws LimitExceeded when there are more than 16 session indexes (section 7)
      */
     public function __construct(
@@ -43,8 +44,15 @@ final readonly class LogoutRequest
     ) {
         SamlId::read($id);
         Uri::read($destination);
-        if (count($sessionIndexes) > self::MAX_SESSION_INDEXES) {
-            throw new LimitExceeded('A LogoutRequest names more than 16 session indexes, the bound of section 7 (M-17).');
+        Counts::check(
+            count($sessionIndexes),
+            Counts::SESSION_INDEXES,
+            'A LogoutRequest names more than 16 session indexes, the bound of section 7 (M-17).',
+        );
+        foreach ($sessionIndexes as $sessionIndex) {
+            if (! Characters::carriedByXml($sessionIndex)) {
+                throw new MalformedMessage('A SessionIndex holds a character XML does not carry, a NUL among them (M-15).');
+            }
         }
         if ($reason !== null) {
             Uri::read($reason);

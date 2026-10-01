@@ -6,13 +6,12 @@ namespace Beffroi\Saml2\Model\Internal\Response;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\Unsupported;
-use Beffroi\Saml2\Model\Internal\Assertion\Particle;
-use Beffroi\Saml2\Model\Internal\Assertion\Structure;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Protocol\StatusReader;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Protocol\Status;
 use Beffroi\Saml2\Model\Protocol\StatusCode;
-use Beffroi\Saml2\Model\Saml;
 use Beffroi\Xml\Core\Children;
-use Beffroi\Xml\Core\Name;
 use function count;
 use Dom\Element;
 
@@ -42,24 +41,22 @@ final readonly class Envelope
      */
     public static function of(Element $response): self
     {
-        Structure::unsupported(
+        Schema::unsupported(
             $response,
-            [Structure::saml('EncryptedAssertion')],
+            [Schema::saml('EncryptedAssertion')],
             'The response holds a saml:EncryptedAssertion, which the package does not support until sub-spike 9e (section 6.7).',
         );
-        Structure::sequence(
-            $response,
-            [
-                Particle::optional(Structure::saml('Issuer'), 'saml:Issuer'),
-                Particle::optional(new Name(SignedResponse::DSIG, 'Signature'), 'ds:Signature'),
-                Particle::optional(new Name(Saml::PROTOCOL, 'Extensions'), 'samlp:Extensions'),
-                Particle::one(new Name(Saml::PROTOCOL, 'Status'), 'samlp:Status'),
-                Particle::any([Structure::saml('Assertion')]),
-            ],
-            'samlp:Response',
-        );
-        $status = StatusReader::read(Children::one($response, new Name(Saml::PROTOCOL, 'Status')));
-        $assertions = Children::named($response, Structure::saml('Assertion'));
+        Schema::children($response, 'samlp:Response', [
+            Particle::of(Schema::saml('Issuer'), 0, 1),
+            Particle::of(Schema::ds('Signature'), 0, 1),
+            Particle::of(Schema::samlp('Extensions'), 0, 1),
+            Particle::of(Schema::samlp('Status'), 1, 1),
+            Particle::of(Schema::saml('Assertion'), 0, Particle::UNBOUNDED),
+        ]);
+        $element = Children::one($response, Schema::samlp('Status'));
+        StatusReader::structure($element);
+        $status = StatusReader::read($element);
+        $assertions = Children::named($response, Schema::saml('Assertion'));
         if ($status->code !== StatusCode::Success) {
             if ($assertions !== []) {
                 throw new MalformedMessage('The samlp:Response has a status other than Success and holds a saml:Assertion (M-13).');

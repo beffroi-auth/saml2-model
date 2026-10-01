@@ -68,7 +68,7 @@ final class AuthnRequestReaderTest extends TestCase
 
         // Then
         $this->expectException(MalformedMessage::class);
-        $this->expectExceptionMessageIs('The samlp:AuthnRequest holds a child the schema does not allow there, or out of its order (M-5).');
+        $this->expectExceptionMessageIs('The samlp:AuthnRequest holds a child out of the order of the schema, or one it does not allow there (M-5).');
 
         // When
         AuthnRequestReader::structure($request);

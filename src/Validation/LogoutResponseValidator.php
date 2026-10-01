@@ -86,7 +86,11 @@ final readonly class LogoutResponseValidator
         $context = $this->context($peer, $self, $receivedAt);
         LogoutResponseReader::structure($response->document->root());
 
-        return $this->accept(MessageAuthentication::byBinding($response->document), $context, $requestId);
+        return $this->accept(
+            MessageAuthentication::byBinding($response->document, $peer->verificationKeys()),
+            $context,
+            $requestId,
+        );
     }
 
     /**
@@ -99,8 +103,7 @@ final readonly class LogoutResponseValidator
     ): LogoutContext {
         return LogoutContext::forResponse(
             $this->clock->now(),
-            $this->bounds->clockSkew,
-            $this->bounds->maxMessageAge,
+            $this->bounds,
             $peer,
             $self,
             $receivedAt,

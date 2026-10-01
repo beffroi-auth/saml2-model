@@ -8,6 +8,8 @@ use Beffroi\Saml2\Model\Assertion\AuthnStatement;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
@@ -34,25 +36,17 @@ final readonly class AuthnStatementReader
      */
     public static function read(Element $statement, AssertionContext $context): AuthnStatement
     {
-        Structure::sequence(
-            $statement,
-            [
-                Particle::optional(Structure::saml('SubjectLocality'), 'saml:SubjectLocality'),
-                Particle::one(Structure::saml('AuthnContext'), 'saml:AuthnContext'),
-            ],
-            'saml:AuthnStatement',
-        );
-        $authnInstant = Time::read(Structure::attribute(
-            $statement,
-            'AuthnInstant',
-            'The saml:AuthnStatement has no AuthnInstant (M-5).',
-        ));
-        if ($authnInstant > $context->latest()) {
+        Schema::children($statement, 'saml:AuthnStatement', [
+            Particle::of(Schema::saml('SubjectLocality'), 0, 1),
+            Particle::of(Schema::saml('AuthnContext'), 1, 1),
+        ]);
+        $authnInstant = Time::read(Schema::attribute($statement, 'saml:AuthnStatement', 'AuthnInstant'));
+        if ($authnInstant > $context->window->latest()) {
             throw new OutsideValidityWindow('The AuthnInstant of the authentication statement is later than now plus the clock skew (M-7).');
         }
         $session = Attributes::optional($statement, new Name(null, 'SessionNotOnOrAfter'));
         $sessionNotOnOrAfter = $session === null ? null : Time::read($session);
-        if ($sessionNotOnOrAfter instanceof DateTimeImmutable && $sessionNotOnOrAfter <= $context->earliest()) {
+        if ($sessionNotOnOrAfter instanceof DateTimeImmutable && $sessionNotOnOrAfter <= $context->window->earliest()) {
             throw new OutsideValidityWindow('The SessionNotOnOrAfter of the authentication statement is at or before now minus the clock skew (M-7).');
         }
 
@@ -60,26 +54,22 @@ final readonly class AuthnStatementReader
             $authnInstant,
             Attributes::optional($statement, new Name(null, 'SessionIndex')),
             $sessionNotOnOrAfter,
-            self::classRef(Children::one($statement, Structure::saml('AuthnContext'))),
+            self::classRef(Children::one($statement, Schema::saml('AuthnContext'))),
         );
     }
 
     private static function classRef(Element $authnContext): string
     {
-        Structure::unsupported(
+        Schema::unsupported(
             $authnContext,
-            [Structure::saml('AuthnContextDecl'), Structure::saml('AuthnContextDeclRef')],
+            [Schema::saml('AuthnContextDecl'), Schema::saml('AuthnContextDeclRef')],
             'The authentication context is a saml:AuthnContextDecl or a saml:AuthnContextDeclRef, which the package does not support (section 8).',
         );
-        Structure::sequence(
-            $authnContext,
-            [
-                Particle::one(Structure::saml('AuthnContextClassRef'), 'saml:AuthnContextClassRef'),
-                Particle::any([Structure::saml('AuthenticatingAuthority')]),
-            ],
-            'saml:AuthnContext',
-        );
+        Schema::children($authnContext, 'saml:AuthnContext', [
+            Particle::of(Schema::saml('AuthnContextClassRef'), 1, 1),
+            Particle::of(Schema::saml('AuthenticatingAuthority'), 0, Particle::UNBOUNDED),
+        ]);
 
-        return Text::of(Children::one($authnContext, Structure::saml('AuthnContextClassRef')));
+        return Text::of(Children::one($authnContext, Schema::saml('AuthnContextClassRef')));
     }
 }

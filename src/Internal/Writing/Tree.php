@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Internal\Writing;
 
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Xml\Core\Document;
 use Dom\Element;
 use Dom\XMLDocument;
 
 /**
- * The elements of a document the package builds, section 6.6 step 2 (core.md section 6.5): each created with
- * createElementNS() and its prefix, samlp or saml, and appended to its parent; the saml namespace declared as an
- * attribute on the element that introduces it under an element of another namespace, never on its descendants.
+ * The elements of a document the package builds, every writer's, section 6.6 step 2 (core.md section 6.5): each
+ * created with createElementNS() and its prefix, samlp, saml, md or ds, and appended to its parent; the saml and ds
+ * namespaces declared as an attribute on the element that introduces them under an element of another namespace,
+ * never on its descendants, the namespace of the root declared by DocumentFactory.
  *
  * @internal outside the compatibility promise of section 5
  */
@@ -61,6 +63,33 @@ final readonly class Tree
     public function samlp(Element $parent, string $local): Element
     {
         return $this->append($parent, Saml::PROTOCOL, 'samlp:' . $local);
+    }
+
+    /**
+     * An md element appended to an element where the md prefix is declared.
+     */
+    public function md(Element $parent, string $local): Element
+    {
+        return $this->append($parent, Saml::METADATA, 'md:' . $local);
+    }
+
+    /**
+     * A ds element appended to an element of another namespace, declaring the ds prefix it introduces.
+     */
+    public function introduceDs(Element $parent, string $local): Element
+    {
+        $element = $this->ds($parent, $local);
+        $element->setAttributeNS(self::XMLNS, 'xmlns:ds', Schema::DSIG);
+
+        return $element;
+    }
+
+    /**
+     * A ds element appended to an element where the ds prefix is declared.
+     */
+    public function ds(Element $parent, string $local): Element
+    {
+        return $this->append($parent, Schema::DSIG, 'ds:' . $local);
     }
 
     private function append(Element $parent, string $namespace, string $qualifiedName): Element

@@ -100,8 +100,8 @@ final class EnvelopeReaderTest extends TestCase
     }
 
     /**
-     * §9.2 row 26, M-5, M-6: a Version other than 2.0, no Version, no ID, no IssueInstant, an InResponseTo that is not
-     * an NCName, a relative Destination.
+     * §9.2 rows 25 and 26, M-5, M-6: a Version other than 2.0, no Version, no ID, no IssueInstant, an InResponseTo that
+     * is not an NCName, a relative Destination.
      */
     #[Test]
     #[DataProvider('provideEnvelopesNotOfTheirForm')]

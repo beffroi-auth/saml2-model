@@ -8,6 +8,7 @@ use function array_map;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\UnknownEndpoint;
+use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Metadata\Binding;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoints;
@@ -53,7 +54,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * M-17, section 9.2 row "one over each bound of section 7": 65 endpoints of one kind.
+     * M-17, §9.2 row 36, "one over each bound of section 7": 65 endpoints of one kind.
      */
     #[Test]
     public function itRefusesSixtyFiveEndpoints(): void
@@ -67,7 +68,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "a duplicate index", SAML Metadata §2.2.3: an index names one endpoint.
+     * §9.2 row 35, "a duplicate index", SAML Metadata §2.2.3: an index names one endpoint.
      */
     #[Test]
     public function itRefusesADuplicateIndex(): void
@@ -81,7 +82,25 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * Section 9.3 row "IndexedEndpoints::default() over the three cases", SAML Metadata §2.2.3: the first whose
+     * M-9, section 8: an assertion consumer service on another binding than HTTP-POST, which a response cannot be sent
+     * over, is refused whoever builds the list, so that no search establishes it; the reader drops it before.
+     */
+    #[Test]
+    public function itRefusesAnEndpointNotOnHttpPost(): void
+    {
+        // Then
+        $this->expectException(Unsupported::class);
+        $this->expectExceptionMessageIs('An assertion consumer service is not on HTTP-POST, the one binding the package answers over (section 8).');
+
+        // When
+        new IndexedEndpoints([
+            self::endpoint(0),
+            new IndexedEndpoint(Binding::HttpRedirect, 'https://sp.example.com/acs/redirect', 1),
+        ]);
+    }
+
+    /**
+     * §9.3 row 12, "IndexedEndpoints::default() over the three cases", SAML Metadata §2.2.3: the first whose
      * isDefault is true; else the first without isDefault false; else the first.
      *
      * @param list<?bool> $isDefaults
@@ -148,7 +167,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * M-9, section 9.2 row "an AuthnRequest whose index the metadata does not list": UnknownEndpoint.
+     * M-9, §9.2 row 30, "an AuthnRequest whose index the metadata does not list": UnknownEndpoint.
      */
     #[Test]
     public function itRefusesAnIndexItDoesNotList(): void
@@ -183,7 +202,7 @@ final class IndexedEndpointsTest extends TestCase
     }
 
     /**
-     * M-8, M-9, section 9.2 row "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list":
+     * M-8, M-9, §9.2 row 30, "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list":
      * compared exactly, no normalisation.
      */
     #[Test]

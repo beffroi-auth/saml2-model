@@ -28,6 +28,7 @@
         <ini name="display_errors" value="1"/>
         <ini name="error_reporting" value="-1"/>
         <ini name="date.timezone" value="UTC"/>
+        <ini name="zend.exception_ignore_args" value="0"/>
     </php>
     <source ignoreIndirectDeprecations="true">
         <include>

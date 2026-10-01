@@ -9,10 +9,13 @@ use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Metadata\IdentityProvider;
 use Beffroi\Saml2\Model\Metadata\ServiceProvider;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\Value\Boolean;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Exception\MixedContent;
@@ -38,8 +41,6 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final readonly class RoleReader
 {
-    private const int MAX_NAME_ID_FORMATS = 16;
-
     /**
      * Whether a role lists SAML 2.0 in its protocolSupportEnumeration, a list of URIs separated by whitespace; one
      * that does not is ignored (section 6.5 step 4).
@@ -192,9 +193,11 @@ final readonly class RoleReader
      */
     private static function boundFormats(array $formats): void
     {
-        if (count($formats) > self::MAX_NAME_ID_FORMATS) {
-            throw new LimitExceeded('A role descriptor holds more than 16 md:NameIDFormat, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count($formats),
+            Counts::NAME_ID_FORMATS,
+            'A role descriptor holds more than 16 md:NameIDFormat, the bound of section 7 (M-17).',
+        );
     }
 
     /**

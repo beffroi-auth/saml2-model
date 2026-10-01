@@ -15,6 +15,7 @@ use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\SignatureRequired;
 use Beffroi\Saml2\Model\Exception\UnknownEndpoint;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Metadata\ServiceProvider;
 use Beffroi\Saml2\Model\Protocol\AuthnContextComparison;
 use Beffroi\Saml2\Model\Protocol\AuthnRequest;
 use Beffroi\Saml2\Model\Protocol\NameIdPolicy;
@@ -30,6 +31,7 @@ use Beffroi\Xml\Dsig\Exception\SignatureMismatch;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use function sprintf;
@@ -95,7 +97,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an unsigned AuthnRequest from a service provider whose metadata says AuthnRequestsSigned", M-2,
+     * §9.2 row 31, "an unsigned AuthnRequest from a service provider whose metadata says AuthnRequestsSigned", M-2,
      * Profiles §4.1.6: refused, and refused as well when our own metadata wants the requests signed.
      */
     #[Test]
@@ -175,7 +177,40 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest with a ds:Signature given to validateAuthenticatedByBinding()", SAML Bindings
+     * Section 6.8, M-3: the binding verified the query string with the keys of the service provider's metadata; one
+     * whose metadata holds no signing key cannot have been verified so, and is refused as validate() refuses a signed
+     * request from it, whatever the two parties ask for.
+     */
+    #[Test]
+    #[TestWith([false, false])]
+    #[TestWith([true, true])]
+    public function itRefusesTheBindingPathForAServiceProviderWithoutKey(bool $signed, bool $wanted): void
+    {
+        // Given
+        $sp = AuthnRequestFixtures::serviceProvider($signed);
+        $withoutKey = new ServiceProvider(
+            $sp->entityId,
+            [],
+            [],
+            $sp->assertionConsumerServices,
+            authnRequestsSigned: $signed,
+        );
+
+        // Then
+        $this->expectException(SignatureRequired::class);
+        $this->expectExceptionMessageIs('The metadata of the peer holds no signing key to verify the message with (M-3).');
+
+        // When
+        AuthnRequestFixtures::validator()->validateAuthenticatedByBinding(
+            AuthnRequestFixtures::load(self::UNSIGNED),
+            $withoutKey,
+            AuthnRequestFixtures::identityProvider($wanted),
+            AuthnRequestFixtures::SINGLE_SIGN_ON,
+        );
+    }
+
+    /**
+     * §9.2 row 32, "an AuthnRequest with a ds:Signature given to validateAuthenticatedByBinding()", SAML Bindings
      * §3.4.4.1: the HTTP-Redirect encoding removes the signature of the message.
      */
     #[Test]
@@ -244,7 +279,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * M-9, section 9.3 row "an AuthnRequest without an assertion consumer service": the service of the URL, of the
+     * M-9, §9.3 row 13, "an AuthnRequest without an assertion consumer service": the service of the URL, of the
      * index, or the default of the metadata (SAML Metadata §2.2.3), never a location the request brings.
      */
     #[Test]
@@ -286,7 +321,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list; whose index it
+     * §9.2 row 30, "an AuthnRequest whose AssertionConsumerServiceURL the metadata does not list; whose index it
      * does not list; with both", M-9, SAML Core §3.4.1.
      *
      * @param class-string<MessageRefused> $exception
@@ -338,7 +373,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest with ProtocolBinding HTTP-Redirect", section 8: the Redirect binding cannot
+     * §9.2 row 33, "an AuthnRequest with ProtocolBinding HTTP-Redirect", section 8: the Redirect binding cannot
      * carry a response.
      */
     #[Test]
@@ -356,7 +391,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest without Issuer", Profiles §4.1.4.1, M-4.
+     * §9.2 row 33, "an AuthnRequest without Issuer", Profiles §4.1.4.1, M-4.
      */
     #[Test]
     public function itRefusesARequestWithoutIssuer(): void
@@ -373,7 +408,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "an AuthnRequest with a saml:Subject", section 8: saml:Subject, saml:Conditions and
+     * §9.2 row 33, "an AuthnRequest with a saml:Subject", section 8: saml:Subject, saml:Conditions and
      * samlp:Scoping refused by name, wherever they are.
      */
     #[Test]
@@ -431,7 +466,7 @@ final class AuthnRequestValidatorTest extends TestCase
      */
     public static function provideStructuresOutsideTheSchema(): iterable
     {
-        $order = 'The samlp:AuthnRequest holds a child the schema does not allow there, or out of its order (M-5).';
+        $order = 'The samlp:AuthnRequest holds a child out of the order of the schema, or one it does not allow there (M-5).';
         yield 'a ds:Signature before the saml:Issuer' => [
             'hostile/authn-request-signature-before-issuer-refused.xml',
             $order,
@@ -456,8 +491,9 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "Destination wrong", M-8, Bindings §3.4.5.2, §3.5.5.2: the Destination is the URL at which the
-     * request arrived, byte for byte, whether the request is signed, unsigned or authenticated by the binding.
+     * §9.2 row 12, a Destination other than the URL of arrival, M-8, Bindings §3.4.5.2, §3.5.5.2: the Destination is
+     * the URL at which the request arrived, byte for byte, whether the request is signed, unsigned or authenticated by
+     * the binding.
      */
     #[Test]
     #[DataProvider('provideDestinationsOfAnotherUrl')]
@@ -628,8 +664,8 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * M-8, §9.2 row "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6: the
-     * Issuer of a request carries none of the three qualifiers an entity identifier omits.
+     * M-8, §9.2 row 16, "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6:
+     * the Issuer of a request carries none of the three qualifiers an entity identifier omits.
      */
     #[Test]
     #[DataProvider('provideIssuerQualifiers')]
@@ -715,7 +751,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.2 row "IssueInstant too old", M-7: an IssueInstant one second beyond now plus the skew, or one second
+     * §9.2 row 18, M-7: an IssueInstant one second beyond now plus the skew, or one second
      * older than maxMessageAge.
      */
     #[Test]
@@ -812,7 +848,7 @@ final class AuthnRequestValidatorTest extends TestCase
             [
                 true,
                 true,
-                new NameIdPolicy(NameIdFormat::Persistent->value, 'https://affiliation.example.com', true),
+                new NameIdPolicy(NameIdFormat::Persistent->value, AuthnRequestFixtures::SERVICE_PROVIDER, true),
                 new RequestedAuthnContext(AuthnContextComparison::Minimum, [
                     'urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport',
                     'urn:oasis:names:tc:SAML:2.0:ac:classes:X509',
@@ -825,6 +861,30 @@ final class AuthnRequestValidatorTest extends TestCase
                 $accepted->request->requestedAuthnContext,
             ],
         );
+    }
+
+    /**
+     * Section 6.2 step 5, section 8, SAML Core §3.4.1.1: an SPNameQualifier naming another entity than the service
+     * provider is an affiliation, which the package does not read, and which an identity provider honouring it would
+     * answer with the identifier the user has at that other entity; the service provider's own is returned, as the
+     * test above shows.
+     */
+    #[Test]
+    public function itRefusesAnAffiliationTheNameIdPolicyNames(): void
+    {
+        // Given
+        $request = AuthnRequestFixtures::request(
+            [],
+            AuthnRequestFixtures::ISSUER
+            . '<samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent" SPNameQualifier="https://other-sp.example.com/saml" AllowCreate="true"/>',
+        );
+
+        // Then
+        $this->expectException(Unsupported::class);
+        $this->expectExceptionMessageIs('The SPNameQualifier of the samlp:NameIDPolicy names another entity than the service provider, an affiliation the package does not read (section 8).');
+
+        // When
+        $this->validate($request);
     }
 
     /**
@@ -855,7 +915,7 @@ final class AuthnRequestValidatorTest extends TestCase
     }
 
     /**
-     * Section 9.3 row "a samlp:Extensions with content in a request": accepted, not read.
+     * §9.3 row 9, "a samlp:Extensions with content in a request": accepted, not read.
      */
     #[Test]
     public function itAcceptsExtensionsWithContentUnread(): void
@@ -1094,7 +1154,7 @@ final class AuthnRequestValidatorTest extends TestCase
             ],
             $issuer,
             MalformedMessage::class,
-            'The AssertionConsumerServiceIndex of an AuthnRequest is not an xs:unsignedShort without sign or leading zero (M-6).',
+            'An index is not an xs:unsignedShort, digits without sign or leading zero from 0 to 65535 (M-6).',
         ];
         yield 'step 4 before step 5: HTTP-Redirect and IsPassive="yes"' => [
             ['ProtocolBinding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect', 'IsPassive' => 'yes'],

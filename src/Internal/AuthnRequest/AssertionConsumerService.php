@@ -10,11 +10,11 @@ use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Metadata\Binding;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoints;
+use Beffroi\Saml2\Model\Value\UnsignedShort;
 use Beffroi\Saml2\Model\Value\Uri;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Name;
 use Dom\Element;
-use function preg_match;
 
 /**
  * The assertion consumer service of an AuthnRequest, section 6.2 step 4 (M-9): resolved in the service provider's
@@ -27,8 +27,6 @@ use function preg_match;
  */
 final readonly class AssertionConsumerService
 {
-    private const int MAX_INDEX = 65_535;
-
     /**
      * The endpoint the response goes to, and the three attributes of the request that name it, as read.
      *
@@ -44,7 +42,7 @@ final readonly class AssertionConsumerService
         $url = Attributes::optional($request, new Name(null, 'AssertionConsumerServiceURL'));
         $url = $url === null ? null : Uri::read($url);
         $index = Attributes::optional($request, new Name(null, 'AssertionConsumerServiceIndex'));
-        $index = $index === null ? null : self::index($index);
+        $index = $index === null ? null : UnsignedShort::read($index);
         $binding = Attributes::optional($request, new Name(null, 'ProtocolBinding'));
         $binding = $binding === null ? null : Uri::read($binding);
         self::exclusive($url, $index, $binding);
@@ -85,20 +83,5 @@ final readonly class AssertionConsumerService
         }
 
         return $uri;
-    }
-
-    /**
-     * An xs:unsignedShort in its one lexical form (M-6): decimal digits without sign, whitespace or leading zero, at
-     * most 65535.
-     *
-     * @throws MalformedMessage
-     */
-    private static function index(string $index): int
-    {
-        if (preg_match('~^(?:0|[1-9]\d{0,4})\z~', $index) !== 1 || (int) $index > self::MAX_INDEX) {
-            throw new MalformedMessage('The AssertionConsumerServiceIndex of an AuthnRequest is not an xs:unsignedShort without sign or leading zero (M-6).');
-        }
-
-        return (int) $index;
     }
 }

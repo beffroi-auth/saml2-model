@@ -939,7 +939,7 @@ final class AdversarialFixtureBuilder
                 'ID="_another-response" Version="2.0" IssueInstant="2026-09-30T11:59:59.5Z"',
                 $signed,
             )),
-            self::accepted('response-assertion-issued-a-year-ago-within-its-bearer-window') => self::signed(
+            self::refused('response-assertion-issued-a-year-ago-within-its-bearer-window') => self::signed(
                 self::replace(
                     'ID="_assertion" Version="2.0" IssueInstant="2026-09-30T11:59:58Z"',
                     'ID="_assertion" Version="2.0" IssueInstant="2025-09-30T11:59:58Z"',
@@ -951,7 +951,7 @@ final class AdversarialFixtureBuilder
                 self::replace(self::AUDIENCE, self::AUDIENCE . '<saml:Audience/>', self::response()),
                 ['_assertion'],
             ),
-            self::accepted('response-name-id-with-a-right-to-left-override') => self::signed(
+            self::refused('response-name-id-with-a-right-to-left-override') => self::signed(
                 self::replace('>_7a2f4c1d9e<', ">_7a2f\u{202E}4c1d9e<", self::response()),
                 ['_assertion'],
             ),

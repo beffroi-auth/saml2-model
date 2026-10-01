@@ -132,7 +132,7 @@ final class AuthnRequestWriterTest extends TestCase
             AuthnRequestFixtures::ASSERTION_CONSUMER,
             null,
             AuthnRequestFixtures::POST,
-            new NameIdPolicy(NameIdFormat::Persistent->value, 'https://affiliation.example.com', true),
+            new NameIdPolicy(NameIdFormat::Persistent->value, AuthnRequestFixtures::SERVICE_PROVIDER, true),
             true,
             true,
             new RequestedAuthnContext(AuthnContextComparison::Minimum, [

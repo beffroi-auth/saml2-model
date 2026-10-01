@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Protocol;
 
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
 use Beffroi\Saml2\Model\Internal\Logout\Envelope;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\MixedContent;
@@ -31,6 +32,6 @@ final readonly class UnverifiedLogoutRequest
     {
         $root = Envelope::root($document, 'LogoutRequest');
 
-        return new self($document, Envelope::unverifiedIssuer($root));
+        return new self($document, IssuerReader::unverified($root, 'samlp:LogoutRequest'));
     }
 }

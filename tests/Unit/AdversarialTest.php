@@ -420,8 +420,18 @@ final class AdversarialTest extends TestCase
         ];
         yield 'destination with a zero width space' => [
             'response-destination-with-a-zero-width-space',
-            DestinationMismatch::class,
-            'The Destination of the response is not the URL at which it arrived (M-8).',
+            MalformedMessage::class,
+            'A URI holds whitespace, a control, format or invisible character, or bytes that are not UTF-8 (M-6).',
+        ];
+        yield 'name id with a right to left override' => [
+            'response-name-id-with-a-right-to-left-override',
+            InvalidNameId::class,
+            'The NameID holds a format or invisible character, invisible or reordering (M-12).',
+        ];
+        yield 'assertion issued a year ago within its bearer window' => [
+            'response-assertion-issued-a-year-ago-within-its-bearer-window',
+            OutsideValidityWindow::class,
+            'The IssueInstant of the assertion is older than maxMessageAge (M-7).',
         ];
         yield 'recipient scheme in upper case' => [
             'response-recipient-scheme-in-upper-case',
@@ -673,14 +683,6 @@ final class AdversarialTest extends TestCase
         ];
         yield 'name id in a cdata section' => ['response-name-id-in-a-cdata-section', []];
         yield 'failing signature in the extensions' => ['response-failing-signature-in-the-extensions', []];
-        yield 'assertion issued a year ago within its bearer window' => [
-            'response-assertion-issued-a-year-ago-within-its-bearer-window',
-            [],
-        ];
-        yield 'name id with a right to left override' => [
-            'response-name-id-with-a-right-to-left-override',
-            ['nameId' => "_7a2f\u{202E}4c1d9e"],
-        ];
     }
 
     /**
@@ -772,7 +774,7 @@ final class AdversarialTest extends TestCase
         yield 'issuer in the protocol namespace' => [
             'authn-request-issuer-in-the-protocol-namespace',
             MalformedMessage::class,
-            'The samlp:AuthnRequest holds a child the schema does not allow there, or out of its order (M-5).',
+            'The samlp:AuthnRequest holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'relative assertion consumer service url under an xml base' => [
             'authn-request-relative-assertion-consumer-service-url-under-an-xml-base',
@@ -1185,7 +1187,7 @@ final class AdversarialTest extends TestCase
         yield 'key info in a namespace one character off' => [
             'metadata-key-info-in-a-namespace-one-character-off',
             MalformedMessage::class,
-            'An md:KeyDescriptor holds a child the schema does not allow there, or out of its order (M-5).',
+            'The md:KeyDescriptor holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'relative location under an xml base' => [
             'metadata-relative-location-under-an-xml-base',

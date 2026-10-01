@@ -95,4 +95,24 @@ final class SubjectConfirmationTest extends TestCase
             null,
         );
     }
+
+    /**
+     * M-15: an address holding a NUL, which the DOM would cut the written value at, refused whoever builds the
+     * confirmation.
+     */
+    #[Test]
+    public function itRefusesAnAddressXmlDoesNotCarry(): void
+    {
+        // Then
+        $this->expectException(MalformedMessage::class);
+        $this->expectExceptionMessageIs('The Address holds a character XML does not carry, a NUL among them (M-15).');
+
+        // When
+        new SubjectConfirmation(
+            'https://sp.example.com/saml/acs',
+            new DateTimeImmutable('2026-09-30T12:05:00Z'),
+            null,
+            "192.0.2.1\u{0}",
+        );
+    }
 }

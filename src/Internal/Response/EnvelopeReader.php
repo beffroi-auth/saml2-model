@@ -11,7 +11,7 @@ use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Internal\Assertion\AssertionContext;
 use Beffroi\Saml2\Model\Internal\Assertion\IssuerReader;
-use Beffroi\Saml2\Model\Internal\Assertion\Structure;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Value\SamlId;
 use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Saml2\Model\Value\Uri;
@@ -22,7 +22,6 @@ use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Verified;
 use Dom\Element;
-use function sprintf;
 
 /**
  * The envelope of a response, section 6.1 step 6, read from the verified response when it was signed and from the
@@ -52,17 +51,13 @@ final readonly class EnvelopeReader
     {
         $root = $response->root;
         $signed = $response->verification instanceof Verified;
-        Version::read(Structure::attribute($root, 'Version', 'The samlp:Response has no Version (M-5).'));
-        $id = Structure::attribute($root, 'ID', 'The samlp:Response has no ID (M-5).');
-        $issueInstant = Time::read(Structure::attribute(
-            $root,
-            'IssueInstant',
-            'The samlp:Response has no IssueInstant (M-5).',
-        ));
-        if ($issueInstant > $context->latest()) {
+        Version::read(Schema::attribute($root, 'samlp:Response', 'Version'));
+        $id = Schema::attribute($root, 'samlp:Response', 'ID');
+        $issueInstant = Time::read(Schema::attribute($root, 'samlp:Response', 'IssueInstant'));
+        if ($issueInstant > $context->window->latest()) {
             throw new OutsideValidityWindow('The IssueInstant of the response is later than now plus the clock skew (M-7).');
         }
-        if ($issueInstant < $context->now->modify(sprintf('-%d seconds', $context->bounds->maxMessageAge))) {
+        if ($issueInstant < $context->window->oldest()) {
             throw new OutsideValidityWindow('The IssueInstant of the response is older than maxMessageAge (M-7).');
         }
         $destination = Attributes::optional($root, new Name(null, 'Destination'));
@@ -72,7 +67,7 @@ final readonly class EnvelopeReader
         if ($destination !== null && Uri::read($destination) !== $context->recipient) {
             throw new DestinationMismatch('The Destination of the response is not the URL at which it arrived (M-8).');
         }
-        $issuer = Children::optional($root, Structure::saml('Issuer'));
+        $issuer = Children::optional($root, Schema::saml('Issuer'));
         if (! $issuer instanceof Element && $signed) {
             throw new MalformedMessage('The response is signed and has no saml:Issuer (M-8).');
         }

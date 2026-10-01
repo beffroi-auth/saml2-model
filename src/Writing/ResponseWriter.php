@@ -10,12 +10,15 @@ use Beffroi\Saml2\Model\Internal\Writing\ResponseBuilder;
 use Beffroi\Saml2\Model\Protocol\Response;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\SamlLoader;
+use Beffroi\Saml2\Model\Value\Time;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\RefusedXml;
 use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Exception\SigningFailed;
 use Beffroi\Xml\Dsig\Signer;
+use DateTimeImmutable;
 use InvalidArgumentException;
+use SensitiveParameter;
 
 /**
  * A samlp:Response of the Web Browser SSO profile written by the identity provider, in the order of section 6.6
@@ -42,8 +45,12 @@ final readonly class ResponseWriter
      * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
      * @throws SigningFailed when the signing key fails
      */
-    public function write(Response $response, Signing $signing, SignedParts $parts = SignedParts::Assertion): Document
-    {
+    public function write(
+        Response $response,
+        #[SensitiveParameter]
+        Signing $signing,
+        SignedParts $parts = SignedParts::Assertion,
+    ): Document {
         $assertion =
             $response->assertion ?? throw new InvalidArgumentException('The response carries no assertion: a failure is written by writeFailure() (section 6.6).');
         $this->checkDestination($response);
@@ -67,8 +74,11 @@ final readonly class ResponseWriter
      * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
      * @throws SigningFailed when the signing key fails
      */
-    public function writeFailure(Response $response, ?Signing $signing): Document
-    {
+    public function writeFailure(
+        Response $response,
+        #[SensitiveParameter]
+        ?Signing $signing,
+    ): Document {
         if ($response->assertion instanceof Assertion) {
             throw new InvalidArgumentException('The response carries an assertion: a response whose status is Success is written by write() (section 6.6).');
         }
@@ -99,6 +109,7 @@ final readonly class ResponseWriter
      * together, in the order of section 6.1.
      *
      * @throws InvalidArgumentException
+     * @throws MalformedMessage
      */
     private function check(Response $response, Assertion $assertion): void
     {
@@ -117,6 +128,25 @@ final readonly class ResponseWriter
         if ($assertion->authnStatement->sessionIndex === null) {
             throw new InvalidArgumentException('The authentication statement holds no SessionIndex, which the Single Logout profile needs (section 6.6).');
         }
+        $conditions = $assertion->conditions;
+        if (
+            $conditions->notBefore instanceof DateTimeImmutable
+            && $conditions->notOnOrAfter instanceof DateTimeImmutable
+            && $this->written($conditions->notBefore) >= $this->written($conditions->notOnOrAfter)
+        ) {
+            throw new InvalidArgumentException('The NotBefore of the Conditions is not earlier than their NotOnOrAfter, to the second, which the service provider refuses (section 6.6).');
+        }
+    }
+
+    /**
+     * The time as the writer writes it, in UTC to the second (M-15), as the reader of the service provider reads it
+     * back.
+     *
+     * @throws MalformedMessage when the year is not of four digits
+     */
+    private function written(DateTimeImmutable $time): DateTimeImmutable
+    {
+        return Time::read(Time::write($time));
     }
 
     /**
@@ -125,8 +155,13 @@ final readonly class ResponseWriter
      * @throws RefusedXml
      * @throws SigningFailed
      */
-    private function sign(Signer $signer, Document $document, string $id, Signing $signing): Document
-    {
+    private function sign(
+        Signer $signer,
+        Document $document,
+        string $id,
+        #[SensitiveParameter]
+        Signing $signing,
+    ): Document {
         return $signer->sign(
             $document,
             $id,

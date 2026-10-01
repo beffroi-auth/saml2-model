@@ -273,11 +273,11 @@ final class LogoutResponseValidatorTest extends TestCase
     {
         yield 'a top-level code without Value' => [
             'hostile/logout-response-status-code-without-value-refused.xml',
-            'An samlp:StatusCode has no Value (M-5).',
+            'The samlp:StatusCode has no Value (M-5).',
         ];
         yield 'a second-level code without Value' => [
             'hostile/logout-response-second-level-status-code-without-value-refused.xml',
-            'An samlp:StatusCode has no Value (M-5).',
+            'The samlp:StatusCode has no Value (M-5).',
         ];
     }
 
@@ -335,35 +335,35 @@ final class LogoutResponseValidatorTest extends TestCase
         ];
         yield 'no samlp:Status' => [
             'hostile/logout-response-without-status-refused.xml',
-            'An samlp:LogoutResponse holds no samlp:Status (M-5).',
+            'The samlp:LogoutResponse holds no samlp:Status (M-4).',
         ];
         yield 'a samlp:Status without samlp:StatusCode' => [
             'hostile/logout-response-status-without-status-code-refused.xml',
-            'An samlp:Status holds no samlp:StatusCode (M-5).',
+            'The samlp:Status holds no samlp:StatusCode (M-4).',
         ];
         yield 'two samlp:StatusCode' => [
             'hostile/logout-response-two-status-codes-refused.xml',
-            'An samlp:Status holds more than one samlp:StatusCode (M-5).',
+            'The samlp:Status holds more than one samlp:StatusCode (M-4).',
         ];
         yield 'two samlp:StatusMessage' => [
             'hostile/logout-response-two-status-messages-refused.xml',
-            'An samlp:Status holds more than one samlp:StatusMessage (M-5).',
+            'The samlp:Status holds more than one samlp:StatusMessage (M-4).',
         ];
         yield 'two samlp:StatusDetail' => [
             'hostile/logout-response-two-status-details-refused.xml',
-            'An samlp:Status holds more than one samlp:StatusDetail (M-5).',
+            'The samlp:Status holds more than one samlp:StatusDetail (M-4).',
         ];
         yield 'a samlp:StatusDetail before a samlp:StatusMessage' => [
             'hostile/logout-response-status-detail-before-status-message-refused.xml',
-            'An samlp:Status holds a child the schema does not allow there, or out of its order (M-5).',
+            'The samlp:Status holds a child out of the order of the schema, or one it does not allow there (M-5).',
         ];
         yield 'two second-level codes' => [
             'hostile/logout-response-two-second-level-status-codes-refused.xml',
-            'An samlp:StatusCode holds more than one samlp:StatusCode (M-5).',
+            'The samlp:StatusCode holds more than one samlp:StatusCode (M-4).',
         ];
         yield 'two third-level codes' => [
             'hostile/logout-response-two-third-level-status-codes-refused.xml',
-            'An samlp:StatusCode holds more than one samlp:StatusCode (M-5).',
+            'The samlp:StatusCode holds more than one samlp:StatusCode (M-4).',
         ];
     }
 
@@ -417,8 +417,8 @@ final class LogoutResponseValidatorTest extends TestCase
     }
 
     /**
-     * M-8, §9.2 row "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6: the
-     * Issuer of a response carries none of the three qualifiers an entity identifier omits.
+     * M-8, §9.2 row 16, "the Issuer ... with a NameQualifier, an SPNameQualifier or an SPProvidedID", SAML Core §8.3.6:
+     * the Issuer of a response carries none of the three qualifiers an entity identifier omits.
      *
      * @param array<string, string> $replacements
      */
@@ -500,15 +500,31 @@ final class LogoutResponseValidatorTest extends TestCase
     }
 
     /**
+     * Section 6.8, M-3: the binding verified the query string with the keys of the peer's metadata; a peer whose
+     * metadata holds no signing key cannot have been verified so, and is refused as validate() refuses it.
+     */
+    #[Test]
+    public function itRefusesTheBindingPathForAPeerWithoutKey(): void
+    {
+        // Then
+        $this->expectException(SignatureRequired::class);
+        $this->expectExceptionMessageIs('The metadata of the peer holds no signing key to verify the message with (M-3).');
+
+        // When
+        $this->byBinding(MetadataFixtures::load(self::REDIRECT), LogoutFixtures::IDP_SLO, '');
+    }
+
+    /**
      * The service provider's response given to the identity provider's validateAuthenticatedByBinding().
      */
     private function byBinding(
         Document $document,
         string $receivedAt = LogoutFixtures::IDP_SLO,
+        string $certificate = 'sp',
     ): AcceptedLogoutResponse {
         return LogoutFixtures::responseValidator()->validateAuthenticatedByBinding(
             UnverifiedLogoutResponse::of($document),
-            LogoutFixtures::serviceProvider(),
+            LogoutFixtures::serviceProvider($certificate),
             LogoutFixtures::identityProvider(),
             $receivedAt,
             LogoutFixtures::REQUEST_ID,

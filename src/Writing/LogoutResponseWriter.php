@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Writing;
 
+use Beffroi\Saml2\Model\Internal\Writing\StatusBuilder;
+use Beffroi\Saml2\Model\Internal\Writing\Tree;
 use Beffroi\Saml2\Model\Protocol\LogoutResponse;
-use Beffroi\Saml2\Model\Protocol\SecondLevelStatusCode;
 use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\SamlLoader;
 use Beffroi\Saml2\Model\Value\Time;
@@ -15,8 +16,7 @@ use Beffroi\Xml\Core\Exception\RefusedXml;
 use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Dsig\Exception\SigningFailed;
 use Beffroi\Xml\Dsig\Signer;
-use Dom\Element;
-use LogicException;
+use SensitiveParameter;
 
 /**
  * A samlp:LogoutResponse written in the order of section 6.6 (section 5.7): what its reader would refuse, its
@@ -34,9 +34,13 @@ final readonly class LogoutResponseWriter
      * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
      * @throws SigningFailed when the signing key fails
      */
-    public function write(LogoutResponse $response, ?Signing $signing): Document
-    {
+    public function write(
+        LogoutResponse $response,
+        #[SensitiveParameter]
+        ?Signing $signing,
+    ): Document {
         $document = new DocumentFactory()->create(new Name(Saml::PROTOCOL, 'LogoutResponse'), 'samlp');
+        $tree = Tree::of($document);
         $root = $document->root();
         $root->setAttributeNS(self::XMLNS, 'xmlns:saml', Saml::ASSERTION);
         $root->setAttribute('ID', $response->id);
@@ -44,15 +48,8 @@ final readonly class LogoutResponseWriter
         $root->setAttribute('IssueInstant', Time::write($response->issueInstant));
         $root->setAttribute('Destination', $response->destination);
         $root->setAttribute('InResponseTo', $response->inResponseTo);
-        $this->child($root, Saml::ASSERTION, 'saml:Issuer')->append($response->issuer->entityId);
-        $code = $this->child($this->child($root, Saml::PROTOCOL, 'samlp:Status'), Saml::PROTOCOL, 'samlp:StatusCode');
-        $code->setAttribute('Value', $response->status->code->value);
-        if ($response->status->secondLevel instanceof SecondLevelStatusCode) {
-            $this->child($code, Saml::PROTOCOL, 'samlp:StatusCode')->setAttribute(
-                'Value',
-                $response->status->secondLevel->value,
-            );
-        }
+        $tree->saml($root, 'Issuer')->append($response->issuer->entityId);
+        StatusBuilder::append($tree, $root, $response->status);
         if (! $signing instanceof Signing) {
             return $document;
         }
@@ -65,18 +62,5 @@ final readonly class LogoutResponseWriter
             after: new Name(Saml::ASSERTION, 'Issuer'),
             certificatePem: $signing->certificatePem,
         );
-    }
-
-    /**
-     * A prefixed element appended to its parent, its prefix declared on the root (core.md section 6.5).
-     */
-    private function child(Element $parent, string $namespace, string $qualifiedName): Element
-    {
-        $document =
-            $parent->ownerDocument ?? throw new LogicException('An element of a built document belongs to it (section 6.6).');
-        $child = $document->createElementNS($namespace, $qualifiedName);
-        $parent->appendChild($child);
-
-        return $child;
     }
 }

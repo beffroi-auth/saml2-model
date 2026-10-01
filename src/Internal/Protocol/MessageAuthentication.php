@@ -83,14 +83,22 @@ final readonly class MessageAuthentication
 
     /**
      * The validateAuthenticatedByBinding() path: saml2-bindings verified the signature over the query string of
-     * HTTP-Redirect, whose encoding removes the ds:Signature of the message (SAML Bindings §3.4.4.1).
+     * HTTP-Redirect, whose encoding removes the ds:Signature of the message (SAML Bindings §3.4.4.1), with the keys of
+     * the peer's metadata (section 6.8); a peer whose metadata holds none cannot have been verified so, and is refused
+     * as validate() refuses it (M-3).
+     *
+     * @param ?VerificationKeys $keys the keys of the peer's metadata, null when it holds no signing certificate
      *
      * @throws MalformedMessage when the root holds a ds:Signature
+     * @throws SignatureRequired when the peer has no signing key (M-3)
      */
-    public static function byBinding(Document $received): self
+    public static function byBinding(Document $received, ?VerificationKeys $keys): self
     {
         if (self::signature($received) !== 0) {
             throw new MalformedMessage('The message carries a ds:Signature, which the HTTP-Redirect encoding removes (SAML Bindings §3.4.4.1).');
+        }
+        if (! $keys instanceof VerificationKeys) {
+            throw self::noKey();
         }
 
         return new self($received, Authentication::Binding);

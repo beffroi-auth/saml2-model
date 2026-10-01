@@ -10,6 +10,7 @@ use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Protocol\AuthnContextComparison;
 use Beffroi\Saml2\Model\Protocol\RequestedAuthnContext;
 use Beffroi\Saml2\Model\Saml;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Exception\MixedContent;
@@ -37,12 +38,11 @@ final readonly class RequestedAuthnContextReader
      */
     public static function read(Element $context): RequestedAuthnContext
     {
-        if (
-            count(Children::named($context, new Name(Saml::ASSERTION, 'AuthnContextClassRef')))
-            > RequestedAuthnContext::MAX_AUTHN_CONTEXT_CLASS_REFS
-        ) {
-            throw new LimitExceeded('A samlp:RequestedAuthnContext holds more than 16 saml:AuthnContextClassRef, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            count(Children::named($context, new Name(Saml::ASSERTION, 'AuthnContextClassRef'))),
+            Counts::AUTHN_CONTEXT_CLASS_REFS,
+            'A samlp:RequestedAuthnContext holds more than 16 saml:AuthnContextClassRef, the bound of section 7 (M-17).',
+        );
         $classRefs = [];
         foreach (Children::all($context) as $child) {
             if (new Name(Saml::ASSERTION, 'AuthnContextDeclRef')->matches($child)) {

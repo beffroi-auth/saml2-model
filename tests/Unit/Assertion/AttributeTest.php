@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Beffroi\Saml2\Model\Tests\Unit\Assertion;
 
+use function array_fill;
 use Beffroi\Saml2\Model\Assertion\Attribute;
 use Beffroi\Saml2\Model\Assertion\AttributeNameFormat;
+use Beffroi\Saml2\Model\Exception\LimitExceeded;
+use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -41,5 +45,63 @@ final class AttributeTest extends TestCase
             ],
             [$attribute->name, $attribute->nameFormat, $attribute->friendlyName, $attribute->values],
         );
+    }
+
+    /**
+     * Section 7, M-15, M-17: 256 values, the bound the reader of the service provider applies.
+     */
+    #[Test]
+    public function itHoldsTheValuesOfItsBound(): void
+    {
+        // Given
+        $values = array_fill(0, 256, 'member');
+
+        // When
+        $attribute = new Attribute('uid', AttributeNameFormat::Unspecified, null, $values);
+
+        // Then
+        static::assertSame($values, $attribute->values);
+    }
+
+    /**
+     * §9.2 row 36, M-15, M-17: 257 values, which the reader of the service provider would refuse, are refused whoever
+     * builds the attribute, a writer included.
+     */
+    #[Test]
+    public function itRefusesValuesOverTheirBound(): void
+    {
+        // Then
+        $this->expectException(LimitExceeded::class);
+        $this->expectExceptionMessageIs('An Attribute holds more than 256 AttributeValue, the bound of section 7 (M-17).');
+
+        // When
+        new Attribute('uid', AttributeNameFormat::Unspecified, null, array_fill(0, 257, 'member'));
+    }
+
+    /**
+     * M-15: a NUL in the name, the friendly name or a value, which the DOM would cut the written value at, or another
+     * character XML does not carry, refused whoever builds the attribute.
+     */
+    #[Test]
+    #[DataProvider('provideTextsNotCarried')]
+    public function itRefusesACharacterXmlDoesNotCarry(string $name, ?string $friendlyName, string $value): void
+    {
+        // Then
+        $this->expectException(MalformedMessage::class);
+        $this->expectExceptionMessageIs('An Attribute holds a character XML does not carry, a NUL among them (M-15).');
+
+        // When
+        new Attribute($name, AttributeNameFormat::Unspecified, $friendlyName, ['member', $value]);
+    }
+
+    /**
+     * @return iterable<string, array{string, ?string, string}>
+     */
+    public static function provideTextsNotCarried(): iterable
+    {
+        yield 'a NUL in the name' => ["groups\u{0}.other", null, 'admins'];
+        yield 'a NUL in the friendly name' => ['groups', "Groups\u{0}", 'admins'];
+        yield 'a NUL in a value' => ['groups', 'Groups', "admins\u{0}-of-nothing"];
+        yield 'U+FFFE in a value' => ['groups', null, "admins\u{FFFE}"];
     }
 }

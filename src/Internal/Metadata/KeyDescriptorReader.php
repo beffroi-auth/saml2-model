@@ -7,6 +7,9 @@ namespace Beffroi\Saml2\Model\Internal\Metadata;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Schema;
+use Beffroi\Saml2\Model\Value\Counts;
 use Beffroi\Saml2\Model\Value\Uri;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Children;
@@ -27,10 +30,6 @@ use function preg_replace;
  */
 final readonly class KeyDescriptorReader
 {
-    private const int MAX_SIGNING = 16;
-
-    private const int MAX_ENCRYPTION = 16;
-
     /**
      * @param list<Element> $keyDescriptors the md:KeyDescriptor children of a role
      *
@@ -57,12 +56,16 @@ final readonly class KeyDescriptorReader
             $encryption += $forEncryption;
             $uses[] = $use;
         }
-        if ($signing > self::MAX_SIGNING) {
-            throw new LimitExceeded('A role descriptor holds more than 16 md:KeyDescriptor for signing, the bound of section 7 (M-17).');
-        }
-        if ($encryption > self::MAX_ENCRYPTION) {
-            throw new LimitExceeded('A role descriptor holds more than 16 md:KeyDescriptor for encryption, the bound of section 7 (M-17).');
-        }
+        Counts::check(
+            $signing,
+            Counts::SIGNING_CERTIFICATES,
+            'A role descriptor holds more than 16 md:KeyDescriptor for signing, the bound of section 7 (M-17).',
+        );
+        Counts::check(
+            $encryption,
+            Counts::ENCRYPTION_CERTIFICATES,
+            'A role descriptor holds more than 16 md:KeyDescriptor for encryption, the bound of section 7 (M-17).',
+        );
         $signingCertificates = [];
         $encryptionCertificates = [];
         foreach ($keyDescriptors as $index => $keyDescriptor) {

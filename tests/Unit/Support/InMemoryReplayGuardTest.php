@@ -130,7 +130,7 @@ final class InMemoryReplayGuardTest extends TestCase
     }
 
     /**
-     * §9.3 row 8, M-11: a store nothing was remembered in is empty.
+     * M-11: a store nothing was remembered in is empty.
      */
     #[Test]
     public function itIsEmptyUntilAPairIsRemembered(): void

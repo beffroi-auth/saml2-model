@@ -7,17 +7,19 @@ namespace Beffroi\Saml2\Model\Internal\Metadata;
 use function array_key_exists;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Saml2\Model\Metadata\Binding;
 use Beffroi\Saml2\Model\Metadata\Endpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoints;
 use Beffroi\Saml2\Model\Value\Boolean;
+use Beffroi\Saml2\Model\Value\Counts;
+use Beffroi\Saml2\Model\Value\UnsignedShort;
 use Beffroi\Saml2\Model\Value\Uri;
 use Beffroi\Xml\Core\Attributes;
 use Beffroi\Xml\Core\Name;
 use function count;
 use Dom\Element;
-use function preg_match;
 use function sprintf;
 
 /**
@@ -29,10 +31,6 @@ use function sprintf;
  */
 final readonly class EndpointReader
 {
-    private const int MAX_ENDPOINTS = 64;
-
-    private const int MAX_INDEX = 65_535;
-
     /**
      * @param list<Element> $elements the md:SingleSignOnService or md:SingleLogoutService children of a role
      * @param string $element their name in the schema
@@ -72,7 +70,7 @@ final readonly class EndpointReader
         $endpoints = [];
         foreach ($elements as $endpoint) {
             $binding = Uri::read(Schema::attribute($endpoint, $element, 'Binding'));
-            $index = self::index(Schema::attribute($endpoint, $element, 'index'));
+            $index = UnsignedShort::read(Schema::attribute($endpoint, $element, 'index'));
             if (array_key_exists($index, $indexes)) {
                 throw new MalformedMessage('Two md:AssertionConsumerService of a role share an index (section 6.5).');
             }
@@ -102,26 +100,10 @@ final readonly class EndpointReader
      */
     public static function bound(array $elements, string $element): void
     {
-        if (count($elements) > self::MAX_ENDPOINTS) {
-            throw new LimitExceeded(sprintf(
-                'A role descriptor holds more than 64 %s, the bound of section 7 (M-17).',
-                $element,
-            ));
-        }
-    }
-
-    /**
-     * An xs:unsignedShort in its one lexical form (M-6): decimal digits without sign, whitespace or leading zero, at
-     * most 65535.
-     *
-     * @throws MalformedMessage
-     */
-    private static function index(string $index): int
-    {
-        if (preg_match('~^(?:0|[1-9]\d{0,4})\z~', $index) !== 1 || (int) $index > self::MAX_INDEX) {
-            throw new MalformedMessage('An md:AssertionConsumerService index is not an xs:unsignedShort without sign or leading zero (M-6).');
-        }
-
-        return (int) $index;
+        Counts::check(
+            count($elements),
+            Counts::ENDPOINTS,
+            sprintf('A role descriptor holds more than 64 %s, the bound of section 7 (M-17).', $element),
+        );
     }
 }

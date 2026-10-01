@@ -49,6 +49,9 @@ const INFECTION_STRICT_FILES = [
     'src/Value/SamlId.php',
     'src/Value/Uri.php',
     'src/Value/Version.php',
+    'src/Value/UnsignedShort.php',
+    'src/Value/Counts.php',
+    'src/Value/Characters.php',
     // Section 9: NameId, the rule of each format (M-12).
     'src/Assertion/NameId.php',
     // Section 9: the bounds of time the validators and the metadata reader share (M-7).
@@ -59,21 +62,24 @@ const INFECTION_STRICT_FILES = [
     'src/Metadata/IndexedEndpoints.php',
     // Section 9: the metadata reader (section 6.5).
     'src/Metadata/MetadataReader.php',
+    // Section 9: the one reading model of the SAML schemas, every strict reader's (M-5).
+    'src/Internal/Schema.php',
+    'src/Internal/Particle.php',
+    // Section 9: the edges of the windows of M-7, which every reader takes.
+    'src/Internal/Window.php',
     // Section 9: the strict readers of metadata and the rules its roles share.
     'src/Internal/Metadata/EndpointReader.php',
     'src/Internal/Metadata/EntityDescriptorReader.php',
     'src/Internal/Metadata/KeyDescriptorReader.php',
-    'src/Internal/Metadata/Particle.php',
     'src/Internal/Metadata/RoleReader.php',
     'src/Internal/Metadata/RoleRules.php',
-    'src/Internal/Metadata/Schema.php',
-    // Section 9: the rule of M-2 for a received protocol message.
+    // Section 9: the rule of M-2 for a received protocol message, and the one reader of a samlp:Status (M-5, M-13).
     'src/Internal/Protocol/MessageAuthentication.php',
+    'src/Internal/Protocol/StatusReader.php',
     // Section 9: the strict readers of the assertion and their rules, sections 6.1 steps 7 to 11.
     'src/Internal/Assertion/AssertionContext.php',
-    'src/Internal/Assertion/Particle.php',
-    'src/Internal/Assertion/Structure.php',
     'src/Internal/Assertion/IssuerReader.php',
+    'src/Internal/Assertion/NameIdReader.php',
     'src/Internal/Assertion/HeaderReader.php',
     'src/Internal/Assertion/SubjectReader.php',
     'src/Internal/Assertion/ConditionsReader.php',
@@ -83,7 +89,6 @@ const INFECTION_STRICT_FILES = [
     // Section 9: the envelope of a response, its status, and the selection of the signed element, section 6.1 steps 2
     // to 6.
     'src/Internal/Response/Envelope.php',
-    'src/Internal/Response/StatusReader.php',
     'src/Internal/Response/SignedResponse.php',
     'src/Internal/Response/SignedAssertion.php',
     'src/Internal/Response/EnvelopeReader.php',
@@ -106,27 +111,28 @@ const INFECTION_STRICT_FILES = [
     // Section 6.6: the builders of a response and its assertion, whose output the validator of section 6.1 reads
     // back (M-15).
     'src/Internal/Writing/Tree.php',
+    'src/Internal/Writing/NameIdBuilder.php',
+    'src/Internal/Writing/StatusBuilder.php',
     'src/Internal/Writing/AssertionBuilder.php',
     'src/Internal/Writing/ResponseBuilder.php',
     // Section 6.6: the writer of a response, which checks what the validator would refuse and signs (M-15).
     'src/Writing/SignedParts.php',
     'src/Writing/ResponseWriter.php',
-    // Section 6.6: the writer of a logout request, which refuses a NotOnOrAfter its reader would refuse (M-15).
+    // Section 6.6: the writers of the other messages and of metadata, each on the tree builder of the response's.
+    'src/Writing/AuthnRequestWriter.php',
+    'src/Writing/MetadataWriter.php',
     'src/Writing/LogoutRequestWriter.php',
+    'src/Writing/LogoutResponseWriter.php',
     // Section 9: the strict readers of the two logout messages (sections 6.3, 6.4).
     'src/Internal/Logout/Envelope.php',
     'src/Internal/Logout/LogoutContext.php',
     'src/Internal/Logout/LogoutRequestReader.php',
     'src/Internal/Logout/LogoutResponseReader.php',
-    'src/Internal/Logout/StatusReader.php',
     // Section 9: the logout validators and what they return (section 5.6).
     'src/Validation/LogoutRequestValidator.php',
     'src/Validation/LogoutResponseValidator.php',
     'src/Validation/AcceptedLogoutRequest.php',
     'src/Validation/AcceptedLogoutResponse.php',
-    // Section 9, each added by the story that writes it:
-    // the other strict readers and the selection of the signed element, every other file of src/Internal/;
-    // the validators, every other file of src/Validation/.
 ];
 
 /**
@@ -380,6 +386,25 @@ function deptrac(): void
  */
 const XMLSEC_ORACLE = 'tmp-phpqa/oracle';
 
+/**
+ * The signed documents the writers wrote and the repository commits, by the certificate of their signer (section
+ * 9.1): the identity provider's responses, logout request and metadata, the service provider's AuthnRequest and
+ * logout response. The job Oracle of the CI verifies the same files.
+ */
+const XMLSEC_COMMITTED = [
+    'tests/Fixture/keys/idp-signing-certificate.pem' => [
+        'tests/Fixture/behaviour/response-written-signed-assertion.xml',
+        'tests/Fixture/behaviour/response-written-signed-assertion-and-response.xml',
+        'tests/Fixture/behaviour/response-written-failure-signed-refused.xml',
+        'tests/Fixture/behaviour/logout-request-written-and-signed-by-the-writer.xml',
+        'tests/Fixture/behaviour/metadata-written-and-signed-by-the-writer.xml',
+    ],
+    'tests/Fixture/keys/sp-signing-certificate.pem' => [
+        'tests/Fixture/behaviour/authn-request-written-and-signed-by-the-writer.xml',
+        'tests/Fixture/behaviour/logout-response-written-and-signed-by-the-writer.xml',
+    ],
+];
+
 #[AsTask(
     description: 'Verify every signature of a written file with xmlsec1, the implementation that is not this one (spec/model.md section 9.1), in Alpine 3.22: castor xmlsec tests/Fixture/behaviour/response-written-signed-assertion-and-response.xml',
 )]
@@ -395,7 +420,7 @@ function xmlsec(
 }
 
 #[AsTask(
-    description: 'Write and sign responses with every scheme this build offers, then have xmlsec1 verify every signature of each (spec/model.md section 9.1), what the job Oracle of the CI runs: PHP_VERSION=8.5 castor xmlsec-oracle',
+    description: 'Write and sign responses with every scheme this build offers, then have xmlsec1 verify every signature of each, and of every signed document the writers committed, each under its signer\'s certificate (spec/model.md section 9.1), what the job Oracle of the CI runs: PHP_VERSION=8.5 castor xmlsec-oracle',
 )]
 function xmlsec_oracle(): void
 {
@@ -416,6 +441,9 @@ function xmlsec_oracle(): void
         ['XMLSEC_ORACLE' => XMLSEC_ORACLE],
     );
     xmlsec1(glob(XMLSEC_ORACLE . '/*.xml') ?: [], 'tests/Fixture/keys/idp-signing-certificate.pem');
+    foreach (XMLSEC_COMMITTED as $certificate => $files) {
+        xmlsec1($files, $certificate);
+    }
 }
 
 /**

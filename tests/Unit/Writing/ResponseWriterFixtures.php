@@ -107,6 +107,7 @@ final class ResponseWriterFixtures
         string $recipient = self::ASSERTION_CONSUMER,
         ?string $id = null,
         string $issueInstant = self::NOW,
+        ?Conditions $conditions = null,
     ): Assertion {
         return new Assertion(
             $id ?? SamlId::generate(),
@@ -114,7 +115,7 @@ final class ResponseWriterFixtures
             new Issuer($issuer),
             new NameId('alice'),
             new SubjectConfirmation($recipient, new DateTimeImmutable('2026-10-01T12:05:00Z'), $inResponseTo, null),
-            new Conditions(null, null, [[self::SERVICE_PROVIDER]], false),
+            $conditions ?? new Conditions(null, null, [[self::SERVICE_PROVIDER]], false),
             new AuthnStatement(new DateTimeImmutable('2026-10-01T11:59:30Z'), $sessionIndex, null, self::CONTEXT_CLASS),
             [],
         );
