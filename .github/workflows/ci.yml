@@ -9,6 +9,10 @@ on:
   pull_request: ~
   workflow_dispatch: ~
 
+# No job writes to the repository: the token of every job reads only, whatever the repository's default says.
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -19,9 +23,8 @@ concurrency:
 # its verdict.
 #
 # beffroi-php/xml-security is private and required at dev-main through a vcs repository (spec/model.md section 12).
-# Each Composer install reads the COMPOSER_AUTH secret into the variable Composer reads its credentials from, and
-# only that step sees it. The credential is pending the maintainer's decision (a read-only token, a deploy key, or
-# nothing once xml-security is public): until the secret exists, the installs fail and so does every job after them.
+# Each Composer install reads the COMPOSER_AUTH secret, a read-only fine-grained token the maintainer chose (section
+# 12), into the variable Composer reads its credentials from, and only that step sees it.
 
 jobs:
   pre_checks:
@@ -174,7 +177,12 @@ jobs:
         run: castor infect --reuse-coverage --threads=2
       - name: "Mutations of the pull request"
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
-        run: castor infect --diff --reuse-coverage --base="origin/${{ github.base_ref }}" --threads=2
+        # the base branch's name reaches the shell through the environment, never spliced into the command line
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: castor infect --diff --reuse-coverage --base="origin/$BASE_REF" --threads=2
       - name: "Mutations of the push"
         if: ${{ !cancelled() && github.event_name == 'push' }}
-        run: castor infect --diff --reuse-coverage --base="${{ github.event.before }}" --threads=2
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: castor infect --diff --reuse-coverage --base="$BEFORE" --threads=2
