@@ -500,15 +500,31 @@ final class LogoutResponseValidatorTest extends TestCase
     }
 
     /**
+     * Section 6.8, M-3: the binding verified the query string with the keys of the peer's metadata; a peer whose
+     * metadata holds no signing key cannot have been verified so, and is refused as validate() refuses it.
+     */
+    #[Test]
+    public function itRefusesTheBindingPathForAPeerWithoutKey(): void
+    {
+        // Then
+        $this->expectException(SignatureRequired::class);
+        $this->expectExceptionMessageIs('The metadata of the peer holds no signing key to verify the message with (M-3).');
+
+        // When
+        $this->byBinding(MetadataFixtures::load(self::REDIRECT), LogoutFixtures::IDP_SLO, '');
+    }
+
+    /**
      * The service provider's response given to the identity provider's validateAuthenticatedByBinding().
      */
     private function byBinding(
         Document $document,
         string $receivedAt = LogoutFixtures::IDP_SLO,
+        string $certificate = 'sp',
     ): AcceptedLogoutResponse {
         return LogoutFixtures::responseValidator()->validateAuthenticatedByBinding(
             UnverifiedLogoutResponse::of($document),
-            LogoutFixtures::serviceProvider(),
+            LogoutFixtures::serviceProvider($certificate),
             LogoutFixtures::identityProvider(),
             $receivedAt,
             LogoutFixtures::REQUEST_ID,

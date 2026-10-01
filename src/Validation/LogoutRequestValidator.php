@@ -81,7 +81,7 @@ final readonly class LogoutRequestValidator
         $context = $this->context($peer, $self, $receivedAt);
         LogoutRequestReader::structure($request->document->root());
 
-        return $this->accept(MessageAuthentication::byBinding($request->document), $context);
+        return $this->accept(MessageAuthentication::byBinding($request->document, $peer->verificationKeys()), $context);
     }
 
     /**

@@ -246,7 +246,7 @@ final class MessageAuthenticationTest extends TestCase
         $received = MetadataFixtures::load(self::UNSIGNED);
 
         // When
-        $authentication = MessageAuthentication::byBinding($received);
+        $authentication = MessageAuthentication::byBinding($received, MetadataFixtures::verificationKeys('idp'));
 
         // Then
         static::assertSame([Authentication::Binding, $received], [
@@ -270,7 +270,25 @@ final class MessageAuthenticationTest extends TestCase
         $this->expectExceptionMessageIs('The message carries a ds:Signature, which the HTTP-Redirect encoding removes (SAML Bindings §3.4.4.1).');
 
         // When
-        MessageAuthentication::byBinding($received);
+        MessageAuthentication::byBinding($received, MetadataFixtures::verificationKeys('idp'));
+    }
+
+    /**
+     * Section 6.8, M-3: the binding verifies the query string with the keys of the peer's metadata; a peer whose
+     * metadata holds none cannot have been verified so, and is refused as validate() refuses it.
+     */
+    #[Test]
+    public function itRefusesAMessageTheBindingAuthenticatedFromAPeerWithoutKey(): void
+    {
+        // Given
+        $received = MetadataFixtures::load(self::UNSIGNED);
+
+        // Then
+        $this->expectException(SignatureRequired::class);
+        $this->expectExceptionMessageIs('The metadata of the peer holds no signing key to verify the message with (M-3).');
+
+        // When
+        MessageAuthentication::byBinding($received, null);
     }
 
     private function authenticate(

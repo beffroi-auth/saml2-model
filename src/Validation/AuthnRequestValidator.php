@@ -84,7 +84,13 @@ final readonly class AuthnRequestValidator
         $now = $this->clock->now();
         AuthnRequestReader::structure($request->document->root());
 
-        return $this->accept(MessageAuthentication::byBinding($request->document), $now, $sp, $self, $receivedAt);
+        return $this->accept(
+            MessageAuthentication::byBinding($request->document, $sp->verificationKeys()),
+            $now,
+            $sp,
+            $self,
+            $receivedAt,
+        );
     }
 
     /**

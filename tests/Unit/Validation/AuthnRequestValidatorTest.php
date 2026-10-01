@@ -15,6 +15,7 @@ use Beffroi\Saml2\Model\Exception\OutsideValidityWindow;
 use Beffroi\Saml2\Model\Exception\SignatureRequired;
 use Beffroi\Saml2\Model\Exception\UnknownEndpoint;
 use Beffroi\Saml2\Model\Exception\Unsupported;
+use Beffroi\Saml2\Model\Metadata\ServiceProvider;
 use Beffroi\Saml2\Model\Protocol\AuthnContextComparison;
 use Beffroi\Saml2\Model\Protocol\AuthnRequest;
 use Beffroi\Saml2\Model\Protocol\NameIdPolicy;
@@ -30,6 +31,7 @@ use Beffroi\Xml\Dsig\Exception\SignatureMismatch;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 use function sprintf;
@@ -171,6 +173,39 @@ final class AuthnRequestValidatorTest extends TestCase
         static::assertSame(
             [AuthnRequestFixtures::ID, 0, Authentication::Binding],
             [$accepted->request->id, $accepted->assertionConsumerService->index, $accepted->authentication],
+        );
+    }
+
+    /**
+     * Section 6.8, M-3: the binding verified the query string with the keys of the service provider's metadata; one
+     * whose metadata holds no signing key cannot have been verified so, and is refused as validate() refuses a signed
+     * request from it, whatever the two parties ask for.
+     */
+    #[Test]
+    #[TestWith([false, false])]
+    #[TestWith([true, true])]
+    public function itRefusesTheBindingPathForAServiceProviderWithoutKey(bool $signed, bool $wanted): void
+    {
+        // Given
+        $sp = AuthnRequestFixtures::serviceProvider($signed);
+        $withoutKey = new ServiceProvider(
+            $sp->entityId,
+            [],
+            [],
+            $sp->assertionConsumerServices,
+            authnRequestsSigned: $signed,
+        );
+
+        // Then
+        $this->expectException(SignatureRequired::class);
+        $this->expectExceptionMessageIs('The metadata of the peer holds no signing key to verify the message with (M-3).');
+
+        // When
+        AuthnRequestFixtures::validator()->validateAuthenticatedByBinding(
+            AuthnRequestFixtures::load(self::UNSIGNED),
+            $withoutKey,
+            AuthnRequestFixtures::identityProvider($wanted),
+            AuthnRequestFixtures::SINGLE_SIGN_ON,
         );
     }
 

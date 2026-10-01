@@ -80,6 +80,21 @@ final class LogoutRequestValidatorTest extends TestCase
     }
 
     /**
+     * Section 6.8, M-3: the binding verified the query string with the keys of the peer's metadata; a peer whose
+     * metadata holds no signing key cannot have been verified so, and is refused as validate() refuses it.
+     */
+    #[Test]
+    public function itRefusesTheBindingPathForAPeerWithoutKey(): void
+    {
+        // Then
+        $this->expectException(SignatureRequired::class);
+        $this->expectExceptionMessageIs('The metadata of the peer holds no signing key to verify the message with (M-3).');
+
+        // When
+        $this->byBinding(MetadataFixtures::load(self::REDIRECT), 0, LogoutFixtures::identityProvider(''));
+    }
+
+    /**
      * §9.2 row 34, M-2, SAML Profiles §4.4.4.1: an unsigned LogoutRequest given to validate(), the path of HTTP-POST
      * and of an HTTP-Redirect without signature, is refused; the same document is accepted by the binding path.
      */
