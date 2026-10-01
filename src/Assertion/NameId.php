@@ -6,6 +6,7 @@ namespace Beffroi\Saml2\Model\Assertion;
 
 use Beffroi\Saml2\Model\Exception\InvalidNameId;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Saml2\Model\Value\Characters;
 use Beffroi\Saml2\Model\Value\Uri;
 use function mb_strlen;
 use function preg_match;
@@ -17,7 +18,9 @@ use function preg_match;
  * (M-6); at most 256 characters for a persistent or a transient identifier (SAML Core §8.3.7, §8.3.8), 1024 for the
  * others (section 7);
  * an entity identifier is a URI without qualifier (SAML Core §8.3.6), an email address an addr-spec (SAML Core
- * §8.3.2), and the qualifiers of a persistent or a transient identifier name an entity, a URI (SAML Core §8.3.7).
+ * §8.3.2), and the qualifiers of a persistent or a transient identifier name an entity, a URI (SAML Core §8.3.7). The
+ * value and the qualifiers hold only characters XML carries, a NUL above all, which the DOM would cut a written
+ * identifier at (M-15).
  */
 final readonly class NameId
 {
@@ -26,7 +29,8 @@ final readonly class NameId
     private const int MAX_PAIRWISE_CHARACTERS = 256;
 
     /**
-     * @throws InvalidNameId when the value or a qualifier breaks the rule of the format (M-12)
+     * @throws InvalidNameId when the value or a qualifier breaks the rule of the format (M-12), or holds a character
+     *                       XML does not carry (M-15)
      */
     public function __construct(
         public string $value,
@@ -48,6 +52,11 @@ final readonly class NameId
         // false, for bytes that are not UTF-8, refuses too
         if (preg_match('~^[\p{Z}\p{Cc}]|[\p{Z}\p{Cc}]\z~u', $value) !== 0) {
             throw new InvalidNameId('The NameID starts or ends with whitespace or a control character, or is not UTF-8 (M-12).');
+        }
+        foreach ([$value, $nameQualifier ?? '', $spNameQualifier ?? '', $spProvidedId ?? ''] as $text) {
+            if (! Characters::carriedByXml($text)) {
+                throw new InvalidNameId('The NameID or a qualifier holds a character XML does not carry, a NUL among them (M-15).');
+            }
         }
         if (preg_match('~\p{Cf}~u', $value) === 1) {
             throw new InvalidNameId('The NameID holds a format character, invisible or reordering (M-12).');
