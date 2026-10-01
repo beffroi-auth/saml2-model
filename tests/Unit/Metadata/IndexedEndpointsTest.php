@@ -8,6 +8,7 @@ use function array_map;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\UnknownEndpoint;
+use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Metadata\Binding;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoint;
 use Beffroi\Saml2\Model\Metadata\IndexedEndpoints;
@@ -78,6 +79,24 @@ final class IndexedEndpointsTest extends TestCase
 
         // When
         new IndexedEndpoints([self::endpoint(0), self::endpoint(1), self::endpoint(0)]);
+    }
+
+    /**
+     * M-9, section 8: an assertion consumer service on another binding than HTTP-POST, which a response cannot be sent
+     * over, is refused whoever builds the list, so that no search establishes it; the reader drops it before.
+     */
+    #[Test]
+    public function itRefusesAnEndpointNotOnHttpPost(): void
+    {
+        // Then
+        $this->expectException(Unsupported::class);
+        $this->expectExceptionMessageIs('An assertion consumer service is not on HTTP-POST, the one binding the package answers over (section 8).');
+
+        // When
+        new IndexedEndpoints([
+            self::endpoint(0),
+            new IndexedEndpoint(Binding::HttpRedirect, 'https://sp.example.com/acs/redirect', 1),
+        ]);
     }
 
     /**

@@ -322,18 +322,6 @@ final class MetadataWriterTest extends TestCase
             ),
             'The service provider holds no assertion consumer service, which its reader requires (section 6.6).',
         ];
-        yield 'an assertion consumer service on HTTP-Redirect' => [
-            new EntityDescriptor($entityId, null, self::identityProvider($entityId), new ServiceProvider(
-                $entityId,
-                [],
-                [],
-                new IndexedEndpoints([
-                    new IndexedEndpoint(Binding::HttpPost, $entityId . '/acs', 0),
-                    new IndexedEndpoint(Binding::HttpRedirect, $entityId . '/acs', 1),
-                ]),
-            )),
-            'An assertion consumer service is not on HTTP-POST, which its reader drops (section 6.6).',
-        ];
     }
 
     private static function identityProvider(string $entityId): IdentityProvider
