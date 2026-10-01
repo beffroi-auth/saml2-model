@@ -6,7 +6,6 @@ namespace Beffroi\Saml2\Model\Writing;
 
 use Beffroi\Saml2\Model\Assertion\NameIdFormat;
 use Beffroi\Saml2\Model\Internal\Writing\Tree;
-use Beffroi\Saml2\Model\Metadata\Binding;
 use Beffroi\Saml2\Model\Metadata\Endpoint;
 use Beffroi\Saml2\Model\Metadata\EntityDescriptor;
 use Beffroi\Saml2\Model\Metadata\IdentityProvider;
@@ -38,8 +37,8 @@ final readonly class MetadataWriter
 {
     /**
      * @throws InvalidArgumentException when the descriptor holds no role, its identity provider no single sign-on
-     *                                   service, its service provider no assertion consumer service or one that is
-     *                                   not on HTTP-POST: a programming error of the caller (section 5.8)
+     *                                   service, or its service provider no assertion consumer service: a
+     *                                   programming error of the caller (section 5.8)
      * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
      * @throws SigningFailed when the signing key fails
      */
@@ -93,14 +92,8 @@ final readonly class MetadataWriter
         if ($descriptor->identityProvider?->singleSignOnServices === []) {
             throw new InvalidArgumentException('The identity provider holds no single sign-on service, which its reader requires (section 6.6).');
         }
-        $assertionConsumers = $descriptor->serviceProvider->assertionConsumerServices->endpoints ?? null;
-        if ($assertionConsumers === []) {
+        if ($descriptor->serviceProvider?->assertionConsumerServices->endpoints === []) {
             throw new InvalidArgumentException('The service provider holds no assertion consumer service, which its reader requires (section 6.6).');
-        }
-        foreach ($assertionConsumers ?? [] as $assertionConsumer) {
-            if ($assertionConsumer->binding !== Binding::HttpPost) {
-                throw new InvalidArgumentException('An assertion consumer service is not on HTTP-POST, which its reader drops (section 6.6).');
-            }
         }
     }
 

@@ -8,13 +8,16 @@ use function array_key_exists;
 use Beffroi\Saml2\Model\Exception\LimitExceeded;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\UnknownEndpoint;
+use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Value\Counts;
 use function count;
 
 /**
  * The assertion consumer services of a service provider (section 5.3, M-9): at most 64, their indexes unique (SAML
- * Metadata §2.2.3), in the order of the metadata. The metadata reader keeps those on HTTP-POST only, and the three
- * searches below run over what the list holds (section 6.5 step 6); a search that finds nothing is UnknownEndpoint.
+ * Metadata §2.2.3), each on HTTP-POST, the one binding a response is sent over (section 8), in the order of the
+ * metadata. The metadata reader drops the others before it builds the list, and whoever else builds it, from the
+ * metadata it stored, cannot put one in, so that the three searches below never establish an endpoint of another
+ * binding (section 6.5 step 6); a search that finds nothing is UnknownEndpoint.
  */
 final readonly class IndexedEndpoints
 {
@@ -22,6 +25,7 @@ final readonly class IndexedEndpoints
      * @param list<IndexedEndpoint> $endpoints
      *
      * @throws LimitExceeded when there are more than 64 (section 7)
+     * @throws Unsupported when one is not on HTTP-POST (section 8)
      * @throws MalformedMessage when two share an index (SAML Metadata §2.2.3)
      */
     public function __construct(
@@ -34,6 +38,9 @@ final readonly class IndexedEndpoints
         );
         $byIndex = [];
         foreach ($endpoints as $endpoint) {
+            if ($endpoint->binding !== Binding::HttpPost) {
+                throw new Unsupported('An assertion consumer service is not on HTTP-POST, the one binding the package answers over (section 8).');
+            }
             if (array_key_exists($endpoint->index, $byIndex)) {
                 throw new MalformedMessage('Two assertion consumer services share an index (section 6.5).');
             }
