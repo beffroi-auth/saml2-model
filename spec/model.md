@@ -513,11 +513,13 @@ Constants of the package where the specification fixes them, bounds with a defau
 
 **Refused as malformed** (`MalformedMessage`): what M-4, M-5 and M-6 name, among them a second assertion, a second confirmation, a second authentication statement, a child out of order, an unknown element of a SAML namespace, a `Version` other than `2.0`, a time without `Z`, a boolean other than its four forms, a relative URI.
 
-**Never called**, in the package, enforced by the rules of `.ci-tools/phpstan.neon`: everything core.md §8 bans (`DOMDocument`, XPath, `getElementsByTagName*()`, `getElementById()`, `createFromString()` outside `Core`, `C14N()`, `saveXml()`, `importNode()`; `textContent` and `nodeValue` are not read); every `openssl_*` function; `time()`, `microtime()`, `date()`, `strtotime()`, `new \DateTime()` and `new \DateTimeImmutable()` without an explicit UTC string (the clock port is the time); `rand()`, `mt_rand()`, `uniqid()`, `lcg_value()` (`random_bytes()` is the randomness); `(bool)`, `boolval()`, `filter_var()` with `FILTER_VALIDATE_BOOL` or `FILTER_VALIDATE_BOOLEAN`; `==` and `!=`; any class of `Symfony\Component\HttpFoundation`, `Psr\Http\` or `Beffroi\Xml\*\Internal`, which Deptrac holds.
+**Never called**, in the package, enforced by the rules of `.ci-tools/phpstan.neon`: everything core.md §8 bans (`DOMDocument`, XPath, `getElementsByTagName*()`, `getElementById()`, `createFromString()` outside `Core`, `C14N()`, `saveXml()`, `importNode()`; `textContent` and `nodeValue` are not read); every `openssl_*` function; `hash_hmac()`; every reading of the machine's clock, `time()`, `hrtime()`, `microtime()`, `date()`, `gmdate()`, `idate()`, `getdate()`, `localtime()`, `gettimeofday()`, `mktime()`, `gmmktime()`, `strtotime()`, `date_create()`, `date_create_immutable()`, and `new \DateTime()` or `new \DateTimeImmutable()` with a constant string that is not a full date and time in UTC, relative or absent (the clock port is the time; a non-constant string, a time read from a message, is accepted); `rand()`, `mt_rand()`, `srand()`, `mt_srand()`, `uniqid()`, `lcg_value()`, `shuffle()`, `str_shuffle()`, `array_rand()` (`random_bytes()` is the randomness); `(bool)`, `boolval()`, `settype()`, `filter_var()` with `FILTER_VALIDATE_BOOL` or `FILTER_VALIDATE_BOOLEAN`; `==`, `!=`, `<>` and `switch`, which compares loosely; any class of `Symfony\Component\HttpFoundation`, `Psr\Http\`, `Beffroi\Xml\*\Internal`, and `Beffroi\Xml\Enc` until sub-spike 9e, which Deptrac holds. The ban of a method named `validate()`, which core.md §8 sets for the DOM's validation, lets through a call on a class of this package, whose validators are named so.
+
+**Reviewed by hand**, since PHPStan cannot enforce it here: a read of `textContent`, `nodeValue` or `innerHTML`; `DateTimeImmutable::createFromFormat()` with a format that fills the missing fields from the clock (without `!` or `|`); `filter_var()` with its filter in a variable; `<=>`; `date_default_timezone_set()`. Deptrac covers `src/` only.
 
 ## 9. Acceptance
 
-The package is accepted when every case below is a green test in CI on PHP 8.4 and 8.5; when Infection leaves no escaped mutant in the validators of `Validation\`, the metadata reader, the strict readers and the selection of the signed element of `Internal\`, the lexical forms of `Value\`, `NameId` and `IndexedEndpoints`; when the real documents of 9.4 validate; and when the judge of 9.5 is green both ways.
+The package is accepted when every case below is a green test in CI on PHP 8.4 and 8.5; when Infection leaves no escaped mutant in the exceptions and the status classes, the validators of `Validation\`, the metadata reader, the strict readers and the selection of the signed element of `Internal\`, the lexical forms of `Value\`, `NameId` and `IndexedEndpoints`; when the real documents of 9.4 validate; and when the judge of 9.5 is green both ways.
 
 ### 9.1 Round trips
 
@@ -583,7 +585,7 @@ One fixture per case under `tests/Fixture/hostile/`, each a variant of a valid d
 | A metadata listing Artifact and SOAP endpoints next to POST and Redirect ones | loads, the two kept |
 | `IndexedEndpoints::default()` over the three cases of Metadata §2.2.3 | the first `isDefault="true"`; else the first without `isDefault="false"`; else the first |
 | An `AuthnRequest` without an assertion consumer service | the default endpoint of the metadata (M-9) |
-| A failure response `Responder` / `AuthnFailed` | `UnsuccessfulResponse` carrying both codes, no `StatusMessage` in its message |
+| A failure response `Responder` / `AuthnFailed` | `UnsuccessfulResponse` whose `$status` carries both codes; its message is fixed, names M-13 and carries no code and no `StatusMessage`; built with a `Success` status, it is an `\InvalidArgumentException` |
 | A `LogoutResponse` with `PartialLogout` | returned, not thrown |
 | Every `MessageRefused` message | ends with the rule in parentheses, carries no ID, no URL, no entity ID, no `NameID` (M-16) |
 | `SamlId::generate()` | `_` and 40 lowercase hexadecimal digits, an NCName, two calls different |
@@ -641,11 +643,15 @@ tests/                 Unit/ (one class per class of src/, plus TraceabilityTest
                        the test keys, the fixture reader, the builders of the hostile variants), Fixture/ (keys, hostile,
                        behaviour, real, each with a README carrying its commands), Interop/simplesamlphp/ and Interop/keycloak/ (9.5),
                        PhpStan/ (the rules of core.md §8, copied, extended with section 8)
-castor.php, .castor/   phpunit, phpstan, deptrac, mago-format, mago-lint, rector, lint, composer-validate, infect, prepare-pr,
+castor.php, .castor/   install (Composer in the phpqa image, the private xml-security read with the GitHub CLI's token passed
+                       by name, never written), phpunit, phpstan, deptrac, mago-format, mago-lint, rector, lint, composer-validate,
+                       infect, prepare-pr,
                        xmlsec (xmlsec1 verifies a written file), simplesamlphp and keycloak (9.5)
 .ci-tools/             phpstan.neon (level max, strict rules, deprecation rules, phpunit, banned code), deptrac.yaml (Value
-                       below Assertion, Protocol and Metadata, below Validation and Writing; Port beside; the public classes
-                       of Core and Dsig, psr/clock, and nothing of HTTP), rector.php, phpunit.xml.dist
+                       below Assertion, Protocol and Metadata, below Validation and Writing; Port beside; TimeBounds a leaf
+                       layer of its own, since MetadataReader and the validators both take it; Exception and Protocol see
+                       each other, UnsuccessfulResponse carrying a Status and StatusCode refusing with MalformedMessage; the
+                       public classes of Core and Dsig, psr/clock, and nothing of HTTP), rector.php, phpunit.xml.dist
 infection.json.dist    at the root; the strict list of section 9 in .castor/qa.php
 mago.toml              the formatter and the linter
 .github/workflows/     ci.yml on ghcr.io/spomky-labs/phpqa, PHP 8.4 and 8.5: format, lint, rector, phpstan, deptrac, composer,
