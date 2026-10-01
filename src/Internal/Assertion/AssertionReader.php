@@ -1,0 +1,83 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Beffroi\Saml2\Model\Internal\Assertion;
+
+use Beffroi\Saml2\Model\Assertion\Assertion;
+use Beffroi\Saml2\Model\Exception\MessageRefused;
+use Beffroi\Saml2\Model\Exception\MalformedMessage;
+use Beffroi\Xml\Core\Children;
+use Beffroi\Xml\Core\Document;
+use Beffroi\Xml\Core\Exception\MixedContent;
+use Beffroi\Xml\Core\Name;
+use function count;
+
+/**
+ * The strict reader of an assertion, section 6.1 steps 7 to 11 in order, over the document of a verification (M-1): the
+ * root a saml:Assertion, its children in the order and with the cardinality of the schema (M-4, M-5), a ds:Signature
+ * after the Issuer accepted and not read (the verification that handed the document over removed the one it verified,
+ * D-10), one AuthnStatement, at most one AttributeStatement, any other statement refused by name (section 8); then the
+ * header, the subject, the conditions, the authentication statement and the attributes, each by its reader. It takes a
+ * Document, never an element: which element was verified is the validator's decision (story #7). The replay of step 13
+ * is the validator's too, with the values this returns.
+ *
+ * @internal outside the compatibility promise of section 5
+ */
+final readonly class AssertionReader
+{
+    private const string DSIG = 'http://www.w3.org/2000/09/xmldsig#';
+
+    /**
+     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
+     * @throws MixedContent when a value holds an element
+     */
+    public static function read(Document $document, AssertionContext $context): Assertion
+    {
+        $assertion = $document->root();
+        if (! Structure::saml('Assertion')->matches($assertion)) {
+            throw new MalformedMessage('The root of the document is not a saml:Assertion (M-4).');
+        }
+        Structure::unsupported(
+            $assertion,
+            [Structure::saml('Statement'), Structure::saml('AuthzDecisionStatement')],
+            'The assertion holds a statement other than AuthnStatement and AttributeStatement, which the package does not support (section 8).',
+        );
+        Structure::sequence(
+            $assertion,
+            [
+                Particle::one(Structure::saml('Issuer'), 'saml:Issuer'),
+                Particle::optional(new Name(self::DSIG, 'Signature'), 'ds:Signature'),
+                Particle::one(Structure::saml('Subject'), 'saml:Subject'),
+                Particle::one(Structure::saml('Conditions'), 'saml:Conditions'),
+                Particle::optional(Structure::saml('Advice'), 'saml:Advice'),
+                Particle::any([Structure::saml('AuthnStatement'), Structure::saml('AttributeStatement')]),
+            ],
+            'saml:Assertion',
+        );
+        $authnStatements = Children::named($assertion, Structure::saml('AuthnStatement'));
+        if ($authnStatements === []) {
+            throw new MalformedMessage('The saml:Assertion holds no saml:AuthnStatement (M-4).');
+        }
+        if (count($authnStatements) > 1) {
+            throw new MalformedMessage('The saml:Assertion holds more than one saml:AuthnStatement (M-4).');
+        }
+        $attributeStatements = Children::named($assertion, Structure::saml('AttributeStatement'));
+        if (count($attributeStatements) > 1) {
+            throw new MalformedMessage('The saml:Assertion holds more than one saml:AttributeStatement (M-4).');
+        }
+        [$id, $issueInstant, $issuer] = HeaderReader::read($assertion, $context);
+        [$nameId, $confirmation] = SubjectReader::read(Children::one($assertion, Structure::saml('Subject')), $context);
+
+        return new Assertion(
+            $id,
+            $issueInstant,
+            $issuer,
+            $nameId,
+            $confirmation,
+            ConditionsReader::read(Children::one($assertion, Structure::saml('Conditions')), $context),
+            AuthnStatementReader::read($authnStatements[0], $context),
+            $attributeStatements === [] ? [] : AttributeStatementReader::read($attributeStatements[0]),
+        );
+    }
+}
