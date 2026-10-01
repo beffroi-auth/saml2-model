@@ -79,6 +79,20 @@ const INFECTION_STRICT_FILES = [
     'src/Internal/Assertion/AuthnStatementReader.php',
     'src/Internal/Assertion/AttributeStatementReader.php',
     'src/Internal/Assertion/AssertionReader.php',
+    // Section 9: the envelope of a response, its status, and the selection of the signed element, section 6.1 steps 2
+    // to 6.
+    'src/Internal/Response/Envelope.php',
+    'src/Internal/Response/StatusReader.php',
+    'src/Internal/Response/SignedResponse.php',
+    'src/Internal/Response/SignedAssertion.php',
+    'src/Internal/Response/EnvelopeReader.php',
+    // Section 9: the validator of a response and what it takes and returns (sections 5.4, 5.5).
+    'src/Protocol/UnverifiedResponse.php',
+    'src/Protocol/Response.php',
+    'src/Validation/ExpectedResponse.php',
+    'src/Validation/SignatureCoverage.php',
+    'src/Validation/AcceptedAssertion.php',
+    'src/Validation/ResponseValidator.php',
     // Section 9, each added by the story that writes it:
     // the other strict readers and the selection of the signed element, every other file of src/Internal/;
     // the validators, every other file of src/Validation/.
