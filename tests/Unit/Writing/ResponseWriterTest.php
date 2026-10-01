@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Beffroi\Saml2\Model\Tests\Unit\Writing;
 
 use Beffroi\Saml2\Model\Assertion\Assertion;
+use Beffroi\Saml2\Model\Assertion\Conditions;
 use Beffroi\Saml2\Model\Exception\UnsuccessfulResponse;
 use Beffroi\Saml2\Model\Protocol\Response;
 use Beffroi\Saml2\Model\Protocol\SecondLevelStatusCode;
 use Beffroi\Saml2\Model\Protocol\StatusCode;
 use Beffroi\Saml2\Model\Protocol\UnverifiedResponse;
+use Beffroi\Saml2\Model\Saml;
 use Beffroi\Saml2\Model\Tests\Unit\Metadata\MetadataFixtures;
 use Beffroi\Saml2\Model\Tests\Unit\Writing\ResponseWriterFixtures as Fixtures;
 use Beffroi\Saml2\Model\Validation\SignatureCoverage;
@@ -22,6 +24,7 @@ use Beffroi\Xml\Core\Name;
 use Beffroi\Xml\Core\Text;
 use Beffroi\Xml\Dsig\Exception\DigestMismatch;
 use Beffroi\Xml\Dsig\SignatureAlgorithm;
+use DateTimeImmutable;
 use Dom\Element;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -368,6 +371,47 @@ final class ResponseWriterTest extends TestCase
             Fixtures::response(Fixtures::assertion(sessionIndex: null)),
             'The authentication statement holds no SessionIndex, which the Single Logout profile needs (section 6.6).',
         ];
+        yield 'a window shorter than a second, empty once written to the second' => [
+            Fixtures::response(Fixtures::assertion(conditions: new Conditions(
+                new DateTimeImmutable('2026-10-01T12:00:00.200000Z'),
+                new DateTimeImmutable('2026-10-01T12:00:00.900000Z'),
+                [[Fixtures::SERVICE_PROVIDER]],
+                false,
+            ))),
+            'The NotBefore of the Conditions is not earlier than their NotOnOrAfter, to the second, which the service provider refuses (section 6.6).',
+        ];
+    }
+
+    /**
+     * Section 6.6 step 1, M-15: a window of less than a second that spans a second is written as one second, which the
+     * service provider reads as a window.
+     */
+    #[Test]
+    public function itWritesAWindowThatSpansASecond(): void
+    {
+        // Given
+        $response = Fixtures::response(Fixtures::assertion(conditions: new Conditions(
+            new DateTimeImmutable('2026-10-01T12:00:00.900000Z'),
+            new DateTimeImmutable('2026-10-01T12:00:01.000000Z'),
+            [[Fixtures::SERVICE_PROVIDER]],
+            false,
+        )));
+
+        // When
+        $document = new ResponseWriter()->write($response, $this->signing());
+
+        // Then
+        $conditions = Children::one(
+            Children::one($document->root(), new Name(Saml::ASSERTION, 'Assertion')),
+            new Name(Saml::ASSERTION, 'Conditions'),
+        );
+        static::assertSame(
+            ['2026-10-01T12:00:00Z', '2026-10-01T12:00:01Z'],
+            [
+                Attributes::required($conditions, new Name(null, 'NotBefore')),
+                Attributes::required($conditions, new Name(null, 'NotOnOrAfter')),
+            ],
+        );
     }
 
     /**

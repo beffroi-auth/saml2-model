@@ -25,6 +25,7 @@ use Beffroi\Xml\Dsig\Signer;
 use DateTimeImmutable;
 use Dom\Element;
 use InvalidArgumentException;
+use SensitiveParameter;
 
 /**
  * An md:EntityDescriptor written in the order of section 6.6 (section 5.7): checked against what its reader refuses
@@ -42,8 +43,11 @@ final readonly class MetadataWriter
      * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
      * @throws SigningFailed when the signing key fails
      */
-    public function write(EntityDescriptor $descriptor, ?Signing $signing): Document
-    {
+    public function write(
+        EntityDescriptor $descriptor,
+        #[SensitiveParameter]
+        ?Signing $signing,
+    ): Document {
         $this->check($descriptor);
         $id = SamlId::generate();
         $document = new DocumentFactory()->create(new Name(Saml::METADATA, 'EntityDescriptor'), 'md');
