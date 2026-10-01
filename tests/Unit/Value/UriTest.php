@@ -80,7 +80,7 @@ final class UriTest extends TestCase
     {
         // Then
         $this->expectException(MalformedMessage::class);
-        $this->expectExceptionMessageIs('A URI holds whitespace, a control or format character, or bytes that are not UTF-8 (M-6).');
+        $this->expectExceptionMessageIs('A URI holds whitespace, a control, format or invisible character, or bytes that are not UTF-8 (M-6).');
 
         // When
         Uri::read($value);
@@ -106,6 +106,9 @@ final class UriTest extends TestCase
         yield 'a zero-width space' => ["https://example.com/acs\u{200B}"];
         yield 'a right-to-left override' => ["https://example.com/\u{202E}lmth.sca"];
         yield 'a byte order mark' => ["\u{FEFF}https://example.com/"];
+        yield 'a Hangul filler' => ["https://example.com/a\u{3164}b"];
+        yield 'a variation selector' => ["https://example.com/a\u{FE0F}b"];
+        yield 'a blank Braille pattern' => ["https://example.com/a\u{2800}b"];
     }
 
     /**

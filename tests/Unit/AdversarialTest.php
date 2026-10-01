@@ -421,12 +421,12 @@ final class AdversarialTest extends TestCase
         yield 'destination with a zero width space' => [
             'response-destination-with-a-zero-width-space',
             MalformedMessage::class,
-            'A URI holds whitespace, a control or format character, or bytes that are not UTF-8 (M-6).',
+            'A URI holds whitespace, a control, format or invisible character, or bytes that are not UTF-8 (M-6).',
         ];
         yield 'name id with a right to left override' => [
             'response-name-id-with-a-right-to-left-override',
             InvalidNameId::class,
-            'The NameID holds a format character, invisible or reordering (M-12).',
+            'The NameID holds a format or invisible character, invisible or reordering (M-12).',
         ];
         yield 'assertion issued a year ago within its bearer window' => [
             'response-assertion-issued-a-year-ago-within-its-bearer-window',
