@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_4f1e2d3c4b5a69788796a5b4c3d2e1f0a9b8c7d6" Version="2.0" IssueInstant="2026-09-30T12:00:00Z" Destination="https://sp.example.com/saml/slo"><saml:Issuer>https://idp.example.com/saml</saml:Issuer><saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">_7a2f4c1d9e</saml:NameID><samlp:SessionIndex>_session-1</samlp:SessionIndex></samlp:LogoutRequest>

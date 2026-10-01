@@ -52,9 +52,23 @@ const INFECTION_STRICT_FILES = [
     'src/Assertion/NameId.php',
     // Section 9: the bounds of time the validators and the metadata reader share (M-7).
     'src/Validation/TimeBounds.php',
+    // Section 5.6: how a protocol message was authenticated (M-2).
+    'src/Validation/Authentication.php',
+    // Section 9: IndexedEndpoints, the default endpoint and the searches of M-9.
+    'src/Metadata/IndexedEndpoints.php',
+    // Section 9: the metadata reader (section 6.5).
+    'src/Metadata/MetadataReader.php',
+    // Section 9: the strict readers of metadata and the rules its roles share.
+    'src/Internal/Metadata/EndpointReader.php',
+    'src/Internal/Metadata/EntityDescriptorReader.php',
+    'src/Internal/Metadata/KeyDescriptorReader.php',
+    'src/Internal/Metadata/Particle.php',
+    'src/Internal/Metadata/RoleReader.php',
+    'src/Internal/Metadata/RoleRules.php',
+    'src/Internal/Metadata/Schema.php',
+    // Section 9: the rule of M-2 for a received protocol message.
+    'src/Internal/Protocol/MessageAuthentication.php',
     // Section 9, each added by the story that writes it:
-    // src/Metadata/IndexedEndpoints.php;
-    // src/Metadata/MetadataReader.php;
     // the strict readers and the selection of the signed element, every file of src/Internal/;
     // the validators, every other file of src/Validation/.
 ];
