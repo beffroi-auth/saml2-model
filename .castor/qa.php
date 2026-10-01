@@ -51,6 +51,7 @@ const INFECTION_STRICT_FILES = [
     'src/Value/Version.php',
     'src/Value/UnsignedShort.php',
     'src/Value/Counts.php',
+    'src/Value/Characters.php',
     // Section 9: NameId, the rule of each format (M-12).
     'src/Assertion/NameId.php',
     // Section 9: the bounds of time the validators and the metadata reader share (M-7).
