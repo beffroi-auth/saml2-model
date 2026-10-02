@@ -294,7 +294,7 @@ is for the coordinator, who alone edits it.
    carry a response; and `byLocation()` must choose among the HTTP-POST ones, since the three share a `Location`.
 10. **Repeated attribute names.** The response carries six `saml:Attribute` named `Role`, one value each, where one
     attribute with six values would say the same. 6.1 step 11 neither refuses nor merges them; the model returns six
-    `Attribute`, and whoever maps them to claims (`heidi/saml`) must know it.
+    `Attribute`, and whoever maps them to claims (`beffroi/saml`) must know it.
 11. **An empty `md:NameIDFormat`.** Observed in a trial run, not committed: with the broker's identity provider
     created through the API without `nameIDPolicyFormat`, the broker's metadata carries `<md:NameIDFormat></md:NameIDFormat>`.
     6.5 step 7 drops a URI that is not a format of Core §8.3; whether an empty one is dropped, or refused as a value
@@ -579,13 +579,13 @@ Numbered after those of the first phase. F1 is finding 1, F2 finding 2.
     broker then asks for `ProtocolBinding` HTTP-POST, and sends its requests over HTTP-POST. F1 stays for a broker
     configured by hand, whose form leaves `postBindingResponse` off, and for an identity provider metadata without an
     HTTP-POST single sign-on service. The specification refuses a response over HTTP-Redirect (section 8, 6.2 step 4),
-    which HTTP-Redirect cannot carry (Profiles §4.1.2): the rule stands, and the metadata of `heidi/saml` listing an
+    which HTTP-Redirect cannot carry (Profiles §4.1.2): the rule stands, and the metadata of `beffroi/saml` listing an
     HTTP-POST single sign-on service is what makes a Keycloak broker comply.
 18. **F2 does not arise when the model's metadata says `WantAuthnRequestsSigned="true"`.** `import-config` carries it to
     the broker's `wantAuthnRequestsSigned`, which signs both its `AuthnRequest` and its `LogoutRequest`, and publishes
     the realm's key in the broker's metadata (the first phase's had none); over HTTP-POST the signature is an enveloped
     `ds:Signature` that `validate()` verifies under that key. Without it, the broker's `LogoutRequest` is unsigned and
-    refused (`SignatureRequired`, M-2), as the first phase found. The metadata of `heidi/saml`'s identity provider
+    refused (`SignatureRequired`, M-2), as the first phase found. The metadata of `beffroi/saml`'s identity provider
     saying `WantAuthnRequestsSigned="true"` is what makes a Keycloak broker's logout acceptable.
 
 **What Keycloak accepted from the model.**

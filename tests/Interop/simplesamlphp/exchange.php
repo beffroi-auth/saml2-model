@@ -350,7 +350,7 @@ final class Exchange
     public function logoutAtTheModel(Browser $browser, Assertion $assertion, ServiceProvider $sp, bool $record): void
     {
         [$request, $relayState] = $this->logoutRequestAtTheModel($browser, $sp, $record);
-        // What heidi/saml does with it (section 6.9): the session it names is the one the model opened.
+        // What beffroi/saml does with it (section 6.9): the session it names is the one the model opened.
         if (
             $request->nameId->value !== $assertion->nameId->value
             || $request->sessionIndexes !== [$assertion->authnStatement->sessionIndex]

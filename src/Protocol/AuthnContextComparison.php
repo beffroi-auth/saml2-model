@@ -9,7 +9,7 @@ use Beffroi\Saml2\Model\Exception\MalformedMessage;
 /**
  * The comparison a samlp:RequestedAuthnContext asks for (SAML Core §3.3.2.2.1), a closed vocabulary: fromAttribute()
  * refuses every other value (M-5). The model returns it and never enforces it: whether the identity provider can
- * satisfy it is heidi/saml's (section 6.2 step 5).
+ * satisfy it is beffroi/saml's (section 6.2 step 5).
  */
 enum AuthnContextComparison: string
 {

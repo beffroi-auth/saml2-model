@@ -669,7 +669,7 @@ no rule of the specification had to change for the exchange.
   whose signature failed, and the identity provider started its logout on such a `LogoutRequest`. The model refuses
   both (M-2, section 6.4 by way of 6.3). The `AuthnRequest` is protected the same way by `validate.authnrequest`,
   which SimpleSAMLphp draws from the `AuthnRequestsSigned="true"` of the service provider's metadata. For
-  `heidi/saml` (section 6.9): the service providers it serves may be SimpleSAMLphp installations that verify nothing
+  `beffroi/saml` (section 6.9): the service providers it serves may be SimpleSAMLphp installations that verify nothing
   of its logout messages unless configured to.
 - **F-10. SimpleSAMLphp publishes HTTP-Redirect alone where the model posts.** Its identity provider publishes its
   single sign-on and single logout services on HTTP-Redirect only, and its service provider its single logout service
@@ -698,4 +698,4 @@ no rule of the specification had to change for the exchange.
   (transient, `AllowCreate`), and its `NameID` carries the model's service provider as `SPNameQualifier`, which M-12
   accepts on a transient identifier; `for-model` sent back, in its `LogoutRequest`, the `NameID` the model issued with
   its `SPNameQualifier` and its `Format`, and the `SessionIndex`, which the script compared with what the model
-  issued, the check `heidi/saml` owns (section 6.9).
+  issued, the check `beffroi/saml` owns (section 6.9).
