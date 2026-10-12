@@ -1,21 +1,23 @@
-# beffroi-php/saml2-model
+# beffroi/saml2-model
+
+Part of [beffroi/framework](https://github.com/beffroi-php/beffroi), developed in `src/saml2-model` of that monorepo; this repository is its
+read-only split. Issues and pull requests go to the monorepo.
 
 The SAML 2.0 model for PHP: the `samlp:`, `saml:` and `md:` objects of the Web Browser SSO and Single Logout
 profiles, read strictly, validated against the rules of the profiles in code rather than in options, and written, on
-the safe DOM and the XML Signature of [`beffroi-php/xml-security`](https://github.com/beffroi-php/xml-security). It
+the safe DOM and the XML Signature of [`beffroi/xml-security`](https://github.com/beffroi-php/xml-security). It
 reads an assertion only in what a signature covers, takes a peer's keys from its metadata only, and knows no HTTP:
 the bindings are [`beffroi-php/saml2-bindings`](https://github.com/beffroi-php/saml2-bindings).
 
 [`spec/model.md`](spec/model.md) is the law of the package: the code conforms to it, or the document changes first.
 This file is its short version.
 
-The package requires PHP 8.4 or later, `beffroi-php/xml-security` and `psr/clock`, and nothing else. `xml-security`
-has no tag yet: it is required at `dev-main` through a `vcs` repository.
+The package requires PHP 8.4 or later, `beffroi/xml-security` and `psr/clock`, and nothing else. Neither has a
+tag yet: both are required at the maintenance branch.
 
 ```json
 {
-    "repositories": [{"type": "vcs", "url": "https://github.com/beffroi-php/xml-security.git"}],
-    "require": {"beffroi-php/saml2-model": "dev-main"},
+    "require": {"beffroi/saml2-model": "0.0.x-dev"},
     "minimum-stability": "dev",
     "prefer-stable": true
 }
@@ -123,7 +125,7 @@ interface ReplayGuardInterface
 }
 ```
 
-The in-memory doubles of both ports live in `tests/Support/` and are not shipped: a per-process store in a pool of
+The in-memory doubles of both ports live in `tests/saml2-model/Support/` of the monorepo and are not shipped: a per-process store in a pool of
 workers forgets across workers.
 
 ## The invariants
@@ -153,7 +155,7 @@ Each is code, never an option, and has its tests; `TraceabilityTest` fails when 
 ## What consumers never call
 
 The package reaches the DOM through `xml-security`'s `Core` only and calls nothing its section 8 bans; its own
-PHPStan rules, which consumers are asked to copy (`.ci-tools/phpstan.neon`, `tests/PhpStan/`), add every reading of
+PHPStan rules, which consumers are asked to copy (`.ci-tools/phpstan-saml2-model.neon`, `tests/saml2-model/PhpStan/`), add every reading of
 the machine's clock (`time()`, `date()`, `new \DateTimeImmutable()` without a full date in UTC), every source of
 randomness but `random_bytes()`, every `openssl_*` function, the casts to `bool` and the loose comparisons `==`,
 `!=` and `switch`. `textContent`, `nodeValue` and `innerHTML` are not read: `Text::of()` is the way, and
@@ -162,26 +164,29 @@ promise.
 
 ## Development
 
+From the root of the monorepo, which holds the toolchain of every package:
+
 ```bash
-castor install          # Composer in the phpqa image; the private xml-security read with the GitHub CLI's token
-castor phpunit          # PHPUnit 13 with coverage
-castor prepare-pr       # Mago lint and format, Rector, PHPStan at level max with no baseline, Deptrac, syntax, composer
-castor phpstan          # and castor deptrac, mago-format, mago-lint, rector, lint, composer-validate, one at a time
-castor infect           # Infection on the files of section 9, no escaped mutant allowed
-castor infect --diff    # the lines changed since origin/main; --all, the whole source
-castor xmlsec <file>    # xmlsec1, in Alpine, verifies a signed file; --certificate for the service provider's key
-castor xmlsec-oracle    # every signature the writers make and commit, verified by xmlsec1
-castor simplesamlphp    # the judge of section 9.5: SimpleSAMLphp as identity provider and service provider, both ways
-castor keycloak         # Keycloak as identity provider and broker, both ways, by hand
+composer install
+castor phpunit -- --testsuite saml2-model     # PHPUnit 13 with coverage, this package's suite
+castor prepare-pr                             # Mago lint and format, Rector, PHPStan, Deptrac
+castor phpstan                                # this package under .ci-tools/phpstan-saml2-model.neon: level max, no baseline, the bans of section 8
+castor infect --strict                        # Infection on the files of section 9, no escaped mutant allowed
+castor infect --diff                          # the lines changed since origin/HEAD; without either, the whole source
+castor saml2-model-xmlsec <file>              # xmlsec1, in Alpine, verifies a signed file; --certificate for the service provider's key
+castor saml2-model-oracle                     # every signature the writers make and commit, verified by xmlsec1
+castor saml2-model-simplesamlphp              # the judge of section 9.5: SimpleSAMLphp as identity provider and service provider, both ways
+castor saml2-model-keycloak                   # Keycloak as identity provider and broker, both ways, by hand
 ```
 
-Every task runs inside the `ghcr.io/spomky-labs/phpqa` image when Docker is available, on PHP 8.5 by default and on
-8.4 with `PHP_VERSION=8.4`. The CI runs the same tasks on both.
+Every task runs inside the `ghcr.io/spomky-labs/phpqa` image when Docker is available. The CI runs this package's
+suite on PHP 8.5 and on PHP 8.4.
 
 ## Security
 
-See [SECURITY.md](SECURITY.md): private reporting, an advisory and a CVE for every fix.
+See the [security policy](https://github.com/beffroi-php/beffroi/blob/0.0.x/SECURITY.md) of the monorepo: private reporting, an advisory and a CVE for
+every fix.
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see the [LICENSE](https://github.com/beffroi-php/beffroi/blob/0.0.x/LICENSE) of the monorepo.
