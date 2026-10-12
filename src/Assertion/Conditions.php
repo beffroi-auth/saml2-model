@@ -36,11 +36,7 @@ final readonly class Conditions
         public array $audiences,
         public bool $oneTimeUse,
     ) {
-        if (
-            $notBefore instanceof DateTimeImmutable
-            && $notOnOrAfter instanceof DateTimeImmutable
-            && $notBefore >= $notOnOrAfter
-        ) {
+        if ($notBefore instanceof DateTimeImmutable && $notOnOrAfter instanceof DateTimeImmutable && $notBefore >= $notOnOrAfter) {
             throw new MalformedMessage('The NotBefore of the Conditions is not earlier than their NotOnOrAfter (M-7).');
         }
         if ($audiences === []) {

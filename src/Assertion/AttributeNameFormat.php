@@ -27,8 +27,6 @@ enum AttributeNameFormat: string
             return self::Unspecified;
         }
 
-        return (
-            self::tryFrom($uri) ?? throw new MalformedMessage('The NameFormat of an attribute is not one of the three of SAML Core (M-5).')
-        );
+        return self::tryFrom($uri) ?? throw new MalformedMessage('The NameFormat of an attribute is not one of the three of SAML Core (M-5).');
     }
 }

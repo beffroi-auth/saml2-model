@@ -67,9 +67,7 @@ final readonly class IndexedEndpoints
             }
         }
 
-        return (
-            $this->endpoints[0] ?? throw new UnknownEndpoint('The metadata lists no assertion consumer service (M-9).')
-        );
+        return $this->endpoints[0] ?? throw new UnknownEndpoint('The metadata lists no assertion consumer service (M-9).');
     }
 
     /**

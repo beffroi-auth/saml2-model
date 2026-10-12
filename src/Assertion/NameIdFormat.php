@@ -33,8 +33,6 @@ enum NameIdFormat: string
             return self::Unspecified;
         }
 
-        return (
-            self::tryFrom($uri) ?? throw new InvalidNameId('The NameID format is not one of the eight of SAML Core (M-12).')
-        );
+        return self::tryFrom($uri) ?? throw new InvalidNameId('The NameID format is not one of the eight of SAML Core (M-12).');
     }
 }

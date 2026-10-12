@@ -83,10 +83,7 @@ final readonly class MetadataWriter
      */
     private function check(EntityDescriptor $descriptor): void
     {
-        if (
-            ! $descriptor->identityProvider instanceof IdentityProvider
-            && ! $descriptor->serviceProvider instanceof ServiceProvider
-        ) {
+        if (! $descriptor->identityProvider instanceof IdentityProvider && ! $descriptor->serviceProvider instanceof ServiceProvider) {
             throw new InvalidArgumentException('The entity descriptor holds no role to write (section 6.6).');
         }
         if ($descriptor->identityProvider?->singleSignOnServices === []) {

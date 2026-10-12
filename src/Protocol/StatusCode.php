@@ -22,8 +22,6 @@ enum StatusCode: string
      */
     public static function fromUri(string $uri): self
     {
-        return (
-            self::tryFrom($uri) ?? throw new MalformedMessage('The top-level status code is not one of the four of SAML Core (M-5).')
-        );
+        return self::tryFrom($uri) ?? throw new MalformedMessage('The top-level status code is not one of the four of SAML Core (M-5).');
     }
 }

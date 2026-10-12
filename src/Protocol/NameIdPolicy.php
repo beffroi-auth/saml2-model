@@ -32,11 +32,7 @@ final readonly class NameIdPolicy
         public ?string $spNameQualifier = null,
         public bool $allowCreate = false,
     ) {
-        if (
-            $format !== null
-            && $format !== self::ENCRYPTED
-            && ! NameIdFormat::tryFrom($format) instanceof NameIdFormat
-        ) {
+        if ($format !== null && $format !== self::ENCRYPTED && ! NameIdFormat::tryFrom($format) instanceof NameIdFormat) {
             throw new InvalidNameId('The format of a samlp:NameIDPolicy is neither one of the eight of SAML Core nor encrypted (M-12).');
         }
         if ($spNameQualifier !== null) {

@@ -45,10 +45,7 @@ final readonly class LogoutRequestWriter
         #[SensitiveParameter]
         ?Signing $signing,
     ): Document {
-        if (
-            $request->notOnOrAfter instanceof DateTimeImmutable
-            && $this->written($request->notOnOrAfter) <= $this->written($request->issueInstant)
-        ) {
+        if ($request->notOnOrAfter instanceof DateTimeImmutable && $this->written($request->notOnOrAfter) <= $this->written($request->issueInstant)) {
             throw new InvalidArgumentException('The NotOnOrAfter of the LogoutRequest is not later than its IssueInstant, to the second, which its reader refuses (section 6.6).');
         }
         $document = new DocumentFactory()->create(new Name(Saml::PROTOCOL, 'LogoutRequest'), 'samlp');

@@ -95,9 +95,7 @@ final readonly class ConditionsReader
      */
     private static function understood(Element $condition): bool
     {
-        return (
-            Schema::saml('AudienceRestriction')->matches($condition) || Schema::saml('OneTimeUse')->matches($condition)
-        );
+        return Schema::saml('AudienceRestriction')->matches($condition) || Schema::saml('OneTimeUse')->matches($condition);
     }
 
     private static function time(Element $conditions, string $local): ?DateTimeImmutable

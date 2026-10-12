@@ -88,10 +88,7 @@ final readonly class AuthnRequestReader
         // another entity than the requester is an affiliation, whose members share the identifiers (SAML Core
         // §3.4.1.1): honoured by an identity provider that does not read affiliations, it would hand the requester the
         // identifier the user has at that other entity
-        if (
-            $nameIdPolicy?->spNameQualifier !== null
-            && $nameIdPolicy->spNameQualifier !== $context->serviceProvider->entityId
-        ) {
+        if ($nameIdPolicy?->spNameQualifier !== null && $nameIdPolicy->spNameQualifier !== $context->serviceProvider->entityId) {
             throw new Unsupported('The SPNameQualifier of the samlp:NameIDPolicy names another entity than the service provider, an affiliation the package does not read (section 8).');
         }
         $requested = Children::optional($request, Schema::samlp('RequestedAuthnContext'));

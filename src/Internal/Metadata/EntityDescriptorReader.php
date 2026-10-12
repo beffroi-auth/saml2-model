@@ -70,15 +70,10 @@ final readonly class EntityDescriptorReader
         $identityProviders = [];
         $serviceProviders = [];
         foreach ($children[2] as $role) {
-            if (
-                Schema::md('IDPSSODescriptor')->matches($role)
-                && RoleReader::supportsSaml2($role, 'md:IDPSSODescriptor')
-            ) {
+            if (Schema::md('IDPSSODescriptor')->matches($role) && RoleReader::supportsSaml2($role, 'md:IDPSSODescriptor')) {
                 $identityProviders[] = $role;
             }
-            if (
-                Schema::md('SPSSODescriptor')->matches($role) && RoleReader::supportsSaml2($role, 'md:SPSSODescriptor')
-            ) {
+            if (Schema::md('SPSSODescriptor')->matches($role) && RoleReader::supportsSaml2($role, 'md:SPSSODescriptor')) {
                 $serviceProviders[] = $role;
             }
         }
