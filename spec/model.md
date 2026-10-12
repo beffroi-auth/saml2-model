@@ -4,10 +4,10 @@ The SAML 2.0 model of the stack: the `samlp:`, `saml:` and `md:` objects of the 
 
 | | |
 |---|---|
-| Repository | `beffroi-php/saml2-model` |
-| Package | `beffroi-php/saml2-model` |
+| Repository | `src/saml2-model` of the monorepo `beffroi-php/beffroi`, mirrored read only into `beffroi-php/saml2-model` (section 10) |
+| Package | `beffroi/saml2-model` |
 | Namespace | `Beffroi\Saml2\Model`, next to `Beffroi\Saml2\Bindings` of `saml2-bindings` |
-| Runtime | PHP 8.4 or later; `beffroi-php/xml-security`, its `Core` and `Dsig` namespaces, and `Enc` from sub-spike 9e (section 6.7); `psr/clock` (PSR-20, section 5.2). Nothing else. |
+| Runtime | PHP 8.4 or later; `beffroi/xml-security`, its `Core` and `Dsig` namespaces, and `Enc` from sub-spike 9e (section 6.7); `psr/clock` (PSR-20, section 5.2). Nothing else. |
 | Consumers | `saml2-bindings`; `beffroi/saml`, the module of the identity provider's monorepo, in both roles; outside the project, any identity provider or service provider written in PHP |
 | Design | Sub-spike 9b of [spike 9](https://github.com/beffroi-php/design/blob/main/spikes/09-saml/README.md); [decision 0013](https://github.com/beffroi-php/design/blob/main/docs/decisions/0013-saml-formats-xml-ecrits-ici.md) (the stack writes its SAML formats), [decision 0015](https://github.com/beffroi-php/design/blob/main/docs/decisions/0015-xml-security-un-seul-paquet.md) (one package for XML security, SAML apart), [decision 0006](https://github.com/beffroi-php/design/blob/main/docs/decisions/0006-sur-par-defaut.md) (no option to do it wrong) of the identity provider's design repository |
 
@@ -719,7 +719,7 @@ at the root            the toolchain of the monorepo:
 
 **Security policy.** As `xml-security`'s, in the `SECURITY.md` of the monorepo: private reporting through GitHub, a GitHub Security Advisory published with every fix and a CVE requested for it, so that `composer audit` and Packagist see it (decision 0013 records why).
 
-**Versioning.** The release line of the monorepo, as `xml-security`'s: a version is a milestone of `beffroi-php/beffroi`, tagged there and pushed to both mirrors by the split. `0.x` while spike 9 runs, this document as the changelog of intent; `1.0.0` when the identity provider role of sub-spike 9c is green. Semantic versioning on the surface of section 5 from then on.
+**Versioning.** The release line of the monorepo, as `xml-security`'s: a version is a milestone of `beffroi-php/beffroi`, tagged there and pushed to the mirrors by the split. `0.x` while spike 9 runs, this document as the changelog of intent; `1.0.0` when the identity provider role of sub-spike 9c is green. Semantic versioning on the surface of section 5 from then on.
 
 ## 11. Out of scope
 

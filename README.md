@@ -7,7 +7,7 @@ The SAML 2.0 model for PHP: the `samlp:`, `saml:` and `md:` objects of the Web B
 profiles, read strictly, validated against the rules of the profiles in code rather than in options, and written, on
 the safe DOM and the XML Signature of [`beffroi/xml-security`](https://github.com/beffroi-php/xml-security). It
 reads an assertion only in what a signature covers, takes a peer's keys from its metadata only, and knows no HTTP:
-the bindings are [`beffroi-php/saml2-bindings`](https://github.com/beffroi-php/saml2-bindings).
+the bindings are [`beffroi/saml2-bindings`](https://github.com/beffroi-php/saml2-bindings).
 
 [`spec/model.md`](spec/model.md) is the law of the package: the code conforms to it, or the document changes first.
 This file is its short version.
