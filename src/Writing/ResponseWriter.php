@@ -26,6 +26,9 @@ use SensitiveParameter;
  * together, each object having checked its own values: a window that ends before it starts and Conditions without
  * AudienceRestriction are the refusals of Conditions itself, with the exception of their rule (section 5.8); what
  * only the writer sees is a programming error of the caller, \InvalidArgumentException, before anything is built.
+ * An assertion whose window ends when it is issued, its Conditions, its bearer confirmation or its session, is one of
+ * them; what depends on the service provider that reads it, the audience and the bearer window, is its consumer's,
+ * which names that reader (section 6.9).
  * Then built with DocumentFactory and one prefix per namespace, samlp and saml, its Issuer and its Destination always
  * written (E17, SAML Bindings §3.5.5.2), times in UTC to the second, IDs the objects carry, drawn by SamlId::generate();
  * then signed through Dsig's Signer with SamlLoader::create(), the Signature after the saml:Issuer (SAML Core §2.3.3,
@@ -135,6 +138,17 @@ final readonly class ResponseWriter
             && $this->written($conditions->notBefore) >= $this->written($conditions->notOnOrAfter)
         ) {
             throw new InvalidArgumentException('The NotBefore of the Conditions is not earlier than their NotOnOrAfter, to the second, which the service provider refuses (section 6.6).');
+        }
+        $issued = $this->written($assertion->issueInstant);
+        if ($conditions->notOnOrAfter instanceof DateTimeImmutable && $this->written($conditions->notOnOrAfter) <= $issued) {
+            throw new InvalidArgumentException('The NotOnOrAfter of the Conditions is not later than the IssueInstant of the assertion, to the second, which ends it when it is issued (section 6.6).');
+        }
+        if ($this->written($assertion->confirmation->notOnOrAfter) <= $issued) {
+            throw new InvalidArgumentException('The NotOnOrAfter of the bearer confirmation is not later than the IssueInstant of the assertion, to the second, which ends it when it is issued (section 6.6).');
+        }
+        $sessionNotOnOrAfter = $assertion->authnStatement->sessionNotOnOrAfter;
+        if ($sessionNotOnOrAfter instanceof DateTimeImmutable && $this->written($sessionNotOnOrAfter) <= $issued) {
+            throw new InvalidArgumentException('The SessionNotOnOrAfter of the authentication statement is not later than the IssueInstant of the assertion, to the second, which ends it when it is issued (section 6.6).');
         }
     }
 
