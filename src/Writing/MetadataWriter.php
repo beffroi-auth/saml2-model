@@ -29,9 +29,10 @@ use SensitiveParameter;
 /**
  * An md:EntityDescriptor written in the order of section 6.6 (section 5.7): checked against what its reader refuses
  * or drops (M-15), built with DocumentFactory and one prefix per namespace, md and ds, the ID drawn by
- * SamlId::generate(), the validUntil in UTC to the second, each certificate the base64 of an X509Certificate, then
- * signed on request through Dsig's Signer with SamlLoader::create(), the Signature the first child of the root and
- * no InclusiveNamespaces prefix list (dsig.md section 6.2).
+ * SamlId::generate(), the validUntil in UTC to the second, the cacheDuration as the xs:duration of its seconds, each
+ * certificate the base64 of an X509Certificate, then signed on request through Dsig's Signer with
+ * SamlLoader::create(), the Signature the first child of the root and no InclusiveNamespaces prefix list (dsig.md
+ * section 6.2).
  */
 final readonly class MetadataWriter
 {
@@ -56,6 +57,9 @@ final readonly class MetadataWriter
         $root->setAttribute('ID', $id);
         if ($descriptor->validUntil instanceof DateTimeImmutable) {
             $root->setAttribute('validUntil', Time::write($descriptor->validUntil));
+        }
+        if ($descriptor->cacheDuration !== null) {
+            $root->setAttribute('cacheDuration', 'PT' . $descriptor->cacheDuration . 'S');
         }
         if ($descriptor->identityProvider instanceof IdentityProvider) {
             $this->identityProvider($tree, $root, $descriptor->identityProvider);
