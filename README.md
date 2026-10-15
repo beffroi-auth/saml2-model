@@ -90,7 +90,8 @@ namespace, signs through `Dsig`'s `Signer`, and returns a `Document`: serializin
 by the binding. `writeFailure()` writes a response whose status is not `Success`. `AuthnRequestWriter`,
 `LogoutRequestWriter` and `LogoutResponseWriter` write the other messages, signed for HTTP-POST, unsigned for
 HTTP-Redirect, whose binding signs the query string; `LogoutRequestValidator` and `LogoutResponseValidator` read them,
-with the same two methods as `AuthnRequestValidator`.
+with the same two methods as `AuthnRequestValidator`, and take the replay port as `ResponseValidator` does: a logout
+message they accepted is `Replayed` when it comes again inside its window (M-11).
 
 ## Reading and writing metadata
 
@@ -144,7 +145,7 @@ Each is code, never an option, and has its tests; `TraceabilityTest` fails when 
 | M-8 | `Issuer`, `Audience`, `Recipient` and `Destination` are compared byte for byte with what the consumer states. |
 | M-9 | An assertion goes only to an assertion consumer service the service provider's metadata lists. |
 | M-10 | `InResponseTo` answers the request the consumer names, or is absent when it accepts an unsolicited response. |
-| M-11 | A verified assertion is accepted once, through the replay port. |
+| M-11 | A verified assertion, and an accepted logout message, is accepted once, through the replay port. |
 | M-12 | A `NameID` follows the rules of its format, read whole, comments and all, never trimmed. |
 | M-13 | A failure status, an unknown condition, an unsupported element: each is a refusal. |
 | M-14 | One loader and one ID space for SAML, XML Signature and XML Encryption. |
