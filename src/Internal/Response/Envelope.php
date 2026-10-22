@@ -19,8 +19,10 @@ use Dom\Element;
  * the order of the schema (M-5), saml:Issuer optional, ds:Signature optional, samlp:Extensions optional and never
  * read, samlp:Status, then the assertions, each a saml:Assertion or a saml:EncryptedAssertion; exactly one of them, a
  * direct child, with a status of Success, none with another (M-4, M-13); a saml:EncryptedAssertion holding one
- * xenc:EncryptedData and nothing else, an xenc:EncryptedKey next to it refused by name (section 6.7). What it keeps is
- * the status, and the one assertion of the element it read, in clear or encrypted, never searched below it (I-11).
+ * xenc:EncryptedData and nothing else, an xenc:EncryptedKey next to it refused by name, and the response that holds
+ * one carrying its own saml:Issuer (SAML Profiles §4.1.4.2 as corrected by E17), checked here so that a response
+ * refused for it costs no operation of the decryption key (section 6.7). What it keeps is the status, and the one
+ * assertion of the element it read, in clear or encrypted, never searched below it (I-11).
  *
  * @internal outside the compatibility promise of section 5
  */
@@ -43,12 +45,13 @@ final readonly class Envelope
      * @throws Unsupported when a saml:EncryptedAssertion holds an xenc:EncryptedKey next to its xenc:EncryptedData
      *                     (section 6.7)
      * @throws MalformedMessage when a child is out of order, repeated or not allowed, the status is malformed, the
-     *                          assertions are not what the status requires, or a saml:EncryptedAssertion does not hold
-     *                          one xenc:EncryptedData (M-4, M-5, M-13)
+     *                          assertions are not what the status requires, a saml:EncryptedAssertion does not hold
+     *                          one xenc:EncryptedData (M-4, M-5, M-13), or the response that holds one has no Issuer
+     *                          (M-8)
      */
     public static function of(Element $response): self
     {
-        [, , , [$element], $assertions] = Schema::children($response, 'samlp:Response', [
+        [$issuer, , , [$element], $assertions] = Schema::children($response, 'samlp:Response', [
             Particle::of(Schema::saml('Issuer'), 0, 1),
             Particle::of(Schema::ds('Signature'), 0, 1),
             Particle::of(Schema::samlp('Extensions'), 0, 1),
@@ -85,6 +88,9 @@ final readonly class Envelope
             Schema::children($assertions[0], 'saml:EncryptedAssertion', [
                 Particle::of(Schema::xenc('EncryptedData'), 1, 1),
             ]);
+            if ($issuer === []) {
+                throw new MalformedMessage('The response holds a saml:EncryptedAssertion and has no saml:Issuer (M-8).');
+            }
         }
 
         return new self($status, $assertions[0], $encrypted);

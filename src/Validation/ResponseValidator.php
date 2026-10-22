@@ -29,13 +29,13 @@ use function sprintf;
 /**
  * A response of the Web Browser SSO profile, service provider side, in the order of section 6.1: the structure of the
  * envelope before any key is touched (M-4), the response's signature whatever the status, a failure yielding
- * UnsuccessfulResponse (M-13), an encrypted assertion decrypted with the service provider's key once the response's
- * signature covered its ciphertext (section 6.7), the assertion's signature verified on the one assertion child of the
- * received root, or on the root of its decryption, and the assertion read from what a signature covered only (M-1,
- * M-2), the envelope (M-7, M-8, M-10), the rules of the assertion (M-5 to M-8, M-10, M-12, M-13, M-17), and replay last
- * (M-11), so that nothing is remembered of a message a rule refused. The keys are the identity provider's metadata
- * ones (M-3); the refusals of Core, Dsig and Enc pass as they are, every failure of a decryption Enc's one
- * DecryptionFailed (E-3).
+ * UnsuccessfulResponse (M-13), the assertion's signature verified on the one assertion child of the received root and
+ * the assertion read from what a signature covered only (M-1, M-2), the envelope (M-7, M-8, M-10), the rules of the
+ * assertion (M-5 to M-8, M-10, M-12, M-13, M-17), and replay last (M-11), so that nothing is remembered of a message a
+ * rule refused. An encrypted assertion is decrypted with the service provider's key once the response's signature
+ * covered its ciphertext and the envelope passed, then verified on the root of its decryption (section 6.7). The keys
+ * are the identity provider's metadata ones (M-3); the refusals of Core, Dsig and Enc pass as they are, every failure
+ * of a decryption Enc's one DecryptionFailed (E-3).
  */
 final readonly class ResponseValidator
 {
@@ -86,18 +86,23 @@ final readonly class ResponseValidator
 
             throw new UnsuccessfulResponse(Envelope::of($signedResponse->root)->status);
         }
-        // 5: an encrypted assertion decrypted from what step 3 verified (section 6.7), then the assertion's signature,
-        // on the assertion child of the received root or on the root of its decryption, or the response's
-        $signedAssertion = $key instanceof DecryptionKeyInterface
-            ? SignedAssertion::decrypted(
+        if ($key instanceof DecryptionKeyInterface) {
+            // section 6.7: the envelope of step 6 first, which needs nothing of the plaintext, so that a response it
+            // refuses costs no operation of the key; then the decryption, from what step 3 verified, and step 5 on
+            // the root of the decrypted document
+            $responseId = EnvelopeReader::read($signedResponse, $context);
+            $signedAssertion = SignedAssertion::decrypted(
                 DecryptedAssertion::of($signedResponse, $key, $this->loader),
                 $signedResponse,
                 $idp,
                 $this->loader,
-            )
-            : SignedAssertion::of($assertion, $signedResponse, $idp, $this->loader);
-        // 6: the envelope
-        $responseId = EnvelopeReader::read($signedResponse, $context);
+            );
+        } else {
+            // 5: the assertion's signature, on the assertion child of the received root, or the response's
+            $signedAssertion = SignedAssertion::of($assertion, $signedResponse, $idp, $this->loader);
+            // 6: the envelope
+            $responseId = EnvelopeReader::read($signedResponse, $context);
+        }
         // 7 to 12: the assertion, from the document a signature covered (M-1)
         $accepted = AssertionReader::readCovered($signedAssertion, $context);
         // 13: replay, last, with the verified values (M-11)
