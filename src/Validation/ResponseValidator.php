@@ -6,11 +6,9 @@ namespace Beffroi\Saml2\Model\Validation;
 
 use Dom\Element;
 use Beffroi\Xml\Dsig\Verified;
-use Beffroi\Xml\Enc\DecryptionKeyInterface;
 use Beffroi\Saml2\Model\Exception\MessageRefused;
 use Beffroi\Saml2\Model\Exception\Replayed;
 use Beffroi\Saml2\Model\Exception\UnsuccessfulResponse;
-use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Internal\Assertion\AssertionContext;
 use Beffroi\Saml2\Model\Internal\Assertion\AssertionReader;
 use Beffroi\Saml2\Model\Internal\Response\PlaintextReader;
@@ -77,11 +75,12 @@ final readonly class ResponseValidator
         $received = $response->document->root();
         $envelope = Envelope::of($received);
         $assertion = $envelope->assertion;
-        // the key of an encrypted assertion, the one given with the provider whose metadata verify the response, refused
-        // before any key is touched when the provider was given none (section 5.5)
-        $key = $envelope->encrypted
-            ? $idp->decryptionKey ?? throw new Unsupported('The response holds a saml:EncryptedAssertion and the identity provider was given no key to decrypt it (section 6.7).')
-            : null;
+        // the key of an encrypted assertion, the one given with the provider whose metadata verify the response: a
+        // provider given none is refused now, before any key is touched; the reader reads it again from the provider
+        // (section 5.5)
+        if ($envelope->encrypted) {
+            PlaintextReader::keyOf($idp);
+        }
         // 3: the response's signature, whatever the status; the response read from its verification from here on
         $signedResponse = SignedResponse::of($received, $idp, $this->loader);
         // 4: a failure, after the envelope rules
@@ -90,12 +89,12 @@ final readonly class ResponseValidator
 
             throw new UnsuccessfulResponse(Envelope::of($signedResponse->root)->status);
         }
-        if ($key instanceof DecryptionKeyInterface) {
+        if ($envelope->encrypted) {
             // section 6.7: the envelope of step 6 first, which needs nothing of the plaintext, so that a response it
             // refuses costs no operation of the key; then the decryption, from what step 3 verified, and steps 5 and 7
             // to 12 on the root of the decrypted document, inside the decryption (E-16)
             $responseId = EnvelopeReader::read($signedResponse, $context);
-            $read = PlaintextReader::decrypt($signedResponse, $idp, $key, $this->loader, $context);
+            $read = PlaintextReader::decrypt($signedResponse, $idp, $this->loader, $context);
         } else {
             // 5: the assertion's signature, on the assertion child of the received root, or the response's
             $signedAssertion = SignedAssertion::of($assertion, $signedResponse, $idp, $this->loader);
