@@ -51,21 +51,24 @@ $accepted->coverage;                                   // SignatureCoverage::Ass
 through as they are. `ExpectedResponse::unsolicited()` accepts a response to no request, when your policy does.
 
 An assertion encrypted for your service provider, a `saml:EncryptedAssertion` under AES-GCM, or AES-CBC in a response
-the identity provider signed, and RSA-OAEP, is read by a validator built with your key, `Enc`'s `DecryptionKeyInterface`, which a key management service can implement
-without handing the key over:
+the identity provider signed, and RSA-OAEP, is read with the key you give with that identity provider: the key whose
+encryption certificate you gave it, and no other provider, `Enc`'s `DecryptionKeyInterface`, which a key management
+service can implement without handing the key over:
 
 ```php
 use Beffroi\Xml\Enc\PrivateDecryptionKey;
 
-$validator = new ResponseValidator($loader, $clock, $replayGuard, new TimeBounds(), PrivateDecryptionKey::fromPem($pem));
+$accepted = $validator->validate($response, $idp->withDecryptionKey(PrivateDecryptionKey::fromPem($pem)), $expected);
 ```
 
 The signature of the response is verified before anything is decrypted, every cryptographic failure is `Enc`'s one
 `DecryptionFailed`, and the decrypted assertion needs its own signature or the response's, since anyone can encrypt
 for your key (section 6.7). AES-CBC, which Entra, ADFS and SimpleSAMLphp encrypt under, authenticates nothing: it is
 opened only under the signature of the response, which covers the ciphertext, and refused by name in an unsigned
-response, so that the identity provider signs the response too (decision 0013). Without a key, an encrypted assertion
-is refused by name.
+response, so that the identity provider signs the response too (decision 0013); every refusal after a CBC decryption is
+that one `DecryptionFailed`. Give each identity provider its own key: a key two of them share lets one carry the
+other's ciphertext under its own signature and read what the decryption answers (section 5.5). A provider given
+without a key has its encrypted assertion refused by name.
 
 ## Validating a request and writing a response, identity provider side
 
