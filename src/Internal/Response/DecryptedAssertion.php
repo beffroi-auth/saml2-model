@@ -10,8 +10,10 @@ use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\RefusedXml;
 use Beffroi\Xml\Core\Loader;
+use Beffroi\Xml\Dsig\Verified;
 use Beffroi\Xml\Enc\DecryptionKeyInterface;
 use Beffroi\Xml\Enc\Decryptor;
+use Beffroi\Xml\Enc\Exception\CoveringSignatureRequired;
 use Beffroi\Xml\Enc\Exception\DecryptionFailed;
 use Beffroi\Xml\Enc\Exception\EncryptionRefused;
 
@@ -19,8 +21,10 @@ use Beffroi\Xml\Enc\Exception\EncryptionRefused;
  * The decryption of an encrypted assertion, section 6.7: the xenc:EncryptedData of the one saml:EncryptedAssertion of
  * the response as section 6.1 step 3 left it, the verified response when it is signed, so that the signature covered
  * the ciphertext before any decryption touches it, the received one otherwise; decrypted by Enc with the key of the
- * service provider and SamlLoader::create() (M-14), whose refusals pass as they are, every cryptographic failure the
- * one DecryptionFailed (E-3); the root of the plaintext a saml:Assertion (M-4). It holds the Document, so that the
+ * service provider and SamlLoader::create() (M-14), under the proof of the response's signature when there is one,
+ * which alone opens AES-CBC (E-15), and without proof otherwise, AES-CBC then refused by name before any key is
+ * touched; the refusals of Enc pass as they are, every cryptographic failure the one DecryptionFailed (E-3, E-16); the
+ * root of the plaintext a saml:Assertion (M-4). It holds the Document, so that the
  * nodes of the decrypted assertion live as long as it is read (enc.md section 5.4). Nothing here authenticates the
  * assertion: anyone encrypts for the key of the service provider, and section 6.1 step 5 asks for its signature or
  * the response's (M-2).
@@ -40,20 +44,22 @@ final readonly class DecryptedAssertion
      * @param DecryptionKeyInterface $key the service provider's (section 5.5)
      * @param Loader $loader SamlLoader::create(), which loads the plaintext (M-14, E-4)
      *
-     * @throws DecryptionFailed the one failure of every cryptographic step (E-3)
+     * @throws DecryptionFailed the one failure of every cryptographic step (E-3, E-16)
+     * @throws CoveringSignatureRequired when the content is AES-CBC and the response is not signed (E-15)
      * @throws EncryptionRefused the other refusals of Enc, naming their rule (E-1, E-5, E-13)
      * @throws MalformedMessage when the plaintext is not a saml:Assertion (M-4)
      * @throws RefusedXml what Core refuses of the plaintext (E-4)
      */
     public static function of(SignedResponse $response, DecryptionKeyInterface $key, Loader $loader): self
     {
-        $document = new Decryptor($loader)->decrypt(
-            Children::one(
-                Children::one($response->root, Schema::saml('EncryptedAssertion')),
-                Schema::xenc('EncryptedData'),
-            ),
-            $key,
+        $encrypted = Children::one(
+            Children::one($response->root, Schema::saml('EncryptedAssertion')),
+            Schema::xenc('EncryptedData'),
         );
+        $decryptor = new Decryptor($loader);
+        $document = $response->verification instanceof Verified
+            ? $decryptor->decryptCovered($encrypted, $key, new CoveringResponseSignature($response->verification))
+            : $decryptor->decrypt($encrypted, $key);
         if (! Schema::saml('Assertion')->matches($document->root())) {
             throw new MalformedMessage('The plaintext of the saml:EncryptedAssertion is not a saml:Assertion (M-4).');
         }

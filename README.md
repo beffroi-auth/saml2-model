@@ -50,8 +50,8 @@ $accepted->coverage;                                   // SignatureCoverage::Ass
 `OutsideValidityWindow`, `Replayed` and the others of section 5.8, and lets the refusals of `Core`, `Dsig` and `Enc`
 through as they are. `ExpectedResponse::unsolicited()` accepts a response to no request, when your policy does.
 
-An assertion encrypted for your service provider, a `saml:EncryptedAssertion` under AES-GCM and RSA-OAEP, is read by
-a validator built with your key, `Enc`'s `DecryptionKeyInterface`, which a key management service can implement
+An assertion encrypted for your service provider, a `saml:EncryptedAssertion` under AES-GCM, or AES-CBC in a response
+the identity provider signed, and RSA-OAEP, is read by a validator built with your key, `Enc`'s `DecryptionKeyInterface`, which a key management service can implement
 without handing the key over:
 
 ```php
@@ -62,7 +62,10 @@ $validator = new ResponseValidator($loader, $clock, $replayGuard, new TimeBounds
 
 The signature of the response is verified before anything is decrypted, every cryptographic failure is `Enc`'s one
 `DecryptionFailed`, and the decrypted assertion needs its own signature or the response's, since anyone can encrypt
-for your key (section 6.7). Without a key, an encrypted assertion is refused by name.
+for your key (section 6.7). AES-CBC, which Entra, ADFS and SimpleSAMLphp encrypt under, authenticates nothing: it is
+opened only under the signature of the response, which covers the ciphertext, and refused by name in an unsigned
+response, so that the identity provider signs the response too (decision 0013). Without a key, an encrypted assertion
+is refused by name.
 
 ## Validating a request and writing a response, identity provider side
 
