@@ -40,8 +40,8 @@ final readonly class LogoutRequestReader
     /**
      * Section 6.3, before any signature: saml:Issuer, required (SAML Profiles §4.4.4.1), ds:Signature,
      * samlp:Extensions, then the one identifier of the principal, a saml:NameID (saml:BaseID refused by name, section
-     * 8, and saml:EncryptedID until sub-spike 9e, section 6.7), then the samlp:SessionIndex elements, bounded (section
-     * 7), counted before any is read (M-17).
+     * 8, and saml:EncryptedID, section 6.7), then the samlp:SessionIndex elements, bounded (section 7), counted before
+     * any is read (M-17).
      *
      * @throws MalformedMessage when the children are not a sequence of the schema, or the Issuer is missing (M-5)
      * @throws Unsupported when the principal is a saml:BaseID or a saml:EncryptedID
@@ -62,7 +62,7 @@ final readonly class LogoutRequestReader
             throw new Unsupported('The LogoutRequest names its principal with a saml:BaseID, which the package does not support (section 8).');
         }
         if (Schema::saml('EncryptedID')->matches($identifier[0])) {
-            throw new Unsupported('The LogoutRequest names its principal with a saml:EncryptedID, which the package does not support until sub-spike 9e (section 6.7).');
+            throw new Unsupported('The LogoutRequest names its principal with a saml:EncryptedID, which the package does not support (section 6.7).');
         }
         Counts::check(
             count($sessionIndexes),

@@ -29,6 +29,8 @@ final readonly class Schema
 {
     public const string DSIG = 'http://www.w3.org/2000/09/xmldsig#';
 
+    public const string XMLENC = 'http://www.w3.org/2001/04/xmlenc#';
+
     /**
      * The name of an element of the assertion namespace.
      */
@@ -62,7 +64,16 @@ final readonly class Schema
     }
 
     /**
-     * The name of the schema with the prefix of its namespace, samlp:, md:, ds: or saml:, as the refusals print it.
+     * The name of an element of the XML Encryption namespace.
+     */
+    public static function xenc(string $local): Name
+    {
+        return new Name(self::XMLENC, $local);
+    }
+
+    /**
+     * The name of the schema with the prefix of its namespace, samlp:, md:, ds:, xenc: or saml:, as the refusals print
+     * it.
      */
     public static function label(Name $name): string
     {
@@ -71,6 +82,7 @@ final readonly class Schema
                 Saml::PROTOCOL => 'samlp:',
                 Saml::METADATA => 'md:',
                 self::DSIG => 'ds:',
+                self::XMLENC => 'xenc:',
                 default => 'saml:',
             } . $name->local
         );

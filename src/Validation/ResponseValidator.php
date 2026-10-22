@@ -6,11 +6,14 @@ namespace Beffroi\Saml2\Model\Validation;
 
 use Dom\Element;
 use Beffroi\Xml\Dsig\Verified;
+use Beffroi\Xml\Enc\DecryptionKeyInterface;
 use Beffroi\Saml2\Model\Exception\MessageRefused;
 use Beffroi\Saml2\Model\Exception\Replayed;
 use Beffroi\Saml2\Model\Exception\UnsuccessfulResponse;
+use Beffroi\Saml2\Model\Exception\Unsupported;
 use Beffroi\Saml2\Model\Internal\Assertion\AssertionContext;
 use Beffroi\Saml2\Model\Internal\Assertion\AssertionReader;
+use Beffroi\Saml2\Model\Internal\Response\DecryptedAssertion;
 use Beffroi\Saml2\Model\Internal\Response\Envelope;
 use Beffroi\Saml2\Model\Internal\Response\EnvelopeReader;
 use Beffroi\Saml2\Model\Internal\Response\SignedAssertion;
@@ -26,27 +29,33 @@ use function sprintf;
 /**
  * A response of the Web Browser SSO profile, service provider side, in the order of section 6.1: the structure of the
  * envelope before any key is touched (M-4), the response's signature whatever the status, a failure yielding
- * UnsuccessfulResponse (M-13), the assertion's signature verified on the one assertion child of the received root and
- * the assertion read from a verification only (M-1, M-2), the envelope (M-7, M-8, M-10), the rules of the assertion
- * (M-5 to M-8, M-10, M-12, M-13, M-17), and replay last (M-11), so that nothing is remembered of a message a rule
- * refused. The keys are the identity provider's metadata ones (M-3); the refusals of Core and Dsig pass as they are.
+ * UnsuccessfulResponse (M-13), an encrypted assertion decrypted with the service provider's key once the response's
+ * signature covered its ciphertext (section 6.7), the assertion's signature verified on the one assertion child of the
+ * received root, or on the root of its decryption, and the assertion read from what a signature covered only (M-1,
+ * M-2), the envelope (M-7, M-8, M-10), the rules of the assertion (M-5 to M-8, M-10, M-12, M-13, M-17), and replay last
+ * (M-11), so that nothing is remembered of a message a rule refused. The keys are the identity provider's metadata
+ * ones (M-3); the refusals of Core, Dsig and Enc pass as they are, every failure of a decryption Enc's one
+ * DecryptionFailed (E-3).
  */
 final readonly class ResponseValidator
 {
     /**
-     * @param Loader $loader SamlLoader::create(), the Verifier's too (M-14)
+     * @param Loader $loader SamlLoader::create(), the Verifier's and the Decryptor's too (M-14)
+     * @param ?DecryptionKeyInterface $decryptionKey the service provider's own, Enc's port, for an encrypted assertion
+     *                                               (section 6.7); without it, a saml:EncryptedAssertion is refused
      */
     public function __construct(
         private Loader $loader,
         private ClockInterface $clock,
         private ReplayGuardInterface $replay,
         private TimeBounds $bounds = new TimeBounds(),
+        private ?DecryptionKeyInterface $decryptionKey = null,
     ) {
     }
 
     /**
      * @throws MessageRefused one of its subclasses, naming the rule (M-16)
-     * @throws RefusedXml what Core and Dsig refuse, as they refuse it
+     * @throws RefusedXml what Core, Dsig and Enc refuse, as they refuse it
      */
     public function validate(
         UnverifiedResponse $response,
@@ -63,7 +72,12 @@ final readonly class ResponseValidator
         );
         // 1 and 2: the root, checked by UnverifiedResponse::of(); the structure of the envelope, no key touched yet
         $received = $response->document->root();
-        $assertion = Envelope::of($received)->assertion;
+        $envelope = Envelope::of($received);
+        $assertion = $envelope->assertion;
+        // the key of an encrypted assertion, refused before any key is touched when the validator holds none
+        $key = $envelope->encrypted
+            ? $this->decryptionKey ?? throw new Unsupported('The response holds a saml:EncryptedAssertion and the validator holds no key to decrypt it (section 6.7).')
+            : null;
         // 3: the response's signature, whatever the status; the response read from its verification from here on
         $signedResponse = SignedResponse::of($received, $idp, $this->loader);
         // 4: a failure, after the envelope rules
@@ -72,12 +86,20 @@ final readonly class ResponseValidator
 
             throw new UnsuccessfulResponse(Envelope::of($signedResponse->root)->status);
         }
-        // 5: the assertion's signature, on the assertion child of the received root, or the response's
-        $signedAssertion = SignedAssertion::of($assertion, $signedResponse, $idp, $this->loader);
+        // 5: an encrypted assertion decrypted from what step 3 verified (section 6.7), then the assertion's signature,
+        // on the assertion child of the received root or on the root of its decryption, or the response's
+        $signedAssertion = $key instanceof DecryptionKeyInterface
+            ? SignedAssertion::decrypted(
+                DecryptedAssertion::of($signedResponse, $key, $this->loader),
+                $signedResponse,
+                $idp,
+                $this->loader,
+            )
+            : SignedAssertion::of($assertion, $signedResponse, $idp, $this->loader);
         // 6: the envelope
         $responseId = EnvelopeReader::read($signedResponse, $context);
-        // 7 to 12: the assertion, from the verification that covered it (M-1)
-        $accepted = AssertionReader::readVerified($signedAssertion->verification, $context);
+        // 7 to 12: the assertion, from the document a signature covered (M-1)
+        $accepted = AssertionReader::readCovered($signedAssertion, $context);
         // 13: replay, last, with the verified values (M-11)
         $remembered = $this->replay->remember(
             $accepted->issuer->entityId,

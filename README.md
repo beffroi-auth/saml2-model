@@ -47,8 +47,22 @@ $accepted->coverage;                                   // SignatureCoverage::Ass
 ```
 
 `validate()` refuses with a `MessageRefused` naming its rule, `SignatureRequired`, `AudienceMismatch`,
-`OutsideValidityWindow`, `Replayed` and the others of section 5.8, and lets the refusals of `Core` and `Dsig`
+`OutsideValidityWindow`, `Replayed` and the others of section 5.8, and lets the refusals of `Core`, `Dsig` and `Enc`
 through as they are. `ExpectedResponse::unsolicited()` accepts a response to no request, when your policy does.
+
+An assertion encrypted for your service provider, a `saml:EncryptedAssertion` under AES-GCM and RSA-OAEP, is read by
+a validator built with your key, `Enc`'s `DecryptionKeyInterface`, which a key management service can implement
+without handing the key over:
+
+```php
+use Beffroi\Xml\Enc\PrivateDecryptionKey;
+
+$validator = new ResponseValidator($loader, $clock, $replayGuard, new TimeBounds(), PrivateDecryptionKey::fromPem($pem));
+```
+
+The signature of the response is verified before anything is decrypted, every cryptographic failure is `Enc`'s one
+`DecryptionFailed`, and the decrypted assertion needs its own signature or the response's, since anyone can encrypt
+for your key (section 6.7). Without a key, an encrypted assertion is refused by name.
 
 ## Validating a request and writing a response, identity provider side
 
@@ -135,7 +149,7 @@ Each is code, never an option, and has its tests; `TraceabilityTest` fails when 
 
 | | |
 |---|---|
-| M-1 | An assertion is read from what `Dsig` verified, never from the document as it arrived. |
+| M-1 | An assertion is read from what `Dsig` verified, or from the decryption of a ciphertext it verified, never from the document as it arrived. |
 | M-2 | Every assertion is covered by a signature, its own or the response's; every signature a message carries as a direct child verifies. |
 | M-3 | A peer's keys come from its metadata; the `KeyInfo` of a message is never read. |
 | M-4 | One assertion per response, found as a direct child; one subject, one bearer confirmation, one statement of each kind. |

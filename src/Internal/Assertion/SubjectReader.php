@@ -53,7 +53,7 @@ final readonly class SubjectReader
         Schema::unsupported(
             $subject,
             [Schema::saml('EncryptedID')],
-            'The subject is a saml:EncryptedID, which the package does not support until sub-spike 9e (section 6.7).',
+            'The subject is a saml:EncryptedID, which the package does not support (section 6.7).',
         );
         Schema::children($subject, 'saml:Subject', [
             Particle::of(Schema::saml('NameID'), 1, 1),

@@ -8,23 +8,26 @@ use Beffroi\Saml2\Model\Assertion\Assertion;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Saml2\Model\Exception\MessageRefused;
 use Beffroi\Saml2\Model\Internal\Particle;
+use Beffroi\Saml2\Model\Internal\Response\SignedAssertion;
 use Beffroi\Saml2\Model\Internal\Schema;
 use Beffroi\Xml\Core\Children;
 use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\MixedContent;
-use Beffroi\Xml\Dsig\Verified;
 use function count;
 use Dom\Element;
 
 /**
- * The strict reader of an assertion, section 6.1 steps 7 to 11 in order, over the document of a verification (M-1): the
+ * The strict reader of an assertion, section 6.1 steps 7 to 11 in order, over the document of a verification (M-1), or
+ * of the decryption of a ciphertext a verified signature covered (section 6.7): the
  * root a saml:Assertion, its children in the order and with the cardinality of the schema (M-4, M-5), a ds:Signature
  * after the Issuer accepted and not read (the verification that handed the document over removed the one it verified,
  * D-10), one AuthnStatement, at most one AttributeStatement, any other statement refused by name (section 8); then the
  * header, the subject, the conditions, the authentication statement and the attributes, each by its reader. It takes a
- * Document or a Verified, never an element: which element was verified is the validator's decision (section 6.1 step
- * 5), and readVerified() is the one entry point the package calls, so that no path reads an assertion outside the
- * Document of a verification (M-1). The replay of step 13 is the validator's, with the values this returns.
+ * Document or the selection of the signed element, never an element: which document covers the assertion is the
+ * validator's decision (section 6.1 step 5), and readCovered() is the one entry point the package calls, with the
+ * SignedAssertion that selection built from a verification, or from a decryption a verified signature covered, so
+ * that no path reads an assertion outside what a signature covered (M-1). The replay of step 13 is the validator's,
+ * with the values this returns.
  *
  * @internal outside the compatibility promise of section 5
  */
@@ -45,16 +48,17 @@ final readonly class AssertionReader
     }
 
     /**
-     * The assertion a verification covered (M-1, section 6.1 step 5): the root of Verified::$document when the
-     * assertion's own signature was verified, or the one saml:Assertion child of that root when the response's
-     * signature covered an unsigned assertion; read as read() reads it, nothing more accepted.
+     * The assertion a signature covered (M-1, section 6.1 step 5): the root of the document $covered holds when it is
+     * the document of the assertion's own verification, or of the decryption of a ciphertext the response's signature
+     * covered (section 6.7), or the one saml:Assertion child of that root when the response's signature covered an
+     * unsigned assertion; read as read() reads it, nothing more accepted.
      *
      * @throws MessageRefused one of its subclasses, naming the rule (M-16)
      * @throws MixedContent when a value holds an element
      */
-    public static function readVerified(Verified $verified, AssertionContext $context): Assertion
+    public static function readCovered(SignedAssertion $covered, AssertionContext $context): Assertion
     {
-        $root = $verified->document->root();
+        $root = $covered->document->root();
         if (Schema::saml('Assertion')->matches($root)) {
             return self::assertion($root, $context);
         }

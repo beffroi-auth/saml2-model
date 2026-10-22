@@ -26,8 +26,8 @@ use function sprintf;
  * The attribute statement of an assertion, section 6.1 step 11: its saml:Attribute elements in document order, a name
  * repeated kept as read and never merged, each with its Name, a NameFormat of SAML Core §8.2, its FriendlyName and the
  * text of its values read with Text::of() (I-12); an xsi:type on a value is not read, its prefix never resolved
- * (dsig.md §6.3); a value holding an element is Core's MixedContent; saml:EncryptedAttribute is refused by name until
- * sub-spike 9e (section 6.7); the counts of section 7 checked before the lists are read (M-17).
+ * (dsig.md §6.3); a value holding an element is Core's MixedContent; saml:EncryptedAttribute is refused by name
+ * (section 6.7); the counts of section 7 checked before the lists are read (M-17).
  *
  * @internal outside the compatibility promise of section 5
  */
@@ -47,7 +47,7 @@ final readonly class AttributeStatementReader
         Schema::unsupported(
             $statement,
             [Schema::saml('EncryptedAttribute')],
-            'The attribute statement holds a saml:EncryptedAttribute, which the package does not support until sub-spike 9e (section 6.7).',
+            'The attribute statement holds a saml:EncryptedAttribute, which the package does not support (section 6.7).',
         );
         $attributes = Children::named($statement, Schema::saml('Attribute'));
         Counts::check(

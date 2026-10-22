@@ -23,8 +23,9 @@ use function preg_replace;
  * The keys of a role (section 6.5 step 5): each md:KeyDescriptor for signing, for encryption, or for both when it has
  * no use (SAML Metadata §2.4.1.1, E68); its one ds:KeyInfo holding one ds:X509Data holding one ds:X509Certificate,
  * whose base64 is kept on one line, the other children of ds:KeyInfo hints that are not read (Metadata
- * Interoperability Profile §2.5.1); the Algorithm of each md:EncryptionMethod checked as a URI and not kept, until
- * sub-spike 9e. The certificates are checked by building their Dsig key where the role is built (D-16).
+ * Interoperability Profile §2.5.1); the Algorithm of each md:EncryptionMethod checked as a URI and not kept, the
+ * closed lists of Enc deciding what is decrypted (section 6.7). The certificates are checked by building their Dsig
+ * key where the role is built (D-16).
  *
  * @internal
  */
