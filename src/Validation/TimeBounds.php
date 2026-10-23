@@ -9,8 +9,9 @@ use function sprintf;
 
 /**
  * The three time bounds of section 7, in seconds, which the validators and the metadata reader share (M-7): the clock
- * skew, how old an IssueInstant may be when a message arrives, how far ahead a bearer NotOnOrAfter may be. Each is a
- * quantity a caller may raise up to its ceiling for a documented reason, never a switch that removes a window.
+ * skew, how old an IssueInstant may be when a message arrives, how far ahead a bearer NotOnOrAfter may be beyond the
+ * skew. Each is a quantity a caller may raise up to its ceiling for a documented reason, never a switch that removes a
+ * window.
  */
 final readonly class TimeBounds
 {

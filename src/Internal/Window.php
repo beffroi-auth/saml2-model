@@ -48,10 +48,13 @@ final readonly class Window
     }
 
     /**
-     * Now plus maxBearerWindow: a bearer NotOnOrAfter later than this is refused (M-7).
+     * Now plus maxBearerWindow and the clock skew: a bearer NotOnOrAfter later than this is refused (M-7). The skew is
+     * added as it is to every instant ahead of now: Entra ends its bearer window maxBearerWindow itself after the
+     * instant it issues from (section 7), so that without it a service provider whose clock is one second behind
+     * Entra's would refuse every response Entra sends.
      */
     public function bearerLimit(): DateTimeImmutable
     {
-        return $this->now->modify(sprintf('+%d seconds', $this->bounds->maxBearerWindow));
+        return $this->now->modify(sprintf('+%d seconds', $this->bounds->maxBearerWindow + $this->bounds->clockSkew));
     }
 }
