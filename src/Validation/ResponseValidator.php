@@ -114,8 +114,9 @@ final readonly class ResponseValidator
             throw new Replayed('The assertion was already accepted from its issuer (M-11).');
         }
 
-        // 14: the result, its values copied out of the verified documents
-        return new AcceptedAssertion($responseId, $accepted, $this->coverage($signedResponse, $read));
+        // 14: the result, its values copied out of the verified documents, and whether step 2 found the assertion
+        // encrypted (M-18)
+        return new AcceptedAssertion($responseId, $accepted, $this->coverage($signedResponse, $read), $envelope->encrypted);
     }
 
     private function coverage(SignedResponse $response, ReadAssertion $assertion): SignatureCoverage
