@@ -1,13 +1,13 @@
 # beffroi/saml2-model
 
-Part of [beffroi/framework](https://github.com/beffroi-php/beffroi), developed in `src/saml2-model` of that monorepo; this repository is its
+Part of [beffroi/framework](https://github.com/beffroi-auth/beffroi), developed in `src/saml2-model` of that monorepo; this repository is its
 read-only split. Issues and pull requests go to the monorepo.
 
 The SAML 2.0 model for PHP: the `samlp:`, `saml:` and `md:` objects of the Web Browser SSO and Single Logout
 profiles, read strictly, validated against the rules of the profiles in code rather than in options, and written, on
-the safe DOM and the XML Signature of [`beffroi/xml-security`](https://github.com/beffroi-php/xml-security). It
+the safe DOM and the XML Signature of [`beffroi/xml-security`](https://github.com/beffroi-auth/xml-security). It
 reads an assertion only in what a signature covers, takes a peer's keys from its metadata only, and knows no HTTP:
-the bindings are [`beffroi/saml2-bindings`](https://github.com/beffroi-php/saml2-bindings).
+the bindings are [`beffroi/saml2-bindings`](https://github.com/beffroi-auth/saml2-bindings).
 
 [`spec/model.md`](spec/model.md) is the law of the package: the code conforms to it, or the document changes first.
 This file is its short version.
@@ -205,9 +205,9 @@ suite on PHP 8.5 and on PHP 8.4.
 
 ## Security
 
-See the [security policy](https://github.com/beffroi-php/beffroi/blob/0.0.x/SECURITY.md) of the monorepo: private reporting, an advisory and a CVE for
+See the [security policy](https://github.com/beffroi-auth/beffroi/blob/0.0.x/SECURITY.md) of the monorepo: private reporting, an advisory and a CVE for
 every fix.
 
 ## License
 
-MIT, see the [LICENSE](https://github.com/beffroi-php/beffroi/blob/0.0.x/LICENSE) of the monorepo.
+MIT, see the [LICENSE](https://github.com/beffroi-auth/beffroi/blob/0.0.x/LICENSE) of the monorepo.
