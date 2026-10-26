@@ -713,7 +713,7 @@ Validating SimpleSAMLphp's response with a signed assertion, from `UnverifiedRes
 
 ### 9.7 Test form
 
-The form of core.md §9.6 and of the monorepo's `CLAUDE.md`, unchanged: one behaviour per test, `// Given`, `// When`, `// Then`; a refusal with `expectException()` and `expectExceptionMessageIs()` before `// When`; data providers with named cases, declared after the test that uses them; docblocks citing the invariant (`M-n`), the corpus row (`§9.2 row n`) and the section of the SAML specification (`SAML Profiles §4.1.4.3`); fixtures as files, one case per file, a fixture that exists to be refused saying so in its name, a lexical value alone (a time, a boolean, a URI, a `NameID`) being a named case of a data provider instead; a `TraceabilityTest` that fails when an invariant or a corpus row of this document is cited by no test. A test never sleeps: time is the frozen clock of `tests/saml2-model/Support/`.
+The form of core.md §9.6 and of the monorepo's `AGENTS.md`, unchanged: one behaviour per test, `// Given`, `// When`, `// Then`; a refusal with `expectException()` and `expectExceptionMessageIs()` before `// When`; data providers with named cases, declared after the test that uses them; docblocks citing the invariant (`M-n`), the corpus row (`§9.2 row n`) and the section of the SAML specification (`SAML Profiles §4.1.4.3`); fixtures as files, one case per file, a fixture that exists to be refused saying so in its name, a lexical value alone (a time, a boolean, a URI, a `NameID`) being a named case of a data provider instead; a `TraceabilityTest` that fails when an invariant or a corpus row of this document is cited by no test. A test never sleeps: time is the frozen clock of `tests/saml2-model/Support/`.
 
 ### 9.8 Adversarial pass
 
