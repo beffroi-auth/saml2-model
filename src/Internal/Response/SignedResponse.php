@@ -16,19 +16,15 @@ use Beffroi\Xml\Dsig\Verifier;
 use Dom\Element;
 
 /**
- * The response's side of the selection of the signed element, section 6.1 step 3 (M-1, M-2, M-3): the ds:Signature a
- * direct child of the received root, when there is one, verified whatever the status with the keys of the identity
- * provider's metadata and never with the message's KeyInfo (D-7), and the response read from Verified::$document from
- * then on. It holds the Verified, so that the document of the verification lives as long as its root is read.
+ * Section 6.1 step 3
  *
- * @internal outside the compatibility promise of section 5
+ * Verified with the keys of the identity provider's metadata, never with the message's KeyInfo (D-7).
+ * It holds the Verified, so that the document of the verification lives as long as its root is read.
+ *
+ * @internal
  */
 final readonly class SignedResponse
 {
-    /**
-     * @param Element $root the root of Verified::$document, or the received root when the response is not signed
-     * @param ?Verified $verification the verification of the response's signature, null when it carries none
-     */
     private function __construct(
         public Element $root,
         public ?Verified $verification,
@@ -36,12 +32,9 @@ final readonly class SignedResponse
     }
 
     /**
-     * @param Element $received the root of the received document, its structure checked (section 6.1 step 2)
-     * @param Loader $loader SamlLoader::create(), the Verifier's (M-14)
-     *
-     * @throws SignatureRequired when the response is signed and the metadata holds no signing key (M-3)
-     * @throws SignatureRefused one of its subclasses, when the signature does not verify
-     * @throws RefusedXml what Core refuses of the re-parse (D-10)
+     * @throws SignatureRequired when the response is signed and the metadata holds no signing key
+     * @throws SignatureRefused
+     * @throws RefusedXml
      */
     public static function of(Element $received, IdentityProvider $idp, Loader $loader): self
     {
@@ -54,9 +47,7 @@ final readonly class SignedResponse
     }
 
     /**
-     * The signature of $signed, its direct child, verified with the keys of the identity provider's metadata (M-3).
-     *
-     * @throws SignatureRequired when the metadata holds no signing key (M-3)
+     * @throws SignatureRequired when the metadata holds no signing key
      * @throws SignatureRefused
      * @throws RefusedXml
      */

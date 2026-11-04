@@ -31,23 +31,17 @@ use DateTimeImmutable;
 use Dom\Element;
 
 /**
- * The strict reader of a samlp:AuthnRequest, section 6.2 in order: structure() is step 1, over the request as it
- * arrived, before any signature is touched; read() is steps 3 to 5, over the document of the authentication (M-1),
- * the header, the assertion consumer service (M-9), then what the request asks, returned and never enforced. The
- * validator runs step 2, the signature, between the two, and step 6, the result, after them.
+ * Section 6.2
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class AuthnRequestReader
 {
     /**
-     * Section 6.2 step 1: the children in the order and with the cardinality of the schema (SAML Core §3.2.1,
-     * §3.4.1), the saml:Issuer required (Profiles §4.1.4.1), found as direct children only (M-4, I-11); saml:Subject,
-     * saml:Conditions and samlp:Scoping refused by name wherever they are (section 8).
+     * Section 6.2 step 1
      *
-     * @throws Unsupported when it holds a saml:Subject, a saml:Conditions or a samlp:Scoping (section 8)
-     * @throws MalformedMessage when a child is not allowed there, is out of order or repeated (M-5), or the saml:Issuer
-     *                          is missing (M-4)
+     * @throws Unsupported
+     * @throws MalformedMessage
      */
     public static function structure(Element $request): void
     {
@@ -66,13 +60,12 @@ final readonly class AuthnRequestReader
     }
 
     /**
-     * Section 6.2 steps 3 to 5, over the root of the document the authentication handed over (M-1), whose structure
-     * step 1 checked on the request as it arrived.
+     * Section 6.2 steps 3 to 5, M-1
      *
-     * @return array{AuthnRequest, IndexedEndpoint} the request, and the assertion consumer service it resolves to
+     * @return array{AuthnRequest, IndexedEndpoint}
      *
-     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
-     * @throws MixedContent when the Issuer or a class reference holds an element
+     * @throws MessageRefused
+     * @throws MixedContent
      */
     public static function read(Element $request, AuthnRequestContext $context): array
     {
@@ -85,9 +78,8 @@ final readonly class AuthnRequestReader
         $isPassive = Attributes::optional($request, new Name(null, 'IsPassive'));
         $policy = Children::optional($request, Schema::samlp('NameIDPolicy'));
         $nameIdPolicy = $policy instanceof Element ? NameIdPolicyReader::read($policy) : null;
-        // another entity than the requester is an affiliation, whose members share the identifiers (SAML Core
-        // §3.4.1.1): honoured by an identity provider that does not read affiliations, it would hand the requester the
-        // identifier the user has at that other entity
+        // Honouring an affiliation the package does not read would hand the requester the identifier the user has
+        // at another entity (SAML Core §3.4.1.1).
         if ($nameIdPolicy?->spNameQualifier !== null && $nameIdPolicy->spNameQualifier !== $context->serviceProvider->entityId) {
             throw new Unsupported('The SPNameQualifier of the samlp:NameIDPolicy names another entity than the service provider, an affiliation the package does not read (section 8).');
         }
@@ -112,11 +104,7 @@ final readonly class AuthnRequestReader
     }
 
     /**
-     * Section 6.2 step 3: Version 2.0, the ID present, the IssueInstant not later than now plus the skew and
-     * not older than maxMessageAge (M-7); the Destination required when the request carries a signature, its own or
-     * the binding's, equal to the URL at which it arrived whenever present, that URL one of our single sign-on
-     * services (M-8); the Issuer the service provider's entity ID, read by the one reader of an Issuer, its Format
-     * omitted or entity and no qualifier (M-8).
+     * Section 6.2 step 3
      *
      * @return array{string, DateTimeImmutable, ?string, Issuer}
      *
@@ -129,8 +117,7 @@ final readonly class AuthnRequestReader
     private static function header(Element $request, AuthnRequestContext $context): array
     {
         Version::read(Schema::attribute($request, 'samlp:AuthnRequest', 'Version'));
-        // an NCName of at most 128 bytes: the loader's ID attributes refused any other (M-14, I-8), AuthnRequest checks
-        // it again for whoever builds one
+        // The loader's ID attributes already refused anything but an NCName of at most 128 bytes (M-14, I-8).
         $id = Schema::attribute($request, 'samlp:AuthnRequest', 'ID');
         $issueInstant = Time::read(Schema::attribute($request, 'samlp:AuthnRequest', 'IssueInstant'));
         if ($issueInstant > $context->window->latest()) {

@@ -28,8 +28,7 @@ use DateTimeImmutable;
 use Dom\Element;
 
 /**
- * A samlp:LogoutRequest in the order of section 6.3: its structure before any signature, then its values from what
- * the signature or the binding authenticated (M-1).
+ * Section 6.3
  *
  * @internal
  */
@@ -38,14 +37,9 @@ final readonly class LogoutRequestReader
     private const string ELEMENT = 'samlp:LogoutRequest';
 
     /**
-     * Section 6.3, before any signature: saml:Issuer, required (SAML Profiles §4.4.4.1), ds:Signature,
-     * samlp:Extensions, then the one identifier of the principal, a saml:NameID (saml:BaseID refused by name, section
-     * 8, and saml:EncryptedID, section 6.7), then the samlp:SessionIndex elements, bounded (section 7), counted before
-     * any is read (M-17).
-     *
-     * @throws MalformedMessage when the children are not a sequence of the schema, or the Issuer is missing (M-5)
-     * @throws Unsupported when the principal is a saml:BaseID or a saml:EncryptedID
-     * @throws LimitExceeded when there are more than 16 session indexes (section 7)
+     * @throws MalformedMessage
+     * @throws Unsupported
+     * @throws LimitExceeded
      */
     public static function structure(Element $root): void
     {
@@ -72,17 +66,14 @@ final readonly class LogoutRequestReader
     }
 
     /**
-     * Section 6.3, on the root of what the signature or the binding authenticated, whose structure was checked: the
-     * header of the envelope, the NameID under M-12, read with Text::of() (I-12), the session indexes as read, the
-     * NotOnOrAfter under M-7 then later than the IssueInstant, the Reason a URI.
+     * Section 6.3, M-1
      *
-     * @throws IssuerMismatch when the Issuer is not the peer's (M-8)
-     * @throws MalformedMessage when an attribute is absent or not of its lexical form (M-5, M-6), or the NotOnOrAfter
-     *                          is not later than the IssueInstant (section 6.3)
-     * @throws OutsideValidityWindow when the IssueInstant or the NotOnOrAfter is outside its window (M-7)
-     * @throws DestinationMismatch when the Destination is not the URL of arrival, one of ours (M-8)
-     * @throws InvalidNameId when the NameID breaks the rule of its format (M-12)
-     * @throws MixedContent when the Issuer, the NameID or a session index holds an element
+     * @throws IssuerMismatch
+     * @throws MalformedMessage
+     * @throws OutsideValidityWindow
+     * @throws DestinationMismatch
+     * @throws InvalidNameId
+     * @throws MixedContent
      */
     public static function read(Element $root, LogoutContext $context): LogoutRequest
     {
@@ -94,7 +85,6 @@ final readonly class LogoutRequestReader
         if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $context->window->earliest()) {
             throw new OutsideValidityWindow('The NotOnOrAfter of the LogoutRequest is at or before now minus the clock skew (M-7).');
         }
-        // a request that expires when it is issued, or before, is no request (SAML Core §3.7.1)
         if ($notOnOrAfter instanceof DateTimeImmutable && $notOnOrAfter <= $issueInstant) {
             throw new MalformedMessage('The NotOnOrAfter of the LogoutRequest is not later than its IssueInstant (section 6.3).');
         }

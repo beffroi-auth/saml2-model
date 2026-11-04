@@ -19,20 +19,15 @@ use Beffroi\Xml\Dsig\Signer;
 use SensitiveParameter;
 
 /**
- * A samlp:LogoutResponse written in the order of section 6.6 (section 5.7): what its reader would refuse, its
- * constructor refused already (M-15); built with DocumentFactory and one prefix per namespace, samlp and saml, both
- * declared on the root, the ID the response carries, the InResponseTo of the request it answers, the IssueInstant in
- * UTC to the second, the status with its second-level code when it has one; then signed on request through Dsig's
- * Signer with SamlLoader::create(), the Signature after the Issuer (SAML Core §3.2.1) and no InclusiveNamespaces
- * prefix list. Signed for HTTP-POST, unsigned for HTTP-Redirect, whose binding signs the query string (section 6.8).
+ * Section 6.6, SAML Core §3.2.1
  */
 final readonly class LogoutResponseWriter
 {
     private const string XMLNS = 'http://www.w3.org/2000/xmlns/';
 
     /**
-     * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
-     * @throws SigningFailed when the signing key fails
+     * @throws RefusedXml
+     * @throws SigningFailed
      */
     public function write(
         LogoutResponse $response,

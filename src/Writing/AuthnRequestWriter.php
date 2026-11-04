@@ -23,31 +23,21 @@ use InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * A samlp:AuthnRequest written in the order of section 6.6 (section 5.7): checked against what the validator of the
- * identity provider refuses (M-15), the rules of its values already checked by AuthnRequest; built with
- * DocumentFactory and one prefix per namespace, samlp, saml and ds, the saml namespace declared on each element that
- * introduces it; its ID the one the request carries, drawn by SamlId::generate() (M-15), its IssueInstant in UTC to
- * the second, ForceAuthn and IsPassive written only when true; then signed on request through Dsig's Signer with
- * SamlLoader::create(), the Signature after the saml:Issuer (SAML Core §3.2.1, §5.4.1) and no InclusiveNamespaces
- * prefix list (dsig.md section 6.2). Unsigned, it is the document HTTP-Redirect carries, whose binding signs the query
- * string (section 6.8), or an unsigned request over HTTP-POST.
+ * Section 6.6, SAML Core §3.2.1, §5.4.1
  */
 final readonly class AuthnRequestWriter
 {
     /**
-     * @throws InvalidArgumentException when the request holds no Destination, which the identity provider requires of
-     *                                   a request signed by XML or by the binding: a programming error of the caller
-     *                                   (section 5.8)
-     * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
-     * @throws SigningFailed when the signing key fails
+     * @throws InvalidArgumentException when the request holds no Destination
+     * @throws RefusedXml
+     * @throws SigningFailed
      */
     public function write(
         AuthnRequest $request,
         #[SensitiveParameter]
         ?Signing $signing,
     ): Document {
-        // Section 6.6 step 1: signed by XML or by the binding, which the writer cannot tell apart from an unsigned
-        // HTTP-POST, a request without Destination is refused (M-8, SAML Bindings §3.4.5.2, §3.5.5.2)
+        // Refused even unsigned: the writer cannot tell an unsigned HTTP-POST from a request the binding signs (M-8).
         if ($request->destination === null) {
             throw new InvalidArgumentException('The request holds no Destination, which the identity provider requires of a signed request, by XML or by the binding (section 6.6).');
         }

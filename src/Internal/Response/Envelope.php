@@ -15,23 +15,14 @@ use function count;
 use Dom\Element;
 
 /**
- * The structure of the envelope of a response, section 6.1 step 2, read before any key is touched: its children in
- * the order of the schema (M-5), saml:Issuer optional, ds:Signature optional, samlp:Extensions optional and never
- * read, samlp:Status, then the assertions, each a saml:Assertion or a saml:EncryptedAssertion; exactly one of them, a
- * direct child, with a status of Success, none with another (M-4, M-13); a saml:EncryptedAssertion holding one
- * xenc:EncryptedData and nothing else, an xenc:EncryptedKey next to it refused by name, and the response that holds
- * one carrying its own saml:Issuer (SAML Profiles §4.1.4.2 as corrected by E17), checked here so that a response
- * refused for it costs no operation of the decryption key (section 6.7). What it keeps is the status, and the one
- * assertion of the element it read, in clear or encrypted, never searched below it (I-11).
+ * Section 6.1 step 2
  *
- * @internal outside the compatibility promise of section 5
+ * Read before any key is touched, so that a response refused here costs no operation of a key.
+ *
+ * @internal
  */
 final readonly class Envelope
 {
-    /**
-     * @param ?Element $assertion the one saml:Assertion or saml:EncryptedAssertion child, null for a failure
-     * @param bool $encrypted whether that child is a saml:EncryptedAssertion
-     */
     private function __construct(
         public Status $status,
         public ?Element $assertion,
@@ -40,14 +31,8 @@ final readonly class Envelope
     }
 
     /**
-     * @param Element $response a samlp:Response, as UnverifiedResponse::of() checked it
-     *
-     * @throws Unsupported when a saml:EncryptedAssertion holds an xenc:EncryptedKey next to its xenc:EncryptedData
-     *                     (section 6.7)
-     * @throws MalformedMessage when a child is out of order, repeated or not allowed, the status is malformed, the
-     *                          assertions are not what the status requires, a saml:EncryptedAssertion does not hold
-     *                          one xenc:EncryptedData (M-4, M-5, M-13), or the response that holds one has no Issuer
-     *                          (M-8)
+     * @throws Unsupported
+     * @throws MalformedMessage
      */
     public static function of(Element $response): self
     {

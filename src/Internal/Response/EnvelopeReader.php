@@ -24,30 +24,23 @@ use Beffroi\Xml\Dsig\Verified;
 use Dom\Element;
 
 /**
- * The envelope of a response, section 6.1 step 6, read from the verified response when it was signed and from the
- * received one otherwise (step 3): Version 2.0, an ID (an NCName, which the loader checked, I-8), an IssueInstant
- * neither later than now plus the skew nor older than maxMessageAge (M-7); a Destination required when the response is
- * signed and equal to the URL of arrival whenever present (M-8, SAML Bindings §3.5.5.2, SAML Core §3.2.1); an Issuer
- * required when the response is signed (SAML Profiles §4.1.4.2 as corrected by E17; one holding a
- * saml:EncryptedAssertion was required by the envelope, step 2) and the identity provider's entity ID whenever present
- * (M-8); the InResponseTo the consumer expects, or none for an unsolicited response (M-10). The context is the
- * assertion's, whose URL of arrival is the response's too. It reads nothing of the assertion, so that it runs before
- * an encrypted one is decrypted (section 6.7).
+ * Section 6.1 step 6
  *
- * @internal outside the compatibility promise of section 5
+ * It reads nothing of the assertion, so that it runs before an encrypted one is decrypted.
+ *
+ * @internal
  */
 final readonly class EnvelopeReader
 {
     /**
      * @return string the ID of the response
      *
-     * @throws MalformedMessage when an attribute is absent or not of its lexical form (M-5, M-6), or a signed response
-     *                          has no Issuer (M-8)
-     * @throws OutsideValidityWindow when the IssueInstant is ahead, or too old (M-7)
-     * @throws DestinationMismatch when the Destination is not the URL of arrival, or a signed response has none (M-8)
-     * @throws IssuerMismatch when the Issuer is not the identity provider's (M-8)
-     * @throws InResponseToMismatch when the InResponseTo is not the one expected (M-10)
-     * @throws MixedContent when the Issuer holds an element
+     * @throws MalformedMessage
+     * @throws OutsideValidityWindow
+     * @throws DestinationMismatch
+     * @throws IssuerMismatch
+     * @throws InResponseToMismatch
+     * @throws MixedContent
      */
     public static function read(SignedResponse $response, AssertionContext $context): string
     {

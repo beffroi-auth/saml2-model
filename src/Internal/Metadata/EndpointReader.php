@@ -23,19 +23,19 @@ use Dom\Element;
 use function sprintf;
 
 /**
- * The endpoints of a role (section 6.5 step 6): each Binding a URI, those on HTTP-Redirect or HTTP-POST kept and any
- * other dropped, so that a real metadata listing Artifact or SOAP endpoints still loads; the assertion consumer
- * services kept on HTTP-POST only, their indexes unique over all of them, the dropped ones included.
+ * Section 6.5 step 6
+ *
+ * Endpoints on other bindings are dropped, not refused, so that real metadata listing them still loads.
  *
  * @internal
  */
 final readonly class EndpointReader
 {
     /**
-     * @param list<Element> $elements the md:SingleSignOnService or md:SingleLogoutService children of a role
+     * @param list<Element> $elements
      * @param string $element their name in the schema
      *
-     * @throws MalformedMessage when a Binding, a Location or a ResponseLocation is absent or not a URI (M-5, M-6)
+     * @throws MalformedMessage
      *
      * @return list<Endpoint> those on HTTP-Redirect or HTTP-POST, in order
      */
@@ -58,10 +58,9 @@ final readonly class EndpointReader
     }
 
     /**
-     * @param list<Element> $elements the md:AssertionConsumerService children of a role
+     * @param list<Element> $elements
      *
-     * @throws MalformedMessage when a Binding, a Location or an index is absent or not of its lexical form, two
-     *                          share an index, or an isDefault is not a boolean (M-5, M-6)
+     * @throws MalformedMessage
      */
     public static function assertionConsumerServices(array $elements): IndexedEndpoints
     {
@@ -91,7 +90,7 @@ final readonly class EndpointReader
     }
 
     /**
-     * Section 7, before the endpoints of one kind are read: at most 64, the dropped ones counted.
+     * Section 7
      *
      * @param list<Element> $elements
      * @param string $element their name in the schema

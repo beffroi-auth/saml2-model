@@ -20,25 +20,20 @@ use Dom\Element;
 use function preg_replace;
 
 /**
- * The keys of a role (section 6.5 step 5): each md:KeyDescriptor for signing, for encryption, or for both when it has
- * no use (SAML Metadata §2.4.1.1, E68); its one ds:KeyInfo holding one ds:X509Data holding one ds:X509Certificate,
- * whose base64 is kept on one line, the other children of ds:KeyInfo hints that are not read (Metadata
- * Interoperability Profile §2.5.1); the Algorithm of each md:EncryptionMethod checked as a URI and not kept, the
- * closed lists of Enc deciding what is decrypted (section 6.7). The certificates are checked by building their Dsig
- * key where the role is built (D-16).
+ * Section 6.5 step 5, SAML Metadata §2.4.1.1, E68
  *
  * @internal
  */
 final readonly class KeyDescriptorReader
 {
     /**
-     * @param list<Element> $keyDescriptors the md:KeyDescriptor children of a role
+     * @param list<Element> $keyDescriptors
      *
-     * @throws LimitExceeded when more than 16 serve signing or encryption, counted before a certificate is read
-     * @throws MalformedMessage when a use is not signing or encryption, or the structure is not the one above
-     * @throws Unsupported when a ds:KeyInfo holds a ds:KeyValue and no certificate (section 8)
+     * @throws LimitExceeded
+     * @throws MalformedMessage
+     * @throws Unsupported
      *
-     * @return array{list<string>, list<string>} the signing certificates, then the encryption ones, each in order
+     * @return array{list<string>, list<string>} the signing certificates, then the encryption ones
      */
     public static function read(array $keyDescriptors): array
     {
@@ -110,7 +105,7 @@ final readonly class KeyDescriptorReader
             Uri::read(Schema::attribute($encryptionMethod, 'md:EncryptionMethod', 'Algorithm'));
         }
 
-        // base64Binary allows XML whitespace between its characters: a certificate over several lines is one key
+        // A base64Binary allows XML whitespace between its characters: a certificate over several lines is one key.
         return (string) preg_replace('~[\x20\x09\x0A\x0D]+~', '', Text::of($certificates[0]));
     }
 }

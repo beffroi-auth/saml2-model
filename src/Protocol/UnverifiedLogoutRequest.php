@@ -11,9 +11,8 @@ use Beffroi\Xml\Core\Document;
 use Beffroi\Xml\Core\Exception\MixedContent;
 
 /**
- * A received samlp:LogoutRequest before any verification (section 5.4, M-1): the root checked, its Issuer read and
- * nothing else, what the consumer needs to choose the peer whose keys verify it. The Issuer is read again from what was
- * verified or what the binding authenticated, and compared, by LogoutRequestValidator.
+ * Its Issuer only chooses the peer whose keys verify it: LogoutRequestValidator reads it again from what was verified
+ * or authenticated (M-1).
  */
 final readonly class UnverifiedLogoutRequest
 {
@@ -24,9 +23,8 @@ final readonly class UnverifiedLogoutRequest
     }
 
     /**
-     * @throws MalformedMessage when the root is another element, or holds more than one saml:Issuer, or the Issuer is
-     *                          not a URI of M-6
-     * @throws MixedContent when the Issuer holds an element
+     * @throws MalformedMessage
+     * @throws MixedContent
      */
     public static function of(Document $document): self
     {

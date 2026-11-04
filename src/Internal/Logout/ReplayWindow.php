@@ -10,9 +10,7 @@ use function min;
 use function sprintf;
 
 /**
- * Until when an accepted logout message is remembered (M-11, sections 6.3 and 6.4): the end of the window in which the
- * model would accept it again, its IssueInstant plus maxMessageAge and the skew, or the NotOnOrAfter of a request plus
- * the skew when that is earlier. The validator hands it to the replay port, last.
+ * M-11
  *
  * @internal
  */

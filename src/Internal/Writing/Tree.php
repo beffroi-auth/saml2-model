@@ -11,12 +11,9 @@ use Dom\Element;
 use Dom\XMLDocument;
 
 /**
- * The elements of a document the package builds, every writer's, section 6.6 step 2 (core.md section 6.5): each
- * created with createElementNS() and its prefix, samlp, saml, md or ds, and appended to its parent; the saml and ds
- * namespaces declared as an attribute on the element that introduces them under an element of another namespace,
- * never on its descendants, the namespace of the root declared by DocumentFactory.
+ * Section 6.6 step 2, core.md section 6.5
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class Tree
 {
@@ -27,20 +24,14 @@ final readonly class Tree
     ) {
     }
 
-    /**
-     * The tree of a document DocumentFactory created.
-     */
     public static function of(Document $document): self
     {
-        /** @var XMLDocument $xml DocumentFactory creates an XML document, which owns every element built in it */
+        /** @var XMLDocument $xml */
         $xml = $document->root()->ownerDocument;
 
         return new self($xml);
     }
 
-    /**
-     * A saml element appended to an element of another namespace, declaring the saml prefix it introduces.
-     */
     public function introduceSaml(Element $parent, string $local): Element
     {
         $element = $this->saml($parent, $local);
@@ -49,33 +40,21 @@ final readonly class Tree
         return $element;
     }
 
-    /**
-     * A saml element appended to an element where the saml prefix is declared.
-     */
     public function saml(Element $parent, string $local): Element
     {
         return $this->append($parent, Saml::ASSERTION, 'saml:' . $local);
     }
 
-    /**
-     * A samlp element appended to an element where the samlp prefix is declared.
-     */
     public function samlp(Element $parent, string $local): Element
     {
         return $this->append($parent, Saml::PROTOCOL, 'samlp:' . $local);
     }
 
-    /**
-     * An md element appended to an element where the md prefix is declared.
-     */
     public function md(Element $parent, string $local): Element
     {
         return $this->append($parent, Saml::METADATA, 'md:' . $local);
     }
 
-    /**
-     * A ds element appended to an element of another namespace, declaring the ds prefix it introduces.
-     */
     public function introduceDs(Element $parent, string $local): Element
     {
         $element = $this->ds($parent, $local);
@@ -84,9 +63,6 @@ final readonly class Tree
         return $element;
     }
 
-    /**
-     * A ds element appended to an element where the ds prefix is declared.
-     */
     public function ds(Element $parent, string $local): Element
     {
         return $this->append($parent, Schema::DSIG, 'ds:' . $local);

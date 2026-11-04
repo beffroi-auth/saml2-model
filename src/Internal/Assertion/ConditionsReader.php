@@ -27,23 +27,21 @@ use function in_array;
 use function sprintf;
 
 /**
- * The conditions of an assertion, section 6.1 step 9: saml:ProxyRestriction refused by name (section 8), any condition
- * but AudienceRestriction and OneTimeUse Indeterminate and refused (M-13, SAML Core §2.5.1.1), at most one OneTimeUse
- * (SAML Core §2.5.1.5), the window of M-7 at both ends, and every AudienceRestriction holding our entity ID among its
- * audiences (M-8, SAML Core §2.5.1.4 as corrected by E46), their counts bounded before they are read (M-17).
+ * Section 6.1 step 9
  *
- * @internal outside the compatibility promise of section 5
+ * Every AudienceRestriction must hold our entity ID (SAML Core §2.5.1.4 as corrected by E46).
+ *
+ * @internal
  */
 final readonly class ConditionsReader
 {
     /**
-     * @throws Unsupported when the conditions hold a saml:ProxyRestriction (section 8)
-     * @throws IndeterminateCondition when they hold a condition the package does not understand (M-13)
-     * @throws MalformedMessage when OneTimeUse repeats, a restriction holds no audience or another element, or a value
-     *                          is not of its lexical form (M-5, M-6), or the window ends before it starts (M-7)
-     * @throws LimitExceeded when a count is over its bound of section 7 (M-17)
-     * @throws OutsideValidityWindow when the window has not opened or has closed (M-7)
-     * @throws AudienceMismatch when a restriction does not hold our entity ID, or there is none (M-8)
+     * @throws Unsupported
+     * @throws IndeterminateCondition
+     * @throws MalformedMessage
+     * @throws LimitExceeded
+     * @throws OutsideValidityWindow
+     * @throws AudienceMismatch
      */
     public static function read(Element $conditions, AssertionContext $context): Conditions
     {
@@ -90,9 +88,6 @@ final readonly class ConditionsReader
         );
     }
 
-    /**
-     * Whether the condition is one of the two the package understands, AudienceRestriction and OneTimeUse.
-     */
     private static function understood(Element $condition): bool
     {
         return Schema::saml('AudienceRestriction')->matches($condition) || Schema::saml('OneTimeUse')->matches($condition);
@@ -106,7 +101,7 @@ final readonly class ConditionsReader
     }
 
     /**
-     * @return list<string> the audiences of the restriction, as read, one of them ours
+     * @return list<string>
      */
     private static function audiences(Element $restriction, AssertionContext $context): array
     {

@@ -17,10 +17,6 @@ use Beffroi\Xml\Dsig\VerificationKeys;
 use function count;
 
 /**
- * The rules an identity provider and a service provider share, whoever builds them (section 5.3): an entity ID of
- * M-6, the counts of section 7, each certificate the base64 of an RSA key of at least 2048 bits (D-16), and the Dsig
- * keys of the signing ones (M-3).
- *
  * @internal
  */
 final readonly class RoleRules
@@ -31,9 +27,9 @@ final readonly class RoleRules
      * @param list<Endpoint> $singleLogoutServices
      * @param list<NameIdFormat> $nameIdFormats
      *
-     * @throws MalformedMessage when the entity ID is not a URI of M-6
-     * @throws LimitExceeded when a list is over its bound of section 7 (M-17)
-     * @throws InvalidKey when a certificate is not the base64 of an RSA key of at least 2048 bits (D-16)
+     * @throws MalformedMessage
+     * @throws LimitExceeded
+     * @throws InvalidKey
      */
     public static function check(
         string $entityId,
@@ -67,7 +63,7 @@ final readonly class RoleRules
     /**
      * @param list<Endpoint> $endpoints
      *
-     * @throws LimitExceeded when there are more than 64 (section 7)
+     * @throws LimitExceeded
      */
     public static function checkEndpoints(array $endpoints, string $kind): void
     {
@@ -79,8 +75,7 @@ final readonly class RoleRules
     }
 
     /**
-     * The Dsig keys of the signing certificates, or null when there is none: VerificationKeys refuses an empty list
-     * as a programming error, while a peer's metadata is input (section 5.3).
+     * Null when there is none, since VerificationKeys refuses an empty list and a peer's metadata may have none.
      *
      * @param list<string> $signingCertificates each already checked by check()
      *

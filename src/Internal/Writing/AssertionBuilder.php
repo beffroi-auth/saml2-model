@@ -16,26 +16,16 @@ use DateTimeImmutable;
 use Dom\Element;
 
 /**
- * The saml:Assertion of the identity provider, section 6.6 steps 2 and 4, in the order of the schema (SAML Core
- * §2.3.3): its Issuer, written without Format (M-8); one Subject holding the NameID it is given, its Format always
- * written, and one bearer SubjectConfirmation whose SubjectConfirmationData carries the NotOnOrAfter, the Recipient,
- * the InResponseTo of the request or none, and the Address when given (SAML Profiles §4.1.4.2); the Conditions with
- * their window and each AudienceRestriction, then OneTimeUse when asked; one AuthnStatement with its AuthnInstant, its
- * SessionIndex, its SessionNotOnOrAfter when given and one AuthnContextClassRef; and one AttributeStatement when there
- * are attributes, each Attribute with its Name, its NameFormat always written, its FriendlyName when given, and its
- * values as text without xsi:type (section 12). Times in UTC to the second (M-15). What the validator of the service
- * provider refuses of the objects together is the writer's check, before this builds (section 6.6 step 1).
+ * Section 6.6 steps 2 and 4, SAML Core §2.3.3
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class AssertionBuilder
 {
     private const string BEARER = 'urn:oasis:names:tc:SAML:2.0:cm:bearer';
 
     /**
-     * The assertion appended to $parent, an element of another namespace, which it declares the saml prefix under.
-     *
-     * @throws MalformedMessage what Time refuses of a year that is not of four digits (M-15)
+     * @throws MalformedMessage for a year that is not of four digits
      */
     public static function append(Tree $tree, Element $parent, Assertion $assertion): void
     {

@@ -12,10 +12,8 @@ use Beffroi\Xml\Core\Exception\MixedContent;
 use Beffroi\Xml\Core\Name;
 
 /**
- * An AuthnRequest as it arrived, before anything is verified (section 5.4, M-1): the root checked to be
- * samlp:AuthnRequest, and its Issuer read and nothing else, what the identity provider needs to choose the service
- * provider whose metadata verifies it. AuthnRequestValidator reads the Issuer again from what was verified or
- * authenticated, and compares it with that service provider's entity ID (M-8).
+ * Its Issuer only chooses the service provider whose metadata verifies it: AuthnRequestValidator reads it again from
+ * what was verified or authenticated (M-1).
  */
 final readonly class UnverifiedAuthnRequest
 {
@@ -26,9 +24,8 @@ final readonly class UnverifiedAuthnRequest
     }
 
     /**
-     * @throws MalformedMessage when the root is another element, holds more than one saml:Issuer (M-4), or its Issuer
-     *                          is not a URI of M-6
-     * @throws MixedContent when the Issuer holds an element
+     * @throws MalformedMessage
+     * @throws MixedContent
      */
     public static function of(Document $document): self
     {

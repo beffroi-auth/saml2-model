@@ -19,20 +19,16 @@ use DateTimeImmutable;
 use Dom\Element;
 
 /**
- * The authentication statement of an assertion, section 6.1 step 10: an AuthnInstant not later than now plus the skew,
- * a SessionNotOnOrAfter in the window of M-7 when present, the SessionIndex as read, saml:SubjectLocality accepted and
- * not read, and an AuthnContext holding one AuthnContextClassRef, its saml:AuthenticatingAuthority elements accepted
- * and not read; saml:AuthnContextDecl and saml:AuthnContextDeclRef are refused by name (section 8).
+ * Section 6.1 step 10
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class AuthnStatementReader
 {
     /**
-     * @throws MalformedMessage when an element is missing, repeated, out of order or not allowed, or a value is not of
-     *                          its lexical form (M-4, M-5, M-6)
-     * @throws OutsideValidityWindow when the AuthnInstant is ahead, or the session has ended (M-7)
-     * @throws Unsupported when the authentication context is a declaration (section 8)
+     * @throws MalformedMessage
+     * @throws OutsideValidityWindow
+     * @throws Unsupported
      */
     public static function read(Element $statement, AssertionContext $context): AuthnStatement
     {

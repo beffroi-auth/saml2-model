@@ -14,12 +14,6 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 
 /**
- * What the rules of a logout message are checked against (sections 6.3 and 6.4), as the validator states it: the
- * entity ID of the peer (M-8); the URL at which the message arrived, and those of our single logout services where it
- * may arrive, the Location of each for a request, its ResponseLocation or else its Location for a response (SAML
- * Metadata §2.2.2, section 5.6); the window of M-7, from now read once from the clock and the time bounds of section
- * 7.
- *
  * @internal
  */
 final readonly class LogoutContext
@@ -36,9 +30,7 @@ final readonly class LogoutContext
     }
 
     /**
-     * A LogoutRequest arrives at the Location of one of our single logout services.
-     *
-     * @throws InvalidArgumentException when $self is not the role that faces $peer's (section 5.6)
+     * @throws InvalidArgumentException when $self is not the role that faces $peer's
      */
     public static function forRequest(
         DateTimeImmutable $now,
@@ -54,10 +46,9 @@ final readonly class LogoutContext
     }
 
     /**
-     * A LogoutResponse arrives at the ResponseLocation of one of our single logout services, or at its Location when
-     * it has none (SAML Metadata §2.2.2).
+     * SAML Metadata §2.2.2
      *
-     * @throws InvalidArgumentException when $self is not the role that faces $peer's (section 5.6)
+     * @throws InvalidArgumentException when $self is not the role that faces $peer's
      */
     public static function forResponse(
         DateTimeImmutable $now,

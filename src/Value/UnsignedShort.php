@@ -8,17 +8,14 @@ use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use function preg_match;
 
 /**
- * An index (M-6): an xs:unsignedShort (XML Schema Part 2 §3.3.23), from 0 to 65535, read in its one lexical form,
- * decimal digits without sign, whitespace or leading zero. The index of an md:AssertionConsumerService (SAML Metadata
- * §2.2.3) and the AssertionConsumerServiceIndex of an AuthnRequest (SAML Core §3.4.1) are indexes of this rule,
- * whoever builds them; written as the decimal PHP prints, which is that form (M-15).
+ * XML Schema Part 2 §3.3.23, M-6
  */
 final readonly class UnsignedShort
 {
     private const int MAX = 65_535;
 
     /**
-     * @throws MalformedMessage when the value is not of the lexical form above, or over 65535 (M-6)
+     * @throws MalformedMessage
      */
     public static function read(string $value): int
     {
@@ -30,7 +27,7 @@ final readonly class UnsignedShort
     }
 
     /**
-     * @throws MalformedMessage when the value is under 0 or over 65535 (M-6)
+     * @throws MalformedMessage
      */
     public static function check(int $value): int
     {

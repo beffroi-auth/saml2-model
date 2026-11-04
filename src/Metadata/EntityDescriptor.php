@@ -10,17 +10,15 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 
 /**
- * An md:EntityDescriptor (section 5.3, SAML Metadata §2.3.2): the entity ID, a URI of M-6, the validUntil when the
- * metadata carries one, and the identity provider and service provider roles, each null when absent. A role carries
- * the entity ID of its descriptor. The cacheDuration, in seconds, is what the writer writes when its consumer gives
- * one, and what the reader never reads (section 6.5 step 3): a document read back carries null.
+ * SAML Metadata §2.3.2
+ *
+ * The cacheDuration, in seconds, is written when given and never read: a document read back carries null.
  */
 final readonly class EntityDescriptor
 {
     /**
-     * @throws MalformedMessage when the entity ID is not a URI of M-6
-     * @throws InvalidArgumentException when a role carries another entity ID, or the cacheDuration is under one second:
-     *                                   a programming error of the caller
+     * @throws MalformedMessage
+     * @throws InvalidArgumentException when a role carries another entity ID, or the cacheDuration is under one second
      */
     public function __construct(
         public string $entityId,

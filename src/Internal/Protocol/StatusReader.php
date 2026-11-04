@@ -14,21 +14,18 @@ use Beffroi\Xml\Core\Children;
 use Dom\Element;
 
 /**
- * The one reader of a samlp:Status, a response's and a logout response's (SAML Core §3.2.2): one samlp:StatusCode, then
- * samlp:StatusMessage and samlp:StatusDetail, neither read (M-13, M-16); the top-level code one of the four of SAML Core
- * (M-5), the second-level one when it has one, an unknown URI reading as null. Each code holds at most one code, and a
- * third-level code is not read.
+ * SAML Core §3.2.2
  *
- * @internal outside the compatibility promise of section 5
+ * The StatusMessage and the StatusDetail are never read (M-13, M-16).
+ *
+ * @internal
  */
 final readonly class StatusReader
 {
     private const string CODE = 'samlp:StatusCode';
 
     /**
-     * The children of samlp:Status, and of its top-level and second-level codes, in the order of the schema.
-     *
-     * @throws MalformedMessage when they are not a sequence of the schema (M-5)
+     * @throws MalformedMessage
      */
     public static function structure(Element $status): void
     {
@@ -46,9 +43,7 @@ final readonly class StatusReader
     }
 
     /**
-     * The status of a samlp:Status whose structure was checked.
-     *
-     * @throws MalformedMessage when a code has no Value, or the top-level one is not one of SAML Core's (M-5)
+     * @throws MalformedMessage
      */
     public static function read(Element $status): Status
     {
@@ -63,9 +58,6 @@ final readonly class StatusReader
         );
     }
 
-    /**
-     * The place of a samlp:StatusCode, required once in samlp:Status, optional once in another samlp:StatusCode.
-     */
     private static function code(int $min): Particle
     {
         return new Particle(self::CODE, [Schema::samlp('StatusCode')], $min, 1);

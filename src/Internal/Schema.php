@@ -17,13 +17,9 @@ use Dom\Element;
 use function sprintf;
 
 /**
- * The one reading model of the SAML 2.0 schemas, for every element the package reads (M-5): the names of its four
- * vocabularies, the children of an element in the order and with the cardinality of its sequence, found as direct
- * children through Core's Children (M-4, I-11), the attributes it requires, and what the package does not support,
- * refused by name (section 8). Nothing is searched, and every refusal names the place of the schema, never what the
- * input holds (M-16).
+ * M-5
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class Schema
 {
@@ -31,50 +27,31 @@ final readonly class Schema
 
     public const string XMLENC = 'http://www.w3.org/2001/04/xmlenc#';
 
-    /**
-     * The name of an element of the assertion namespace.
-     */
     public static function saml(string $local): Name
     {
         return new Name(Saml::ASSERTION, $local);
     }
 
-    /**
-     * The name of an element of the protocol namespace.
-     */
     public static function samlp(string $local): Name
     {
         return new Name(Saml::PROTOCOL, $local);
     }
 
-    /**
-     * The name of an element of the metadata namespace.
-     */
     public static function md(string $local): Name
     {
         return new Name(Saml::METADATA, $local);
     }
 
-    /**
-     * The name of an element of the XML Signature namespace.
-     */
     public static function ds(string $local): Name
     {
         return new Name(self::DSIG, $local);
     }
 
-    /**
-     * The name of an element of the XML Encryption namespace.
-     */
     public static function xenc(string $local): Name
     {
         return new Name(self::XMLENC, $local);
     }
 
-    /**
-     * The name of the schema with the prefix of its namespace, samlp:, md:, ds:, xenc: or saml:, as the refusals print
-     * it.
-     */
     public static function label(Name $name): string
     {
         return (
@@ -89,15 +66,10 @@ final readonly class Schema
     }
 
     /**
-     * The element children of $parent, each in the place of $particles it takes, in order: a child that no place at
-     * or after the current one accepts is unknown or out of order, a place holds at most its maximum and at least its
-     * minimum.
-     *
      * @param string $element the name of $parent in the schema, for the refusals
      * @param list<Particle> $particles
      *
-     * @throws MalformedMessage when a child is out of order or not allowed there (M-5), repeats where it may not, or
-     *                          is missing where it is required (M-4)
+     * @throws MalformedMessage
      *
      * @return list<list<Element>> the children of each place, in the order of $particles
      */
@@ -135,11 +107,9 @@ final readonly class Schema
     }
 
     /**
-     * An attribute in no namespace that the schema requires, as read.
-     *
      * @param string $element the name of the element in the schema, for the refusal
      *
-     * @throws MalformedMessage when it is absent (M-5)
+     * @throws MalformedMessage
      */
     public static function attribute(Element $parent, string $element, string $attribute): string
     {
@@ -153,9 +123,6 @@ final readonly class Schema
     }
 
     /**
-     * No element child of $parent has one of $names: what the package does not support, refused by name wherever the
-     * schema would put it (section 8).
-     *
      * @param list<Name> $names
      *
      * @throws Unsupported

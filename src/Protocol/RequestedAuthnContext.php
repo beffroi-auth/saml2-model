@@ -11,18 +11,15 @@ use Beffroi\Saml2\Model\Value\Uri;
 use function count;
 
 /**
- * The samlp:RequestedAuthnContext of an AuthnRequest (SAML Core §3.3.2.2.1, section 5.3): a comparison and the
- * saml:AuthnContextClassRef URIs it applies to, in the order of the request, at least one and at most 16 (section 7).
- * A saml:AuthnContextDeclRef is refused by name when the request is read (section 8). Returned, never enforced
- * (section 6.2 step 5).
+ * SAML Core §3.3.2.2.1
  */
 final readonly class RequestedAuthnContext
 {
     /**
      * @param list<string> $authnContextClassRefs
      *
-     * @throws MalformedMessage when the list is empty (M-5), or a reference is not a URI of M-6
-     * @throws LimitExceeded when it holds more than 16 references (section 7)
+     * @throws MalformedMessage when the list is empty, or a reference is not a URI
+     * @throws LimitExceeded
      */
     public function __construct(
         public AuthnContextComparison $comparison,

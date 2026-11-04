@@ -14,21 +14,14 @@ use Beffroi\Saml2\Model\Value\Uri;
 use DateTimeImmutable;
 
 /**
- * A samlp:AuthnRequest (SAML Core §3.4.1, section 5.3), whoever builds it, the validator of the identity provider or
- * the service provider that writes it: its ID, an NCName (M-6), drawn by SamlId::generate() when it is written (M-15);
- * its IssueInstant; its Issuer, the service provider; its Destination, a URI; where the response goes, an
- * AssertionConsumerServiceURL or an AssertionConsumerServiceIndex, mutually exclusive, or neither for the default of
- * the metadata (M-9), and its ProtocolBinding, the URI of HTTP-POST (section 8); then what the identity provider is
- * asked, returned and never enforced: the NameIDPolicy, ForceAuthn, IsPassive and the requested authentication
- * context (section 6.2 step 5).
+ * SAML Core §3.4.1
  */
 final readonly class AuthnRequest
 {
     /**
-     * @throws MalformedMessage when the ID is not an NCName of at most 128 bytes, the Destination or the
-     *                          AssertionConsumerServiceURL is not a URI (M-6), the index is not an
-     *                          xs:unsignedShort (M-6), or the index is next to the URL or the ProtocolBinding (M-9)
-     * @throws Unsupported when the ProtocolBinding is not HTTP-POST (section 8)
+     * @throws MalformedMessage when a value is not of its lexical form, or the index comes with the URL or the
+     *                          ProtocolBinding (M-9)
+     * @throws Unsupported when the ProtocolBinding is not HTTP-POST
      */
     public function __construct(
         public string $id,

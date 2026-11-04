@@ -7,8 +7,9 @@ namespace Beffroi\Saml2\Model\Assertion;
 use Beffroi\Saml2\Model\Exception\InvalidNameId;
 
 /**
- * The eight name identifier formats of SAML Core §8.3, a closed vocabulary: fromUri() refuses every other URI (M-5,
- * M-12). The unspecified format is the 1.1 URI, as erratum E60 corrects SAML Core §2.2.2.
+ * SAML Core §8.3
+ *
+ * The unspecified format is the 1.1 URI, as erratum E60 corrects SAML Core §2.2.2.
  */
 enum NameIdFormat: string
 {
@@ -22,10 +23,9 @@ enum NameIdFormat: string
     case Transient = 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient';
 
     /**
-     * The Format of a saml:NameID, null when the attribute is absent, which means Unspecified (SAML Core §2.2.2, E60).
      * Only for a NameID: an Issuer without Format is of format Entity (SAML Core §2.2.5).
      *
-     * @throws InvalidNameId for every other URI (M-12)
+     * @throws InvalidNameId
      */
     public static function fromUri(?string $uri): self
     {

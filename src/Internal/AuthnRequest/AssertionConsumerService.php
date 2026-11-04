@@ -17,25 +17,18 @@ use Beffroi\Xml\Core\Name;
 use Dom\Element;
 
 /**
- * The assertion consumer service of an AuthnRequest, section 6.2 step 4 (M-9): resolved in the service provider's
- * metadata and nowhere else, by the AssertionConsumerServiceURL, by the AssertionConsumerServiceIndex, or else the
- * default of SAML Metadata §2.2.3, over the HTTP-POST services the metadata reader kept (section 6.5 step 6); the
- * index mutually exclusive with the URL and with the ProtocolBinding (SAML Core §3.4.1); the ProtocolBinding HTTP-POST.
- * The AuthnRequest value applies the last two rules too, whoever builds it (M-15), through the same two methods.
+ * Section 6.2 step 4, M-9
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class AssertionConsumerService
 {
     /**
-     * The endpoint the response goes to, and the three attributes of the request that name it, as read.
-     *
      * @return array{IndexedEndpoint, ?string, ?int, ?string} the endpoint, the URL, the index and the binding
      *
-     * @throws MalformedMessage when an attribute is not of its lexical form (M-6), or the index is next to the URL or
-     *                          the ProtocolBinding (M-9)
-     * @throws UnknownEndpoint when the metadata lists no service of that URL or index (M-9)
-     * @throws Unsupported when the ProtocolBinding is not HTTP-POST (section 8)
+     * @throws MalformedMessage
+     * @throws UnknownEndpoint
+     * @throws Unsupported
      */
     public static function read(Element $request, IndexedEndpoints $services): array
     {
@@ -56,10 +49,9 @@ final readonly class AssertionConsumerService
     }
 
     /**
-     * SAML Core §3.4.1: the AssertionConsumerServiceIndex is mutually exclusive with the AssertionConsumerServiceURL
-     * and with the ProtocolBinding.
+     * SAML Core §3.4.1
      *
-     * @throws MalformedMessage when the index is next to either (M-9)
+     * @throws MalformedMessage
      */
     public static function exclusive(?string $url, ?int $index, ?string $protocolBinding): void
     {
@@ -69,12 +61,9 @@ final readonly class AssertionConsumerService
     }
 
     /**
-     * The one place of the rule of section 8 on the ProtocolBinding of a request: HTTP-POST, the binding the response
-     * is sent over; HTTP-Redirect cannot carry a response and the Artifact binding is out of scope.
+     * Section 8
      *
-     * @return string the URI, HTTP-POST's
-     *
-     * @throws Unsupported for every other binding (section 8)
+     * @throws Unsupported
      */
     public static function protocolBinding(string $uri): string
     {

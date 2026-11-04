@@ -10,17 +10,16 @@ use Dom\Element;
 use const PHP_INT_MAX;
 
 /**
- * One place of a sequence of the SAML 2.0 schemas (M-5): the element names it accepts, a choice when there are
- * several, and how many times, from $min to $max.
+ * One place of a sequence of the SAML 2.0 schemas (M-5).
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class Particle
 {
     public const int UNBOUNDED = PHP_INT_MAX;
 
     /**
-     * @param string $label the name of the place in the schema, for the refusals: never a name read from the input
+     * @param string $label the name of the place in the schema, never a name read from the input
      * @param list<Name> $names
      */
     public function __construct(
@@ -31,9 +30,6 @@ final readonly class Particle
     ) {
     }
 
-    /**
-     * One element name, the prefix of its namespace for label.
-     */
     public static function of(Name $name, int $min, int $max): self
     {
         return new self(Schema::label($name), [$name], $min, $max);

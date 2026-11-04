@@ -9,11 +9,11 @@ use Beffroi\Xml\Dsig\Verified;
 use Beffroi\Xml\Enc\CoveringSignatureInterface;
 
 /**
- * The proof Enc asks for before it opens AES-CBC (enc.md E-15, section 6.7): the signature of the response, verified
- * at section 6.1 step 3 under the keys of the identity provider's metadata (M-3), whose document is the response that
- * signature covers, its xenc:EncryptedData among its nodes. It is built from that verification and from nothing else.
+ * enc.md E-15, section 6.7
  *
- * @internal outside the compatibility promise of section 5
+ * Built from the verification of the response's signature and from nothing else.
+ *
+ * @internal
  */
 final readonly class CoveringResponseSignature implements CoveringSignatureInterface
 {

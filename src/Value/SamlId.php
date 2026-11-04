@@ -11,16 +11,14 @@ use function random_bytes;
 use function strlen;
 
 /**
- * A SAML identifier (M-6, M-15): an ID, and an InResponseTo that names one, are NCNames (SAML Core §1.3.4, core.md
- * I-8) of at most 128 bytes, the maxIdLength of Core (section 7); an ID the package writes holds 160 random bits.
+ * SAML Core §1.3.4, M-6, M-15
  */
 final readonly class SamlId
 {
     private const int MAX_BYTES = 128;
 
     /**
-     * An underscore, since an NCName does not start with a digit, then the 40 lowercase hexadecimal digits of 160
-     * bits of random_bytes() (SAML Core §1.3.4, M-15).
+     * An underscore, since an NCName does not start with a digit, then 160 random bits (SAML Core §1.3.4).
      */
     public static function generate(): string
     {
@@ -28,7 +26,7 @@ final readonly class SamlId
     }
 
     /**
-     * @throws MalformedMessage when the value is longer than 128 bytes or is not an NCName (M-6)
+     * @throws MalformedMessage
      */
     public static function read(string $value): string
     {

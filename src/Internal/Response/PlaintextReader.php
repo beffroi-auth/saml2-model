@@ -21,17 +21,12 @@ use Beffroi\Xml\Enc\Exception\EncryptionRefused;
 use Beffroi\Xml\Enc\PlaintextReaderInterface;
 
 /**
- * The decryption of an encrypted assertion and its reading, section 6.7 steps 3 to 5: the xenc:EncryptedData of the
- * one saml:EncryptedAssertion of the response as section 6.1 step 3 left it, the verified response when it is signed,
- * so that the signature covered the ciphertext before any decryption touches it, the received one otherwise; decrypted
- * by Enc with the key given with the identity provider whose metadata verified the response, read from that provider
- * (section 5.5, enc.md E-15) and SamlLoader::create() (M-14), under the proof of the response's signature when there is one, which alone
- * opens AES-CBC, and without proof otherwise, AES-CBC then refused by name before any key is touched. The plaintext is
- * read here, steps 4 and 5 then 7 to 12, inside the decryption when the response is signed: under AES-CBC, every
- * refusal of that reading is Enc's one DecryptionFailed, raised from the one place of the decryptor (E-16); under
- * AES-GCM, each passes as it is.
+ * Section 6.7 steps 3 to 5
  *
- * @internal outside the compatibility promise of section 5
+ * The plaintext is read inside the decryption, so that under AES-CBC every refusal of its reading is Enc's one
+ * DecryptionFailed (E-16).
+ *
+ * @internal
  *
  * @implements PlaintextReaderInterface<ReadAssertion>
  */
@@ -46,11 +41,7 @@ final readonly class PlaintextReader implements PlaintextReaderInterface
     }
 
     /**
-     * The key given with $idp, the one whose encryption certificate went to it (section 5.5), read from the provider
-     * itself wherever a key is needed, so that it is never handed apart from the provider whose metadata verify the
-     * response.
-     *
-     * @throws Unsupported when the provider was given no key (section 6.7)
+     * @throws Unsupported when the provider was given no key
      */
     public static function keyOf(IdentityProvider $idp): DecryptionKeyInterface
     {
@@ -60,16 +51,12 @@ final readonly class PlaintextReader implements PlaintextReaderInterface
     }
 
     /**
-     * @param SignedResponse $response what section 6.1 step 3 verified of a response whose envelope holds a
-     *                                 saml:EncryptedAssertion (step 2), its envelope read (step 6)
-     * @param IdentityProvider $idp the provider whose metadata verified the response, and whose key decrypts it
-     * @param Loader $loader SamlLoader::create(), which loads the plaintext and verifies its signature (M-14, E-4)
+     * @param SignedResponse $response its envelope already read (section 6.1 step 6)
      *
-     * @throws Unsupported when the provider was given no key (section 6.7)
-     * @throws MessageRefused what the reading of the assertion refuses, under AES-GCM
-     * @throws EncryptionRefused the refusals of Enc, naming their rule (E-1, E-5, E-13, E-15), or its one failure (E-3,
-     *                           E-16)
-     * @throws RefusedXml what Core and Dsig refuse of an AES-GCM plaintext (E-4)
+     * @throws Unsupported when the provider was given no key
+     * @throws MessageRefused
+     * @throws EncryptionRefused
+     * @throws RefusedXml
      */
     public static function decrypt(
         SignedResponse $response,
@@ -97,8 +84,7 @@ final readonly class PlaintextReader implements PlaintextReaderInterface
     }
 
     /**
-     * Section 6.7 steps 4 and 5: the plaintext a saml:Assertion (M-4), its own signature verified on its root or the
-     * response's over its ciphertext (M-2), and steps 7 to 12 of section 6.1 on what a signature covered (M-1).
+     * Section 6.7 steps 4 and 5
      *
      * @throws MessageRefused
      * @throws RefusedXml

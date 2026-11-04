@@ -9,10 +9,9 @@ use DateTimeImmutable;
 use function sprintf;
 
 /**
- * The edges of the windows of M-7, the one place every reader takes them from: now, read once per validation from the
- * clock the consumer passes, and the time bounds of section 7.
+ * M-7
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class Window
 {
@@ -22,25 +21,18 @@ final readonly class Window
     ) {
     }
 
-    /**
-     * Now plus the clock skew: a NotBefore, an IssueInstant or an AuthnInstant later than this is refused (M-7).
-     */
     public function latest(): DateTimeImmutable
     {
         return $this->now->modify(sprintf('+%d seconds', $this->bounds->clockSkew));
     }
 
-    /**
-     * Now minus the clock skew: a NotOnOrAfter, a SessionNotOnOrAfter or a validUntil at or before this is refused
-     * (M-7).
-     */
     public function earliest(): DateTimeImmutable
     {
         return $this->now->modify(sprintf('-%d seconds', $this->bounds->clockSkew));
     }
 
     /**
-     * Now minus maxMessageAge, the skew not added: an IssueInstant earlier than this is refused (M-7).
+     * Now minus maxMessageAge, the skew not added (M-7).
      */
     public function oldest(): DateTimeImmutable
     {
@@ -48,10 +40,8 @@ final readonly class Window
     }
 
     /**
-     * Now plus maxBearerWindow and the clock skew: a bearer NotOnOrAfter later than this is refused (M-7). The skew is
-     * added as it is to every instant ahead of now: Entra ends its bearer window maxBearerWindow itself after the
-     * instant it issues from (section 7), so that without it a service provider whose clock is one second behind
-     * Entra's would refuse every response Entra sends.
+     * The skew is added since Entra ends its bearer window exactly maxBearerWindow after it issues: without it, a
+     * service provider whose clock is one second behind Entra's would refuse every response.
      */
     public function bearerLimit(): DateTimeImmutable
     {

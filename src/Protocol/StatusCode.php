@@ -7,8 +7,7 @@ namespace Beffroi\Saml2\Model\Protocol;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 
 /**
- * The four top-level status codes of SAML Core §3.2.2.2, a closed vocabulary: the value of the topmost StatusCode
- * MUST be one of them, and fromUri() refuses every other URI (M-5).
+ * SAML Core §3.2.2.2
  */
 enum StatusCode: string
 {
@@ -18,7 +17,7 @@ enum StatusCode: string
     case VersionMismatch = 'urn:oasis:names:tc:SAML:2.0:status:VersionMismatch';
 
     /**
-     * @throws MalformedMessage for every other URI (M-5)
+     * @throws MalformedMessage
      */
     public static function fromUri(string $uri): self
     {

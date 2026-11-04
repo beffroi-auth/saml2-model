@@ -18,11 +18,9 @@ use Beffroi\Xml\Dsig\Verifier;
 use function count;
 
 /**
- * The rule of M-2 for a received protocol message, an AuthnRequest, a LogoutRequest or a LogoutResponse (section
- * 5.6): the document to read the message from, and how it was authenticated. A ds:Signature is looked for as a direct
- * child of the root and nowhere else (M-4, I-11); when there is one, it is verified with the keys of the peer's
- * metadata (M-3) and the message is read from Verified::$document (M-1). Dsig's refusals pass through as they are
- * (section 5.8).
+ * M-2
+ *
+ * A ds:Signature is looked for as a direct child of the root and nowhere else (I-11).
  *
  * @internal
  */
@@ -37,16 +35,12 @@ final readonly class MessageAuthentication
     }
 
     /**
-     * The validate() path of a message the profile requires signed, a LogoutRequest, a LogoutResponse, or an
-     * AuthnRequest the metadata of either party asks to be signed (Profiles §4.1.6, §4.4.4.1, §4.4.4.2).
+     * SAML Profiles §4.1.6, §4.4.4.1, §4.4.4.2
      *
-     * @param ?VerificationKeys $keys the keys of the peer's metadata, null when it holds no signing certificate
-     * @param Loader $loader SamlLoader::create(), the Verifier's (M-14)
-     *
-     * @throws SignatureRequired when the peer has no signing key (M-3), or the message carries no ds:Signature (M-2)
-     * @throws MalformedMessage when the root holds more than one ds:Signature (M-5)
-     * @throws SignatureRefused one of its subclasses, when the signature does not verify
-     * @throws RefusedXml what Core refuses of the re-parse (D-10)
+     * @throws SignatureRequired
+     * @throws MalformedMessage
+     * @throws SignatureRefused
+     * @throws RefusedXml
      */
     public static function signatureRequired(Document $received, ?VerificationKeys $keys, Loader $loader): self
     {
@@ -60,17 +54,14 @@ final readonly class MessageAuthentication
     }
 
     /**
-     * The validate() path of an AuthnRequest that neither party's metadata asks to be signed (Profiles §4.1.6): a
-     * ds:Signature, when present, is verified all the same (M-2); without one, the message was authenticated by
-     * nothing.
+     * SAML Profiles §4.1.6
      *
-     * @param ?VerificationKeys $keys the keys of the peer's metadata, null when it holds no signing certificate
-     * @param Loader $loader SamlLoader::create(), the Verifier's (M-14)
+     * A ds:Signature, when present, is verified all the same (M-2).
      *
-     * @throws SignatureRequired when the message carries a ds:Signature and the peer has no signing key (M-3)
-     * @throws MalformedMessage when the root holds more than one ds:Signature (M-5)
-     * @throws SignatureRefused one of its subclasses, when the signature does not verify
-     * @throws RefusedXml what Core refuses of the re-parse (D-10)
+     * @throws SignatureRequired when the message is signed and the peer has no signing key
+     * @throws MalformedMessage
+     * @throws SignatureRefused
+     * @throws RefusedXml
      */
     public static function signatureOptional(Document $received, ?VerificationKeys $keys, Loader $loader): self
     {
@@ -82,15 +73,10 @@ final readonly class MessageAuthentication
     }
 
     /**
-     * The validateAuthenticatedByBinding() path: saml2-bindings verified the signature over the query string of
-     * HTTP-Redirect, whose encoding removes the ds:Signature of the message (SAML Bindings §3.4.4.1), with the keys of
-     * the peer's metadata (section 6.8); a peer whose metadata holds none cannot have been verified so, and is refused
-     * as validate() refuses it (M-3).
-     *
-     * @param ?VerificationKeys $keys the keys of the peer's metadata, null when it holds no signing certificate
+     * A peer whose metadata holds no key cannot have been verified by the binding, and is refused (M-3).
      *
      * @throws MalformedMessage when the root holds a ds:Signature
-     * @throws SignatureRequired when the peer has no signing key (M-3)
+     * @throws SignatureRequired
      */
     public static function byBinding(Document $received, ?VerificationKeys $keys): self
     {
@@ -105,9 +91,7 @@ final readonly class MessageAuthentication
     }
 
     /**
-     * How many ds:Signature the root holds as direct children, zero or one.
-     *
-     * @throws MalformedMessage when it holds more than one (M-5)
+     * @throws MalformedMessage
      */
     private static function signature(Document $received): int
     {

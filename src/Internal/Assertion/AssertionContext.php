@@ -9,12 +9,7 @@ use Beffroi\Saml2\Model\Validation\TimeBounds;
 use DateTimeImmutable;
 
 /**
- * What the rules of an assertion are checked against (section 6.1 steps 7 to 11), as the validator states it: the
- * window of M-7, from now read once from the clock and the time bounds of section 7; the entity ID of the identity provider whose keys verified
- * the assertion and ours, its audience (M-8); the URL at which the response arrived, its recipient (M-8); the ID of the
- * request it answers, or null for an unsolicited response (M-10).
- *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class AssertionContext
 {

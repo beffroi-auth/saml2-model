@@ -21,12 +21,9 @@ use Beffroi\Xml\Core\Name;
 use Dom\Element;
 
 /**
- * The subject of an assertion, section 6.1 step 8: one saml:NameID read under M-12, with Text::of() (I-12), and one
- * saml:SubjectConfirmation of method bearer (M-4) whose SubjectConfirmationData holds no element, a Recipient that is
- * the URL of arrival (M-8), a NotOnOrAfter in the window of M-7 and at most maxBearerWindow and the skew ahead, no
- * NotBefore (SAML Profiles §4.1.4.2), the InResponseTo the consumer expects (M-10), and an Address kept as read.
+ * Section 6.1 step 8
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class SubjectReader
 {
@@ -35,13 +32,12 @@ final readonly class SubjectReader
     /**
      * @return array{NameId, SubjectConfirmation}
      *
-     * @throws MalformedMessage when an element is missing, repeated, out of order or not allowed, or a value is not of
-     *                          its lexical form (M-4, M-5, M-6)
-     * @throws Unsupported when the subject or its confirmation is of a kind the package does not support (section 8)
-     * @throws InvalidNameId when the NameID breaks the rule of its format (M-12)
-     * @throws RecipientMismatch when the Recipient is not the URL of arrival (M-8)
-     * @throws OutsideValidityWindow when the bearer window has closed or ends too far ahead (M-7)
-     * @throws InResponseToMismatch when the InResponseTo is not the one expected (M-10)
+     * @throws MalformedMessage
+     * @throws Unsupported
+     * @throws InvalidNameId
+     * @throws RecipientMismatch
+     * @throws OutsideValidityWindow
+     * @throws InResponseToMismatch
      */
     public static function read(Element $subject, AssertionContext $context): array
     {

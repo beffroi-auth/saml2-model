@@ -9,14 +9,12 @@ use Beffroi\Saml2\Model\Value\UnsignedShort;
 use Beffroi\Saml2\Model\Value\Uri;
 
 /**
- * An indexed endpoint of a role (SAML Metadata §2.2.3): an assertion consumer service, its binding, its Location, a
- * URI of M-6, its index, an xs:unsignedShort, and its isDefault, null when the attribute is absent, which
- * IndexedEndpoints::default() tells apart from false.
+ * SAML Metadata §2.2.3
  */
 final readonly class IndexedEndpoint
 {
     /**
-     * @throws MalformedMessage when the location is not a URI of M-6, or the index is not an xs:unsignedShort
+     * @throws MalformedMessage
      */
     public function __construct(
         public Binding $binding,

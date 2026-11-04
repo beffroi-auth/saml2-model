@@ -14,18 +14,15 @@ use Beffroi\Xml\Core\Text;
 use Dom\Element;
 
 /**
- * The one reader of a saml:NameID, an assertion's subject and a logout request's principal (M-12, SAML Core §2.2.3):
- * its value read with Text::of() on the verified document, comments concatenated (I-12), never trimmed; its Format one
- * of SAML Core §8.3, absent meaning unspecified; its three qualifiers as read; the rule of its format applied by NameId.
+ * SAML Core §2.2.3, M-12, I-12
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class NameIdReader
 {
     /**
-     * @throws InvalidNameId when the Format is not one of SAML Core §8.3, or the value breaks the rule of its format
-     *                       (M-12)
-     * @throws MixedContent when the element holds an element
+     * @throws InvalidNameId
+     * @throws MixedContent
      */
     public static function read(Element $nameId): NameId
     {

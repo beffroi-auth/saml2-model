@@ -17,12 +17,9 @@ use DateTimeImmutable;
 use Psr\Clock\ClockInterface;
 
 /**
- * An AuthnRequest, identity provider side, in the order of section 6.2 (section 5.6): the structure of the request
- * as it arrived; the signature the metadata of either party asks for, and every signature present (M-2), verified
- * under the service provider's keys (M-3); the header against the clock, read once (M-7), and against the URL of
- * arrival (M-8); the assertion consumer service of the service provider's metadata (M-9); what the request asks,
- * returned. A request this refuses gets no SAML answer: its endpoint is not established, and an answer sent where
- * the request says would be the theft M-9 closes.
+ * Section 6.2
+ *
+ * A request this refuses gets no SAML answer: its endpoint is not established (M-9).
  */
 final readonly class AuthnRequestValidator
 {
@@ -37,16 +34,12 @@ final readonly class AuthnRequestValidator
     }
 
     /**
-     * The request as it arrived over HTTP-POST, or over HTTP-Redirect without a signature: a ds:Signature child is
-     * verified with $sp's keys (M-2); none is accepted only when neither $sp nor $self asks for signed requests
-     * (Profiles §4.1.6).
+     * SAML Profiles §4.1.6, M-2
      *
-     * @param ServiceProvider $sp the service provider the consumer chose with UnverifiedAuthnRequest::$issuer
-     * @param IdentityProvider $self our own role, its single sign-on services and whether it wants requests signed
      * @param string $receivedAt the URL of our SingleSignOnService at which the request arrived
      *
-     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
-     * @throws RefusedXml what Core and Dsig refuse, as they refuse it
+     * @throws MessageRefused
+     * @throws RefusedXml
      */
     public function validate(
         UnverifiedAuthnRequest $request,
@@ -64,16 +57,13 @@ final readonly class AuthnRequestValidator
     }
 
     /**
-     * The request as it arrived over HTTP-Redirect with a signature over its query string, which saml2-bindings
-     * verified with Verifier::verifyDetached() under $sp's keys before calling: the caller asserts it. A ds:Signature
-     * child is refused (SAML Bindings §3.4.4.1 removes it before encoding).
+     * The caller asserts that saml2-bindings verified the signature over the query string under $sp's keys; a
+     * ds:Signature child is refused (SAML Bindings §3.4.4.1).
      *
-     * @param ServiceProvider $sp the service provider whose keys verified the query string
-     * @param IdentityProvider $self our own role, its single sign-on services
      * @param string $receivedAt the URL of our SingleSignOnService at which the request arrived
      *
-     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
-     * @throws RefusedXml what Core refuses, as it refuses it
+     * @throws MessageRefused
+     * @throws RefusedXml
      */
     public function validateAuthenticatedByBinding(
         UnverifiedAuthnRequest $request,
@@ -94,7 +84,7 @@ final readonly class AuthnRequestValidator
     }
 
     /**
-     * Section 6.2 steps 3 to 6, on the document the authentication handed over (M-1).
+     * Section 6.2 steps 3 to 6
      *
      * @throws MessageRefused
      * @throws RefusedXml

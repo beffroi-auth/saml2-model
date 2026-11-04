@@ -11,10 +11,8 @@ use Beffroi\Xml\Core\Loader;
 use Beffroi\Xml\Core\Name;
 
 /**
- * The one loader of the package (section 5.1, M-14): every document the model reads, the re-parse of the Verifier and
- * the reload of the Signer go through a Core Loader with this preset of ID attributes, so that the SAML, XML Signature
- * and XML Encryption identifiers of a document form one space, and a value that appears twice refuses the document
- * (core.md I-8, section 6.2).
+ * The Verifier and the Signer load through it too, so that the SAML, XML Signature and XML Encryption identifiers
+ * of a document form one space, and a value that appears twice refuses the document (M-14, core.md I-8).
  */
 final class SamlLoader
 {
@@ -22,10 +20,6 @@ final class SamlLoader
 
     private const string XENC = 'http://www.w3.org/2001/04/xmlenc#';
 
-    /**
-     * ID on the elements of the assertion, protocol and metadata namespaces, Id on those of XML Signature and XML
-     * Encryption, as core.md section 5.3 records them for the SAML stack: one ID space (M-14).
-     */
     public static function idAttributes(): IdAttributes
     {
         return new IdAttributes([
@@ -37,10 +31,6 @@ final class SamlLoader
         ]);
     }
 
-    /**
-     * The Loader every class of the package, the Verifier and the Signer are given, under the bounds of Core
-     * (core.md section 7) the caller chooses.
-     */
     public static function create(Limits $limits = new Limits()): Loader
     {
         return new Loader(self::idAttributes(), $limits);

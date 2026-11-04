@@ -17,10 +17,8 @@ use function count;
 use Dom\Element;
 
 /**
- * A samlp:Response as it arrived, before any signature is verified (section 5.4, M-1): the Document the consumer
- * loaded with SamlLoader::create(), held for as long as the validation runs, and the two values the consumer needs to
- * choose the identity provider whose keys verify it, its Issuer and its InResponseTo. They choose a peer and nothing
- * else: ResponseValidator reads both again from what was verified.
+ * Its Issuer and its InResponseTo only choose the identity provider: ResponseValidator reads both again from what was
+ * verified (M-1).
  */
 final readonly class UnverifiedResponse
 {
@@ -32,13 +30,10 @@ final readonly class UnverifiedResponse
     }
 
     /**
-     * The root checked to be samlp:Response; its Issuer, or the Issuer of its one direct saml:Assertion child when it
-     * has none, and its InResponseTo, read and nothing else. Two Issuers where one is read are refused rather than one
-     * of them picked (M-4); a response with several assertions and no Issuer of its own names no issuer.
+     * Two Issuers where one is read are refused rather than one of them picked (M-4).
      *
-     * @throws MalformedMessage when the root is another element, an Issuer is repeated, or the two values are not of
-     *                          their lexical form (M-6)
-     * @throws MixedContent when the Issuer holds an element
+     * @throws MalformedMessage
+     * @throws MixedContent
      */
     public static function of(Document $document): self
     {

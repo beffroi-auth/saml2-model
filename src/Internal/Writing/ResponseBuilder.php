@@ -14,18 +14,14 @@ use Beffroi\Saml2\Model\Exception\MalformedMessage;
 use Beffroi\Xml\Core\Name;
 
 /**
- * The samlp:Response of the identity provider, section 6.6 step 2, built with DocumentFactory and the samlp prefix, in
- * the order of the schema (SAML Core §3.2.2): its ID, Version, IssueInstant in UTC to the second (M-15), Destination
- * and InResponseTo when given; its Issuer, written without Format (SAML Profiles §4.1.4.2 as corrected by E17); its
- * Status, the top-level code and the second-level one when there is one, no StatusMessage; then its one assertion,
- * none on a failure (M-13). Unsigned: signing is the writer's (section 6.6 step 3).
+ * Section 6.6 step 2, SAML Core §3.2.2
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class ResponseBuilder
 {
     /**
-     * @throws MalformedMessage what Time refuses of a year that is not of four digits (M-15)
+     * @throws MalformedMessage for a year that is not of four digits
      */
     public static function build(Response $response): Document
     {

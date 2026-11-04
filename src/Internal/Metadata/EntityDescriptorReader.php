@@ -22,20 +22,17 @@ use DateTimeImmutable;
 use Dom\Element;
 
 /**
- * An md:EntityDescriptor in the order of section 6.5: the root and its children in the schema's order, the entity ID,
- * the validUntil, then at most one identity provider and one service provider for SAML 2.0, the other role
- * descriptors, md:Organization, md:ContactPerson and md:AdditionalMetadataLocation skipped. MetadataReader verifies
- * the signature between the root and the rest.
+ * Section 6.5
  *
  * @internal
  */
 final readonly class EntityDescriptorReader
 {
     /**
-     * Section 6.5 steps 1 and 2: the ds:Signature of the root, its first child in the schema's order, or null.
+     * Section 6.5 steps 1 and 2
      *
-     * @throws Unsupported when the root is md:EntitiesDescriptor (section 8)
-     * @throws MalformedMessage when it is another element, or its children are not a sequence of the schema (M-5)
+     * @throws Unsupported
+     * @throws MalformedMessage
      */
     public static function signature(Element $root): ?Element
     {
@@ -43,17 +40,16 @@ final readonly class EntityDescriptorReader
     }
 
     /**
-     * Section 6.5 steps 1 and 3 to 7, a ds:Signature child not read.
+     * Section 6.5 steps 1 and 3 to 7
      *
-     * @param DateTimeImmutable $expired now minus the clock skew: a validUntil at or before it is past (M-7)
+     * @param DateTimeImmutable $expired now minus the clock skew
      *
-     * @throws Unsupported when the root is md:EntitiesDescriptor, or a key is a ds:KeyValue alone (section 8)
-     * @throws MalformedMessage when the structure or a value is not the schema's, or the roles are not those of
-     *                          section 6.5 step 4
-     * @throws OutsideValidityWindow when the validUntil of the entity or of a role it reads is past (M-7)
-     * @throws LimitExceeded when a count is over its bound of section 7 (M-17)
-     * @throws InvalidKey when a certificate is not the base64 of an RSA key of at least 2048 bits (D-16)
-     * @throws MixedContent when an md:NameIDFormat holds an element (I-12)
+     * @throws Unsupported
+     * @throws MalformedMessage
+     * @throws OutsideValidityWindow
+     * @throws LimitExceeded
+     * @throws InvalidKey
+     * @throws MixedContent
      */
     public static function read(Element $root, DateTimeImmutable $expired): EntityDescriptor
     {

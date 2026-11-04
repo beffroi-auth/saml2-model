@@ -23,24 +23,21 @@ use Dom\Element;
 use function sprintf;
 
 /**
- * The attribute statement of an assertion, section 6.1 step 11: its saml:Attribute elements in document order, a name
- * repeated kept as read and never merged, each with its Name, a NameFormat of SAML Core §8.2, its FriendlyName and the
- * text of its values read with Text::of() (I-12); an xsi:type on a value is not read, its prefix never resolved
- * (dsig.md §6.3); a value holding an element is Core's MixedContent; saml:EncryptedAttribute is refused by name
- * (section 6.7); the counts of section 7 checked before the lists are read (M-17).
+ * Section 6.1 step 11
  *
- * @internal outside the compatibility promise of section 5
+ * An xsi:type on a value is never read, its prefix never resolved (dsig.md §6.3).
+ *
+ * @internal
  */
 final readonly class AttributeStatementReader
 {
     /**
      * @return list<Attribute>
      *
-     * @throws Unsupported when the statement holds a saml:EncryptedAttribute (section 6.7)
-     * @throws LimitExceeded when a count is over its bound of section 7 (M-17)
-     * @throws MalformedMessage when an element is missing or not allowed, a Name is missing, or a NameFormat is not one
-     *                          of SAML Core (M-4, M-5)
-     * @throws MixedContent when a value holds an element
+     * @throws Unsupported
+     * @throws LimitExceeded
+     * @throws MalformedMessage
+     * @throws MixedContent
      */
     public static function read(Element $statement): array
     {

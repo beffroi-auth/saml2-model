@@ -7,9 +7,9 @@ namespace Beffroi\Saml2\Model\Value;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 
 /**
- * A boolean (M-6): one of the four lexical forms of XML Schema Part 2 §3.2.2.1, true, false, 1 and 0, compared as a
- * string and never cast; nothing around it, although XML Schema collapses whitespace there. Written true or false,
- * the two constants below, which a writer chooses between (M-15).
+ * XML Schema Part 2 §3.2.2.1, M-6
+ *
+ * Compared as a string, never cast, and with no whitespace around it, although XML Schema collapses it there.
  */
 final readonly class Boolean
 {
@@ -18,7 +18,7 @@ final readonly class Boolean
     public const string FALSE = 'false';
 
     /**
-     * @throws MalformedMessage for every other string (M-6)
+     * @throws MalformedMessage
      */
     public static function read(string $value): bool
     {

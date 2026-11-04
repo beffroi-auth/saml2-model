@@ -20,21 +20,17 @@ use function count;
 use Dom\Element;
 
 /**
- * A samlp:RequestedAuthnContext read strictly (SAML Core §3.3.2.2.1, section 6.2 step 5): its Comparison, exact when
- * absent, and its saml:AuthnContextClassRef children, each read with Text::of() (I-12), at least one and at most 16,
- * counted before any is read (section 7, M-17); a saml:AuthnContextDeclRef is refused by name (section 8), any other
- * child is malformed (M-5).
+ * SAML Core §3.3.2.2.1, section 6.2 step 5
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class RequestedAuthnContextReader
 {
     /**
-     * @throws LimitExceeded when it holds more than 16 class references (section 7)
-     * @throws Unsupported when it holds a saml:AuthnContextDeclRef (section 8)
-     * @throws MalformedMessage when it holds another child or no class reference (M-5), or a value is not of its
-     *                          lexical form (M-5, M-6)
-     * @throws MixedContent when a class reference holds an element
+     * @throws LimitExceeded
+     * @throws Unsupported
+     * @throws MalformedMessage
+     * @throws MixedContent
      */
     public static function read(Element $context): RequestedAuthnContext
     {

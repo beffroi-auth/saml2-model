@@ -13,20 +13,16 @@ use Beffroi\Saml2\Model\Value\Counts;
 use function count;
 
 /**
- * The assertion consumer services of a service provider (section 5.3, M-9): at most 64, their indexes unique (SAML
- * Metadata §2.2.3), each on HTTP-POST, the one binding a response is sent over (section 8), in the order of the
- * metadata. The metadata reader drops the others before it builds the list, and whoever else builds it, from the
- * metadata it stored, cannot put one in, so that the three searches below never establish an endpoint of another
- * binding (section 6.5 step 6); a search that finds nothing is UnknownEndpoint.
+ * The assertion consumer services of a service provider (M-9, SAML Metadata §2.2.3).
  */
 final readonly class IndexedEndpoints
 {
     /**
      * @param list<IndexedEndpoint> $endpoints
      *
-     * @throws LimitExceeded when there are more than 64 (section 7)
-     * @throws Unsupported when one is not on HTTP-POST (section 8)
-     * @throws MalformedMessage when two share an index (SAML Metadata §2.2.3)
+     * @throws LimitExceeded
+     * @throws Unsupported when one is not on HTTP-POST
+     * @throws MalformedMessage when two share an index
      */
     public function __construct(
         public array $endpoints,
@@ -49,10 +45,9 @@ final readonly class IndexedEndpoints
     }
 
     /**
-     * The default endpoint of SAML Metadata §2.2.3: the first whose isDefault is true; else the first without an
-     * isDefault of false; else the first.
+     * SAML Metadata §2.2.3
      *
-     * @throws UnknownEndpoint when the list is empty (M-9)
+     * @throws UnknownEndpoint
      */
     public function default(): IndexedEndpoint
     {
@@ -71,9 +66,7 @@ final readonly class IndexedEndpoints
     }
 
     /**
-     * The endpoint of the AssertionConsumerServiceIndex of a request.
-     *
-     * @throws UnknownEndpoint when no endpoint of the list has that index (M-9)
+     * @throws UnknownEndpoint
      */
     public function byIndex(int $index): IndexedEndpoint
     {
@@ -87,9 +80,9 @@ final readonly class IndexedEndpoints
     }
 
     /**
-     * The first endpoint whose Location is the AssertionConsumerServiceURL of a request, compared exactly (M-8).
+     * M-8
      *
-     * @throws UnknownEndpoint when no endpoint of the list has that location (M-9)
+     * @throws UnknownEndpoint
      */
     public function byLocation(string $location): IndexedEndpoint
     {

@@ -30,24 +30,16 @@ use function preg_split;
 use const PREG_SPLIT_NO_EMPTY;
 
 /**
- * The md:IDPSSODescriptor and md:SPSSODescriptor of an entity (section 6.5 steps 4 to 7), each read in the order and
- * with the cardinality of the schema (M-5): its own validUntil under M-7, the keys, the endpoints, the NameID formats
- * of SAML Core §8.3 and the flags. The children the schema allows and the package does not use are skipped in their place: md:Extensions,
- * md:Organization, md:ContactPerson, md:ArtifactResolutionService, md:ManageNameIDService, md:NameIDMappingService,
- * md:AssertionIDRequestService, md:AttributeProfile, saml:Attribute and md:AttributeConsumingService, and a role's own
- * ds:Signature, which the entity's covers when readSigned() verified it.
+ * Section 6.5 steps 4 to 7
  *
  * @internal
  */
 final readonly class RoleReader
 {
     /**
-     * Whether a role lists SAML 2.0 in its protocolSupportEnumeration, a list of URIs separated by whitespace; one
-     * that does not is ignored (section 6.5 step 4).
-     *
      * @param string $element the name of the role in the schema
      *
-     * @throws MalformedMessage when the attribute is absent (M-5)
+     * @throws MalformedMessage
      */
     public static function supportsSaml2(Element $role, string $element): bool
     {
@@ -61,15 +53,14 @@ final readonly class RoleReader
     }
 
     /**
-     * @param DateTimeImmutable $expired now minus the clock skew: a validUntil at or before it is past (M-7)
+     * @param DateTimeImmutable $expired now minus the clock skew
      *
-     * @throws MalformedMessage when the structure or a value is not the schema's, or no single sign-on service is on
-     *                          HTTP-Redirect or HTTP-POST
-     * @throws OutsideValidityWindow when the role is past its validUntil (M-7)
-     * @throws LimitExceeded when a count is over its bound of section 7 (M-17)
-     * @throws Unsupported when a key is a ds:KeyValue alone (section 8)
-     * @throws InvalidKey when a certificate is not the base64 of an RSA key of at least 2048 bits (D-16)
-     * @throws MixedContent when an md:NameIDFormat holds an element (I-12)
+     * @throws MalformedMessage
+     * @throws OutsideValidityWindow
+     * @throws LimitExceeded
+     * @throws Unsupported
+     * @throws InvalidKey
+     * @throws MixedContent
      */
     public static function identityProvider(
         Element $role,
@@ -107,15 +98,14 @@ final readonly class RoleReader
     }
 
     /**
-     * @param DateTimeImmutable $expired now minus the clock skew: a validUntil at or before it is past (M-7)
+     * @param DateTimeImmutable $expired now minus the clock skew
      *
-     * @throws MalformedMessage when the structure or a value is not the schema's, or no assertion consumer service is
-     *                          on HTTP-POST
-     * @throws OutsideValidityWindow when the role is past its validUntil (M-7)
-     * @throws LimitExceeded when a count is over its bound of section 7 (M-17)
-     * @throws Unsupported when a key is a ds:KeyValue alone (section 8)
-     * @throws InvalidKey when a certificate is not the base64 of an RSA key of at least 2048 bits (D-16)
-     * @throws MixedContent when an md:NameIDFormat holds an element (I-12)
+     * @throws MalformedMessage
+     * @throws OutsideValidityWindow
+     * @throws LimitExceeded
+     * @throws Unsupported
+     * @throws InvalidKey
+     * @throws MixedContent
      */
     public static function serviceProvider(
         Element $role,
@@ -151,10 +141,9 @@ final readonly class RoleReader
     }
 
     /**
-     * The sequence of SSODescriptorType, which both roles start with (SAML Metadata §2.4.1, §2.4.2): the key
-     * descriptors at 2, the single logout services at 6, the NameID formats at 8.
+     * SAML Metadata §2.4.1, §2.4.2
      *
-     * @return list<Particle>
+     * @return list<Particle> the key descriptors at 2, the single logout services at 6, the NameID formats at 8
      */
     private static function ssoDescriptor(): array
     {
@@ -172,11 +161,12 @@ final readonly class RoleReader
     }
 
     /**
-     * The role's own validUntil, which RoleDescriptorType allows, read as the entity's is (section 6.5 step 4): one at
-     * or before now minus the skew refuses the metadata rather than dropping the role.
+     * Section 6.5 step 4
      *
-     * @throws MalformedMessage when it is not a time of M-6
-     * @throws OutsideValidityWindow when it is past (M-7)
+     * A past validUntil refuses the whole metadata rather than dropping the role.
+     *
+     * @throws MalformedMessage
+     * @throws OutsideValidityWindow
      */
     private static function validUntil(Element $role, DateTimeImmutable $expired): void
     {
@@ -189,7 +179,7 @@ final readonly class RoleReader
     /**
      * @param list<Element> $formats
      *
-     * @throws LimitExceeded when there are more than 16, dropped ones included (section 7)
+     * @throws LimitExceeded
      */
     private static function boundFormats(array $formats): void
     {
@@ -201,8 +191,6 @@ final readonly class RoleReader
     }
 
     /**
-     * The formats of SAML Core §8.3, in order; any other URI, an empty one included, is dropped (section 6.5 step 7).
-     *
      * @param list<Element> $formats
      *
      * @throws MixedContent
@@ -223,8 +211,6 @@ final readonly class RoleReader
     }
 
     /**
-     * A boolean attribute of M-6, absent meaning false (section 6.5 step 7).
-     *
      * @throws MalformedMessage
      */
     private static function flag(Element $role, string $attribute): bool

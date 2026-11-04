@@ -25,37 +25,20 @@ use InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * A samlp:Response of the Web Browser SSO profile written by the identity provider, in the order of section 6.6
- * (section 5.7, M-15). First checked against what the validator of the service provider refuses of the objects
- * together, each object having checked its own values: a window that ends before it starts and Conditions without
- * AudienceRestriction are the refusals of Conditions itself, with the exception of their rule (section 5.8); what
- * only the writer sees is a programming error of the caller, \InvalidArgumentException, before anything is built.
- * An assertion whose window ends when it is issued, its Conditions, its bearer confirmation or its session, is one of
- * them; what depends on the service provider that reads it, the audience and the bearer window, is its consumer's,
- * which names that reader (section 6.9).
- * Then built with DocumentFactory and one prefix per namespace, samlp and saml, its Issuer and its Destination always
- * written (E17, SAML Bindings §3.5.5.2), times in UTC to the second, IDs the objects carry, drawn by SamlId::generate();
- * then signed through Dsig's Signer with SamlLoader::create(), the Signature after the saml:Issuer (SAML Core §2.3.3,
- * §3.2.1, §5.4.1) and no InclusiveNamespaces prefix list (dsig.md section 6.2): the assertion first, then, for
- * SignedParts::AssertionAndResponse, the response over the document the first call returned, so that the response's
- * digest covers the assertion's Signature (dsig.md section 5.5). Given an Encryption, the signed assertion is
- * encrypted between the two signatures (section 6.7): Enc's Encryptor with SamlLoader::create() for the key of the
- * service provider, the saml:Assertion replaced by a saml:EncryptedAssertion holding the xenc:EncryptedData, so that
- * the response's signature covers the ciphertext and the assertion's travels inside it (SAML Core §6.2).
+ * Sections 6.6 and 6.7
+ *
+ * The assertion is signed, then encrypted, then the response signed over it: the response's signature covers the
+ * ciphertext, and the assertion's travels inside it (SAML Core §6.2).
  */
 final readonly class ResponseWriter
 {
     /**
-     * The response with its assertion, the assertion signed, encrypted for the service provider when $encryption is
-     * given, the response signed over it on request.
-     *
-     * @throws InvalidArgumentException when the response carries no assertion, a failure being writeFailure()'s, or the
-     *                                   response and its assertion would be refused together (section 6.6 step 1): a
-     *                                   programming error of the caller (section 5.8)
-     * @throws MalformedMessage when a time is not of a four-digit year (M-15)
-     * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing, and Enc while encrypting
-     * @throws SigningFailed when the signing key fails
-     * @throws EncryptionFailed when a primitive of Enc fails with a key its constructor accepted: never input
+     * @throws InvalidArgumentException when the response carries no assertion, or the service provider would
+     *                                   refuse the response and its assertion together
+     * @throws MalformedMessage when a year is not of four digits
+     * @throws RefusedXml
+     * @throws SigningFailed
+     * @throws EncryptionFailed
      */
     public function write(
         Response $response,
@@ -81,14 +64,12 @@ final readonly class ResponseWriter
     }
 
     /**
-     * A response whose status is not Success, without assertion (SAML Profiles §4.1.4.1, M-13), signed when $signing
-     * is given.
+     * SAML Profiles §4.1.4.1
      *
-     * @throws InvalidArgumentException when the response carries an assertion, its status being Success, or holds no
-     *                                   Destination: a programming error of the caller (section 5.8)
-     * @throws MalformedMessage when the IssueInstant is not of a four-digit year (M-15)
-     * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
-     * @throws SigningFailed when the signing key fails
+     * @throws InvalidArgumentException when the response carries an assertion or holds no Destination
+     * @throws MalformedMessage when the year of the IssueInstant is not of four digits
+     * @throws RefusedXml
+     * @throws SigningFailed
      */
     public function writeFailure(
         Response $response,
@@ -108,8 +89,7 @@ final readonly class ResponseWriter
     }
 
     /**
-     * Section 6.6 step 1: the Destination always written, which the service provider requires of a signed response
-     * (M-8, SAML Bindings §3.5.5.2).
+     * SAML Bindings §3.5.5.2
      *
      * @throws InvalidArgumentException
      */
@@ -121,8 +101,7 @@ final readonly class ResponseWriter
     }
 
     /**
-     * Section 6.6 step 1: what the validator of the service provider refuses of the response and its assertion
-     * together, in the order of section 6.1.
+     * Section 6.6 step 1
      *
      * @throws InvalidArgumentException
      * @throws MalformedMessage
@@ -166,9 +145,6 @@ final readonly class ResponseWriter
     }
 
     /**
-     * The time as the writer writes it, in UTC to the second (M-15), as the reader of the service provider reads it
-     * back.
-     *
      * @throws MalformedMessage when the year is not of four digits
      */
     private function written(DateTimeImmutable $time): DateTimeImmutable
@@ -177,8 +153,7 @@ final readonly class ResponseWriter
     }
 
     /**
-     * Section 6.7: the signed saml:Assertion, the last child of the response, encrypted for the service provider and
-     * replaced by a saml:EncryptedAssertion holding the xenc:EncryptedData, its saml prefix declared on it.
+     * Section 6.7
      *
      * @throws RefusedXml
      * @throws EncryptionFailed
@@ -198,8 +173,6 @@ final readonly class ResponseWriter
     }
 
     /**
-     * The element of ID $id signed, its Signature after its saml:Issuer.
-     *
      * @throws RefusedXml
      * @throws SigningFailed
      */

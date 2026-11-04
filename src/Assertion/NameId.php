@@ -12,17 +12,9 @@ use function mb_strlen;
 use function preg_match;
 
 /**
- * A saml:NameID (SAML Core §2.2.3) under the rule of its format (M-12), whoever builds it: the value as read with
- * Text::of() on the verified document, never trimmed, neither empty nor surrounded by whitespace, and holding nowhere
- * a control character, a line or paragraph separator, or an invisible character of Value\Characters, a right-to-left
- * override or a zero-width space among them, so that what is displayed is what is compared (M-6); at most 256
- * characters for a persistent or a transient identifier (SAML Core §8.3.7, §8.3.8), 1024 for the others (section 7);
- * an entity identifier is a URI without qualifier (SAML Core §8.3.6), an email address an addr-spec (SAML Core
- * §8.3.2, RFC 2822 §3.4.1: a dot-atom or a quoted string, one @, then a dot-atom or a domain literal). Each qualifier,
- * whatever the format, is held to the rule of the value but for the empty string, since the identity the consumer
- * links is the value with its qualifiers (SAML Core §2.2.2), and those of a persistent or a transient identifier name
- * an entity, a URI (SAML Core §8.3.7). The value and the qualifiers hold only characters XML carries, a NUL above all,
- * which the DOM would cut a written identifier at (M-15).
+ * SAML Core §2.2.3, M-12
+ *
+ * Whitespace around a value is refused, never trimmed, so that what is displayed is what is compared.
  */
 final readonly class NameId
 {
@@ -31,16 +23,12 @@ final readonly class NameId
     private const int MAX_PAIRWISE_CHARACTERS = 256;
 
     /**
-     * An addr-spec (RFC 2822 §3.4.1): a local part, a dot-atom or a quoted string, one @, and a domain, a dot-atom or a
-     * domain literal; an atom holds any character but whitespace, a control, a format character and the specials of
-     * RFC 2822 §3.2.4, non-ASCII letters included (RFC 6531 §3.3), so that a second unquoted @, a display name in angle
-     * brackets, an empty label or a trailing dot is refused.
+     * RFC 2822 §3.4.1, RFC 6531 §3.3
      */
     private const string ADDR_SPEC = '~^(?:[^\p{Z}\p{Cc}\p{Cf}()<>\[\]:;@\x{5C},."]+(?:\.[^\p{Z}\p{Cc}\p{Cf}()<>\[\]:;@\x{5C},."]+)*|"(?:[^"\x{5C}\p{Cc}]|\x{5C}[^\p{Cc}])*")@(?:[^\p{Z}\p{Cc}\p{Cf}()<>\[\]:;@\x{5C},."]+(?:\.[^\p{Z}\p{Cc}\p{Cf}()<>\[\]:;@\x{5C},."]+)*|\[[^\p{Z}\p{Cc}\[\]\x{5C}]+\])\z~u';
 
     /**
-     * @throws InvalidNameId when the value or a qualifier breaks the rule of the format (M-12), or holds a character
-     *                       XML does not carry (M-15)
+     * @throws InvalidNameId
      */
     public function __construct(
         public string $value,
@@ -59,7 +47,7 @@ final readonly class NameId
         if (mb_strlen($value, 'UTF-8') > self::MAX_CHARACTERS) {
             throw new InvalidNameId('A NameID is longer than 1024 characters (M-12).');
         }
-        // false, for bytes that are not UTF-8, refuses too
+        // For bytes that are not UTF-8, preg_match() returns false, which refuses too.
         if (preg_match('~^[\p{Z}\p{Cc}]|[\p{Z}\p{Cc}]\z~u', $value) !== 0) {
             throw new InvalidNameId('The NameID starts or ends with whitespace or a control character, or is not UTF-8 (M-12).');
         }
@@ -98,11 +86,6 @@ final readonly class NameId
         }
     }
 
-    /**
-     * Whether a qualifier holds to the rule of the value, the empty string allowed: at most 1024 characters, no
-     * whitespace or control character around it, no control character, line or paragraph separator, format or
-     * invisible character anywhere (M-12).
-     */
     private function isQualifier(string $qualifier): bool
     {
         return (
@@ -112,9 +95,6 @@ final readonly class NameId
         );
     }
 
-    /**
-     * Whether the value is a URI of M-6: absolute, without whitespace or control character, at most 1024 characters.
-     */
     private function isUri(string $value): bool
     {
         try {

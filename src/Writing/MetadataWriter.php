@@ -27,21 +27,15 @@ use InvalidArgumentException;
 use SensitiveParameter;
 
 /**
- * An md:EntityDescriptor written in the order of section 6.6 (section 5.7): checked against what its reader refuses
- * or drops (M-15), built with DocumentFactory and one prefix per namespace, md and ds, the ID drawn by
- * SamlId::generate(), the validUntil in UTC to the second, the cacheDuration as the xs:duration of its seconds, each
- * certificate the base64 of an X509Certificate, then signed on request through Dsig's Signer with
- * SamlLoader::create(), the Signature the first child of the root and no InclusiveNamespaces prefix list (dsig.md
- * section 6.2).
+ * Section 6.6
  */
 final readonly class MetadataWriter
 {
     /**
      * @throws InvalidArgumentException when the descriptor holds no role, its identity provider no single sign-on
-     *                                   service, or its service provider no assertion consumer service: a
-     *                                   programming error of the caller (section 5.8)
-     * @throws RefusedXml what Core's serializer and loader and Dsig refuse while signing
-     * @throws SigningFailed when the signing key fails
+     *                                   service, or its service provider no assertion consumer service
+     * @throws RefusedXml
+     * @throws SigningFailed
      */
     public function write(
         EntityDescriptor $descriptor,
@@ -81,7 +75,7 @@ final readonly class MetadataWriter
     }
 
     /**
-     * Section 6.6 step 1: what the reader would refuse or drop is never written (M-15).
+     * Section 6.6 step 1
      *
      * @throws InvalidArgumentException
      */
@@ -130,8 +124,7 @@ final readonly class MetadataWriter
     }
 
     /**
-     * One md:KeyDescriptor per certificate, those for signing first, each ds:KeyInfo declaring the ds prefix it
-     * introduces (core.md section 6.5).
+     * Each ds:KeyInfo declares the ds prefix it introduces (core.md section 6.5).
      *
      * @param list<string> $signing
      * @param list<string> $encryption

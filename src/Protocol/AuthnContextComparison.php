@@ -7,9 +7,7 @@ namespace Beffroi\Saml2\Model\Protocol;
 use Beffroi\Saml2\Model\Exception\MalformedMessage;
 
 /**
- * The comparison a samlp:RequestedAuthnContext asks for (SAML Core §3.3.2.2.1), a closed vocabulary: fromAttribute()
- * refuses every other value (M-5). The model returns it and never enforces it: whether the identity provider can
- * satisfy it is beffroi/saml's (section 6.2 step 5).
+ * SAML Core §3.3.2.2.1
  */
 enum AuthnContextComparison: string
 {
@@ -19,9 +17,7 @@ enum AuthnContextComparison: string
     case Better = 'better';
 
     /**
-     * The Comparison attribute, null when it is absent, which means exact (SAML Core §3.3.2.2.1).
-     *
-     * @throws MalformedMessage for every other value, compared as a string (M-5)
+     * @throws MalformedMessage
      */
     public static function fromAttribute(?string $value): self
     {

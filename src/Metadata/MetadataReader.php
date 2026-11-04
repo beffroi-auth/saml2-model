@@ -19,10 +19,7 @@ use Dom\Element;
 use Psr\Clock\ClockInterface;
 
 /**
- * A peer's md:EntityDescriptor read strictly, in the order of section 6.5 (section 5.6): where its keys come from
- * (M-3) and where an assertion may go (M-9). readTrusted() reads metadata the consumer trusts by its channel without
- * verifying a signature, the one exception of M-2, named; readSigned() verifies it with keys the consumer pinned and
- * reads what the signature covered (M-1). The clock is read once per call (M-7).
+ * Section 6.5
  */
 final readonly class MetadataReader
 {
@@ -37,11 +34,10 @@ final readonly class MetadataReader
     }
 
     /**
-     * Metadata the consumer trusts by the channel it came through (an administrator's upload, a pinned URL over
-     * TLS): a ds:Signature is not verified here, the consumer said why.
+     * No ds:Signature is verified: the consumer trusts the channel the metadata came through (M-2).
      *
-     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
-     * @throws RefusedXml what Core and Dsig refuse, as they refuse it
+     * @throws MessageRefused
+     * @throws RefusedXml
      */
     public function readTrusted(Document $document): EntityDescriptor
     {
@@ -49,12 +45,11 @@ final readonly class MetadataReader
     }
 
     /**
-     * Metadata signed by a key the consumer pinned: the ds:Signature, the first child of the root, is verified (M-2),
-     * and the descriptor read from Verified::$document (M-1).
+     * M-1, M-2
      *
-     * @throws SignatureRequired when the root carries no ds:Signature (M-2)
-     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
-     * @throws RefusedXml what Core and Dsig refuse, as they refuse it
+     * @throws SignatureRequired
+     * @throws MessageRefused
+     * @throws RefusedXml
      */
     public function readSigned(Document $document, VerificationKeys $keys): EntityDescriptor
     {
@@ -71,7 +66,7 @@ final readonly class MetadataReader
     }
 
     /**
-     * Now minus the clock skew, now read once: a validUntil at or before it is past (M-7).
+     * Now minus the clock skew: a validUntil at or before it is past (M-7).
      */
     private function expired(): DateTimeImmutable
     {

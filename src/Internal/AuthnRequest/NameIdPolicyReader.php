@@ -14,17 +14,15 @@ use Beffroi\Xml\Core\Name;
 use Dom\Element;
 
 /**
- * A samlp:NameIDPolicy read strictly (SAML Core §3.4.1.1, section 6.2 step 5): no element child, which its schema
- * does not allow (M-5); its Format one of SAML Core §8.3 or encrypted (M-12), its SPNameQualifier a URI and its
- * AllowCreate a boolean (M-6), each checked by NameIdPolicy.
+ * SAML Core §3.4.1.1, section 6.2 step 5
  *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class NameIdPolicyReader
 {
     /**
-     * @throws MalformedMessage when it holds an element (M-5), or a value is not of its lexical form (M-6)
-     * @throws InvalidNameId when the Format is neither one of SAML Core §8.3 nor encrypted (M-12)
+     * @throws MalformedMessage
+     * @throws InvalidNameId
      */
     public static function read(Element $policy): NameIdPolicy
     {

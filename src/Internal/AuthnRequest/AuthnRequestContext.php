@@ -12,12 +12,7 @@ use Beffroi\Saml2\Model\Validation\TimeBounds;
 use DateTimeImmutable;
 
 /**
- * What the rules of an AuthnRequest are checked against (section 6.2 steps 3 to 5), as the validator states it: the
- * window of M-7, from now read once from the clock and the time bounds of section 7; the service provider whose
- * metadata authenticated it and ours, the identity provider (M-8, M-9); the URL at which it arrived (M-8); how it was
- * authenticated (M-2), since a signature, of its own or of the binding, makes the Destination required.
- *
- * @internal outside the compatibility promise of section 5
+ * @internal
  */
 final readonly class AuthnRequestContext
 {

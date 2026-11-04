@@ -20,10 +20,7 @@ use InvalidArgumentException;
 use Psr\Clock\ClockInterface;
 
 /**
- * A samlp:LogoutRequest, received by either role, validated in the order of section 6.3 (section 5.6): its structure
- * and its bound before any key is touched, then the signature the Single Logout profile requires, its own or the
- * binding's (M-2, SAML Profiles §4.4.4.1), then its values from what that signature covered (M-1), and replay last
- * (M-11), so that nothing is remembered of a request a rule refused. now is read once from the clock (M-7).
+ * Section 6.3, SAML Profiles §4.4.4.1
  */
 final readonly class LogoutRequestValidator
 {
@@ -39,16 +36,12 @@ final readonly class LogoutRequestValidator
     }
 
     /**
-     * The request as it arrived over HTTP-POST, or over HTTP-Redirect without a signature: its ds:Signature is
-     * required and verified with the keys of $peer's metadata (M-2, M-3); without one it is SignatureRequired.
-     *
-     * @param IdentityProvider|ServiceProvider $self our role, the one that faces $peer's
      * @param string $receivedAt the URL of our SingleLogoutService at which the request arrived
      *
-     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
-     * @throws Replayed when the message was accepted already, inside its window (M-11)
-     * @throws RefusedXml what Core and Dsig refuse, as they refuse it
-     * @throws InvalidArgumentException when $self is not the role that faces $peer's (section 5.6)
+     * @throws MessageRefused
+     * @throws Replayed
+     * @throws RefusedXml
+     * @throws InvalidArgumentException when $self is not the role that faces $peer's
      */
     public function validate(
         UnverifiedLogoutRequest $request,
@@ -66,17 +59,15 @@ final readonly class LogoutRequestValidator
     }
 
     /**
-     * The request as it arrived over HTTP-Redirect with a signature over its query string, which saml2-bindings
-     * verified with Verifier::verifyDetached() under $peer's keys before calling: the caller asserts it (section 6.8).
-     * A ds:Signature child is refused, since the HTTP-Redirect encoding removes it (SAML Bindings §3.4.4.1).
+     * The caller asserts that saml2-bindings verified the signature over the query string under $peer's keys; a
+     * ds:Signature child is refused (SAML Bindings §3.4.4.1).
      *
-     * @param IdentityProvider|ServiceProvider $self our role, the one that faces $peer's
      * @param string $receivedAt the URL of our SingleLogoutService at which the request arrived
      *
-     * @throws MessageRefused one of its subclasses, naming the rule (M-16)
-     * @throws Replayed when the message was accepted already, inside its window (M-11)
-     * @throws RefusedXml what Core refuses, as it refuses it
-     * @throws InvalidArgumentException when $self is not the role that faces $peer's (section 5.6)
+     * @throws MessageRefused
+     * @throws Replayed
+     * @throws RefusedXml
+     * @throws InvalidArgumentException when $self is not the role that faces $peer's
      */
     public function validateAuthenticatedByBinding(
         UnverifiedLogoutRequest $request,
@@ -114,7 +105,7 @@ final readonly class LogoutRequestValidator
     private function accept(MessageAuthentication $authentication, LogoutContext $context): AcceptedLogoutRequest
     {
         $request = LogoutRequestReader::read($authentication->document->root(), $context);
-        // replay, last, with the verified values (M-11)
+        // Replay last, on the verified values: nothing is remembered of a request a rule refused (M-11).
         $remembered = $this->replay->remember(
             $request->issuer->entityId,
             $request->id,
